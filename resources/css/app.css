@@ -1,0 +1,59 @@
+/* resources/css/app.css */
+
+body {
+    background-color: #121212; /* Dark background for the body */
+    color: #e0e0e0; /* Light text color */
+}
+
+.navbar {
+    border-bottom: 1px solid #333; /* Dark border for navbar */
+}
+
+.navbar-brand, .nav-link {
+    color: #e0e0e0; /* Light color for navbar text */
+}
+
+.navbar-brand:hover, .nav-link:hover {
+    color: #007bff; /* Accent color on hover */
+}
+
+.comics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.comic-card {
+    background-color: #1e1e1e; /* Dark background for comic cards */
+    border: 1px solid #333; /* Dark border for comic cards */
+    padding: 15px;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.comic-card img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.comic-card h2 {
+    font-size: 1.2em;
+    margin: 10px 0;
+    color: #e0e0e0; /* Light color for card titles */
+}
+
+.comic-card p {
+    font-size: 0.9em;
+    color: #b0b0b0; /* Lighter color for card text */
+}
+
+.comic-card a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.comic-card a:hover h2 {
+    color: #007bff; /* Accent color on hover */
+}
