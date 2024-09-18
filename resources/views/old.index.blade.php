@@ -3,10 +3,11 @@
 @section('content')
 <div class="container">
     <h1>Comics</h1>
-
+aaa
     <div class="comics-grid">
         @foreach ($comics as $comic)
             <div class="comic-card">
+                {{dd($comic);}}
                 <a href="{{ route('comics.show', $comic->id) }}">
                     <img src="{{ asset($comic->image_path) }}" alt="{{ $comic->title }}">
                     <h2>{{ $comic->title }}</h2>

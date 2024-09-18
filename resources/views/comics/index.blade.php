@@ -8,10 +8,11 @@
     <div class="comics-grid">
         @foreach ($comics as $comic)
             <div class="comic-card">
-                <a href="{{ route('comics.show', $comic->id) }}">
+                <a href="{{ route('comics.showBySlug', ['id' => $comic->id, 'slug' => $comic->slug]) }}">
                     <img src="{{ asset('storage/' . $comic->image_path) }}" alt="{{ $comic->title }}">
                     <h2>{{ $comic->title }}</h2>
                 </a>
+
                 <p>By {{ $comic->author }}</p>
                 <p>{{ Str::limit($comic->description, 100) }}</p>
             </div>

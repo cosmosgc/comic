@@ -36,4 +36,12 @@ class PageController extends Controller
 
         return redirect()->route('comics.show', $comic->id);
     }
+
+    public function getPagesByComicId($id) {
+        // Fetch the pages related to the comic
+        $pages = Page::where('comic_id', $id)->orderBy('page_number')->get();
+
+        // Return the pages as JSON
+        return response()->json($pages);
+    }
 }

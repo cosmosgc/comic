@@ -5,6 +5,7 @@ use App\Models\Comic;
 use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ComicController extends Controller
 {
@@ -16,14 +17,31 @@ class ComicController extends Controller
     {
         return view('comics.upload');
     }
-
     public function show($id)
     {
-        // Fetch the comic by its ID
-
-        $comic = Comic::with('pages')->findOrFail($id);
-        // Return a view that displays the comic and its pages
+        $comic = Comic::findOrFail($id);
         return view('comics.show', compact('comic'));
+    }
+
+    public function showById($id)
+    {
+        $comic = Comic::findOrFail($id);
+        return view('comics.show', compact('comic'));
+    }
+
+    // Method to show a comic by its slug
+    public function showBySlug($slug)
+    {
+        $comic = Comic::where('slug', $slug)->firstOrFail();
+        return view('comics.show', compact('comic'));
+    }
+
+    public function getComic($id){
+        $comic = Comic::findOrFail($id);
+
+        // Return the comic as JSON
+        return response()->json($comic);
+
     }
 
 
@@ -36,11 +54,14 @@ class ComicController extends Controller
         ]);
 
         // Create a new comic
+        $slug = $request->input('slug') ?: Comic::generateUniqueSlug($request->input('title'));
+        //dd($slug);
+        // Create the comic
         $comic = Comic::create([
             'title' => $request->input('title'),
             'author' => $request->input('author'),
             'description' => $request->input('desc'),
-            // Add other fields as needed (like author, description, etc.)
+            'slug' => $slug, // Store the slug
         ]);
 
         // Define the comic folder path
@@ -80,6 +101,32 @@ class ComicController extends Controller
         }
         //dd($request, $comicFolderPath);
         return redirect()->route('comics.show', $comic->id)->with('success', 'Comic uploaded successfully.');
+    }
+
+    public function updateMissingSlugs()
+    {
+        // Fetch all comics without a slug
+        $comicsWithoutSlugs = Comic::whereNull('slug')->orWhere('slug', '')->get();
+
+        foreach ($comicsWithoutSlugs as $comic) {
+            // Generate a slug based on the title
+            $slug = Str::slug($comic->title);
+
+            // Check if the slug already exists
+            $originalSlug = $slug;
+            $count = 1;
+
+            while (Comic::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+
+            // Update the comic with the new slug
+            $comic->slug = $slug;
+            $comic->save();
+        }
+
+        return response()->json(['message' => 'Slugs updated for all comics without a slug.']);
     }
 
 }
