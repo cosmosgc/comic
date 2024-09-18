@@ -20,6 +20,7 @@ class Comic extends Model
         'author',
         'image_path',
         'slug',
+        'user_id',
     ];
 
     // If you need to cast any attributes to specific data types
@@ -41,6 +42,10 @@ class Comic extends Model
         }
 
         return $slug;
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
     public function pages()
     {

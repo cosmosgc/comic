@@ -6,7 +6,7 @@ use App\Models\Page;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Auth;
 class ComicController extends Controller
 {
     public function index() {
@@ -36,13 +36,15 @@ class ComicController extends Controller
         return view('comics.show', compact('comic'));
     }
 
-    public function getComic($id){
-        $comic = Comic::findOrFail($id);
+    public function getComic($id)
+    {
+        // Fetch the comic along with its related pages
+        $comic = Comic::with('pages')->findOrFail($id);
 
-        // Return the comic as JSON
+        // Return the comic and its pages as a single JSON response
         return response()->json($comic);
-
     }
+
 
 
     public function store(Request $request)
@@ -62,6 +64,7 @@ class ComicController extends Controller
             'author' => $request->input('author'),
             'description' => $request->input('desc'),
             'slug' => $slug, // Store the slug
+            'user_id' => Auth::id(), // Associate with the authenticated user
         ]);
 
         // Define the comic folder path
@@ -100,7 +103,7 @@ class ComicController extends Controller
             $comic->update(['image_path' => $firstImagePath]);
         }
         //dd($request, $comicFolderPath);
-        return redirect()->route('comics.show', $comic->id)->with('success', 'Comic uploaded successfully.');
+        return redirect()->route('comics.showBySlug', $comic->slug)->with('success', 'Comic uploaded successfully.');
     }
 
     public function updateMissingSlugs()

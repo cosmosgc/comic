@@ -17,8 +17,9 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('author')->nullable();
             $table->string('image_path')->nullable(); // To store the image of the comic
-            $table->string('slug')->unique()->after('title');
+
             $table->timestamps();
+
         });
 
     }
@@ -29,8 +30,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('comics');
-        Schema::table('comics', function (Blueprint $table) {
-            $table->dropColumn('slug');
-        });
     }
 };
