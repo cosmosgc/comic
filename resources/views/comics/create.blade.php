@@ -9,6 +9,10 @@
     <label for="author">Author:</label>
     <input type="text" name="author" id="author">
 
+    <label for="tags">Tags</label>
+    <input type="text" name="tags" placeholder="Tags, use virgula para separar">
+
+
     <label for="image">Comic Image:</label>
     <input type="file" name="image" id="image">
 

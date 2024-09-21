@@ -51,4 +51,8 @@ class Comic extends Model
     {
         return $this->hasMany(Page::class);
     }
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class);
+    }
 }

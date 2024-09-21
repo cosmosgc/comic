@@ -34,6 +34,12 @@
                         <p>By {{ $comic->author }}</p>
                         <p>{{ Str::limit($comic->description, 100) }}</p>
                     </div>
+                    <div class="comic-tags">
+                        @foreach ($comic->tags as $tag)
+                            <span class="badge badge-info">{{ $tag->name }}</span>
+                        @endforeach
+                    </div>
+
                 @endforeach
             </div>
 

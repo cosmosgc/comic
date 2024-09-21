@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\Page;
+use App\Models\tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+
 class ComicController extends Controller
 {
     public function index() {
@@ -45,6 +47,35 @@ class ComicController extends Controller
         return response()->json($comic);
     }
 
+    public function getAllComics(Request $request)
+    {
+        $query = Comic::query();
+
+        // Check if there is a search query
+        if ($request->has('search')) {
+            $search = $request->input('search');
+
+            // Filter by title or author
+            $query->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('author', 'like', '%' . $search . '%');
+        }
+        if ($request->has('tag')) {
+            $tag = Tag::where('name', $request->input('tag'))->first();
+            if ($tag) {
+                $comics = $tag->comics()->get();
+            }
+        }
+
+
+        // Get the results
+        $comics = $query->get();
+
+        // Return the comics as a JSON response
+        return response()->json($comics);
+    }
+
+
+
 
 
     public function store(Request $request)
@@ -66,6 +97,18 @@ class ComicController extends Controller
             'slug' => $slug, // Store the slug
             'user_id' => Auth::id(), // Associate with the authenticated user
         ]);
+        if ($request->filled('tags')) {
+            $tagNames = explode(',', $request->input('tags'));
+            $tagIds = [];
+
+            foreach ($tagNames as $tagName) {
+                $tagName = trim($tagName);
+                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $tagIds[] = $tag->id;
+            }
+
+            $comic->tags()->sync($tagIds);
+        }
 
         // Define the comic folder path
         $comicFolderPath = "comics/{$comic->id}";

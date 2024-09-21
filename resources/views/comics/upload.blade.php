@@ -23,6 +23,10 @@
             <label for="desc">Descrição</label>
             <input type="text" class="form-control" id="desc" name="desc">
         </div>
+        <div class="form-group">
+            <label for="tags">Tags</label>
+            <input type="text" class="form-control"  name="tags" placeholder="Insira tags, separado por virgula">
+        </div>
 
         <div class="form-group">
             <label for="folder">Select a Folder</label>
