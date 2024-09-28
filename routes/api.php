@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\AnalyticsController;
 
 
 Route::get('/user', function (Request $request) {
@@ -18,4 +19,5 @@ Route::get('/comics', [ComicController::class, 'getAllComics']);
 Route::get('/comics/{id}', [ComicController::class, 'getComic']);
 Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId']);
 
+Route::post('/analytics', [AnalyticsController::class, 'store']);
 

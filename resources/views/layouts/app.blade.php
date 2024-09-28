@@ -66,6 +66,35 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get the necessary data for analytics
+            const analyticsData = {
+                url: window.location.href,
+                ip_address: '{{ request()->ip() }}',
+                user_agent: navigator.userAgent,
+                event_type: 'page_view' // You can change this for different types of events
+            };
+
+            // Send the analytics data via API
+            fetch('/api/analytics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Include CSRF token for security
+                },
+                body: JSON.stringify(analyticsData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Analytics data stored:', data);
+            })
+            .catch(error => {
+                console.error('Error storing analytics data:', error);
+            });
+        });
+    </script>
+
 
     @yield('scripts')
 </body>

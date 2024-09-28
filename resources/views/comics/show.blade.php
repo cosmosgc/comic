@@ -165,5 +165,33 @@
             arrowRight.style.display = "none";
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Get the necessary data for analytics
+            const analyticsData = {
+                url: window.location.href,
+                ip_address: '{{ request()->ip() }}',
+                user_agent: navigator.userAgent,
+                event_type: 'page_view' // You can change this for different types of events
+            };
+
+            // Send the analytics data via API
+            fetch('/api/analytics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Include CSRF token for security
+                },
+                body: JSON.stringify(analyticsData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Analytics data stored:', data);
+            })
+            .catch(error => {
+                console.error('Error storing analytics data:', error);
+            });
+        });
+    </script>
 </body>
 </html>
