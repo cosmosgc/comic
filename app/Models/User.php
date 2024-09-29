@@ -21,6 +21,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar_image_path',
+        'bio',
+        'links',
+    ];
+    protected $casts = [
+        'links' => 'array', // Ensure the links field is cast to an array
     ];
 
     /**
@@ -32,6 +38,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
 
     /**
      * Get the attributes that should be cast.

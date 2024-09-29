@@ -59,11 +59,10 @@
 @section('styles')
 <style>
     .canvas{
-        background-color: #000;
+        background-color: #272c31;
     }
     #canvas{
         position: absolute;
-        filter: url("#liquid");
     }
     .custom-root-container{
         overflow: hidden;
@@ -73,97 +72,99 @@
 </style>
 @endsection
 
+
+
 @section('scripts')
 <script>
-const canvas = document.getElementById("canvas"),
-  context = canvas.getContext("2d"),
-  colorPallete =
-      ["#f0f8ff", "#e6eaed", "#bbbfc1", "#e2e4e5", "#f4f9fb", "#ffffff"];
-    //   ["#00f", "#00a", "#00b", "#00c", "#00d", "#00e"];
-// ["#f00","#a00","#b00","#c00","#d00","#e00"];
-// ["white","#888","yellow","orange","darkorange","darkmagenta","darkgreen","khaki"];
+    // Setup canvas and context
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
 
-var width = canvas.width = window.innerWidth,
-  height = canvas.height = window.innerHeight,
-  src = {
-    x: width / 2,
-    y: height / 3
-  },
-  circles = [];
+    let waveOffset = 0; // Variable to animate the wave's movement
 
-window.onresize = function() {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-  src.x= width / 2;
-  src.y= height / 2;
-}
+    const waveHeight = 20; // Height of the wave
+    const waveLength = 150; // Distance between peaks
+    const waveSpeed = 0.05; // Speed of wave animation
+    const numberOfWaves = 12; // How many wave layers
+    const colors = ['#ffbcd4', '#aabbaa', '#dd9999', '#aa9999', '#ffffff', '#aaaaaa', '#dddddd', '#eeeeee', '#cccccc', '#999999','#aa9999', '#ffffff']; // Colors for each wave layer
 
-class Circle {
-  constructor() {
-    this.x = src.x;
-    this.y = src.y;
-    this.angle = Math.PI * 2 * Math.random();
-    var speed=1 + Math.random();
-    this.vx = speed* Math.cos(this.angle);
-    this.vy = speed* Math.sin(this.angle);
+    function drawWaves() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas before redrawing
 
-    // this.xr = 6 + 10 * Math.random();
-    // this.yr = 2 + 10 * Math.random();
-    this.r = 6 + 10 * Math.random()
+        for (let i = 0; i < numberOfWaves; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
 
-    this.color = colorPallete[Math.floor(Math.random() * colorPallete.length)];
-  }
+            // Loop over each x-axis point
+            for (let x = 0; x <= canvas.width; x += 10) {
+                let y = Math.sin(x / waveLength + waveOffset + i) * waveHeight + canvas.height / 2 + i * 30;
+                ctx.lineTo(x, y);
+            }
 
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
+            // Fill the wave
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fillStyle = colors[i];
+            ctx.globalAlpha = 0.6; // Apply transparency
+            ctx.fill();
+        }
 
-    // this.xr-= .01;
-    // this.yr -= .01;
-    // this.r=Math.min(this.yr,this.xr);
-    this.r -= .01;
+        waveOffset += waveSpeed; // Update wave offset for animation
 
-  }
-}
+        drawCircles(); // Draw circles after waves
 
-function removeCircles() {
- circles = circles.filter(
-    (b) =>
-      !(
-        b.x + b.r < 0 ||
-        b.x - b.r > width ||
-        b.y + b.r < 0 ||
-        b.y - b.r > height ||
-        b.r < 0
-      )
-  );
-}
+        requestAnimationFrame(drawWaves); // Animate
+    }
 
-function renderCircles() {
-  context.clearRect(0, 0, width, height);
+    const circles = [];
 
-  if (Math.random() > .2)
-    circles.push(new Circle());
+    function createCircles() {
+        for (let i = 0; i < 15; i++) {
+            circles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 20 + 5,
+                dx: (Math.random() - 0.5) * 2,
+                dy: (Math.random() - 0.5) * 2
+            });
+        }
+    }
 
-  for (var i = 0; i < circles.length; i++) {
-    var b = circles[i];
-    context.fillStyle = b.color;
-    context.beginPath();
+    function drawCircles() {
+        circles.forEach(circle => {
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.fill();
 
-    context.arc(b.x, b.y, b.r, 0, Math.PI * 2, false);
-    // context.ellipse(b.x, b.y, b.xr, b.yr, b.angle, 0, 2 * Math.PI);
+            // Move circles
+            circle.x += circle.dx;
+            circle.y += circle.dy;
 
-    context.fill();
-    b.update();
-  }
+            // Bounce off walls
+            if (circle.x + circle.radius > width || circle.x - circle.radius < 0) {
+                circle.dx = -circle.dx;
+            }
+            if (circle.y + circle.radius > height || circle.y - circle.radius < 0) {
+                circle.dy = -circle.dy;
+            }
+        });
+    }
 
-  removeCircles();
-  requestAnimationFrame(renderCircles);
-}
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
 
-renderCircles();
-
-// https://codepen.io/mnmxmx/pen/VjjvEq
+    window.addEventListener('resize', resizeCanvas);
+    createCircles();
+    drawWaves();
 </script>
 @endsection
-

@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Your Profile')
+@section('title', 'Public Profile of ' . $user->name)
 
 @section('content')
 <div class="container">
-    <h1>Seu perfil</h1>
+    <h1>Perfil de {{ $user->name }}</h1>
 
     @if(session('success'))
         <div class="alert alert-success">
@@ -18,7 +18,7 @@
             <img src="{{ $user->avatar_image_path ? asset('storage/' . $user->avatar_image_path) : asset('default-avatar.png') }}"
                  alt="Avatar" class="avatar-img mb-3" />
             <p class="card-text"><strong>Email:</strong> {{ $user->email }}</p>
-            <p class="card-text"><strong>Bio:</strong> {{ $user->bio ?? 'Sem bio disponivel' }}</p>
+            <p class="card-text"><strong>Bio:</strong> {{ $user->bio ?? 'No bio available' }}</p>
 
             <!-- Display Links -->
             @if(isset($user->links) && count($user->links) > 0)
@@ -35,13 +35,11 @@
             @else
                 <p>No links added.</p>
             @endif
-
-            <a href="{{ route('profile.edit') }}" class="btn btn-primary">Editar perfil</a>
         </div>
     </div>
 
     <div class="mb-4">
-        <h3>Suas Comics</h3>
+        <h3>Comics by {{ $user->name }}</h3>
         @if($comics->count())
             <div class="comics-grid">
                 @foreach($comics as $comic)
@@ -57,7 +55,6 @@
                             <span class="badge badge-info">{{ $tag->name }}</span>
                         @endforeach
                     </div>
-                    <a href="{{ route('comics.edit', ['comic' => $comic->id]) }}" class="btn btn-warning">Edit Comic</a>
                 </div>
                 @endforeach
             </div>
@@ -67,7 +64,7 @@
                 {{ $comics->links() }}
             </div>
         @else
-            <p>You have not uploaded any comics yet.</p>
+            <p>This user has not uploaded any comics yet.</p>
         @endif
     </div>
 </div>

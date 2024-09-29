@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PageController;
 
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -44,8 +45,13 @@ Route::get('/comics/{slug}', [ComicController::class, 'showBySlug'])->name('comi
 Route::get('comics/upload', [ComicController::class, 'create'])->name('comics.upload');
 Route::post('comics/store', [ComicController::class, 'store'])->name('comics.store');
 
+Route::get('/comics/{comic}/edit', [ComicController::class, 'edit'])->name('comics.edit');
+Route::put('/comics/{comic}', [ComicController::class, 'update'])->name('comics.update');
 
+Route::post('/comics/{comic}/reorder-pages', [ComicController::class, 'reorderPages'])->name('comics.reorderPages');
+Route::delete('/comics/{page}/deletePage', [ComicController::class, 'deletePage'])->name('comics.deletePage');
 
+Route::post('/comics/{comic}/pages', [PageController::class, 'store'])->name('pages.store');
 
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -66,3 +72,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
+Route::get('/profile/id/{id}', [ProfileController::class, 'publicShowById'])->name('profile.public.show.id');
+Route::get('/profile/{username}', [ProfileController::class, 'publicShowByUsername'])->name('profile.public.show.username');
+

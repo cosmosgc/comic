@@ -36,6 +36,27 @@ class PageController extends Controller
 
         return redirect()->route('comics.show', $comic->id);
     }
+    public function addPage(Request $request, $comicId)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Adjust as necessary
+        ]);
+
+        // Store the new page image
+        $comic = Comic::findOrFail($comicId);
+        $pageNumber = $comic->pages()->count() + 1; // Set page number to next available
+
+        $path = $request->file('image')->store("comics/{$comic->id}/pages", 'public');
+
+        // Create a new Page entry
+        Page::create([
+            'comic_id' => $comic->id,
+            'image_path' => $path,
+            'page_number' => $pageNumber,
+        ]);
+
+        return redirect()->route('comics.edit', $comic->id)->with('success', 'Page uploaded successfully.');
+    }
 
     public function getPagesByComicId($id) {
         // Fetch the pages related to the comic

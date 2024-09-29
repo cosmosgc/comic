@@ -26,18 +26,26 @@ class ComicController extends Controller
         return view('comics.show', compact('comic'));
     }
 
+    // In your ComicController or equivalent
     public function showById($id)
     {
-        $comic = Comic::findOrFail($id);
+        $comic = Comic::with(['pages' => function ($query) {
+            $query->orderBy('page_number');
+        }])->findOrFail($id);
+
         return view('comics.show', compact('comic'));
     }
 
     // Method to show a comic by its slug
     public function showBySlug($slug)
     {
-        $comic = Comic::where('slug', $slug)->firstOrFail();
+        $comic = Comic::with(['pages' => function ($query) {
+            $query->orderBy('page_number');
+        }])->where('slug', $slug)->firstOrFail();
+
         return view('comics.show', compact('comic'));
     }
+
 
     public function getComic($id)
     {
@@ -174,6 +182,57 @@ class ComicController extends Controller
         }
 
         return response()->json(['message' => 'Slugs updated for all comics without a slug.']);
+    }
+    public function edit($id)
+    {
+        $comic = Comic::with(['pages' => function ($query) {
+            $query->orderBy('page_number');
+        }])->findOrFail($id);
+
+        return view('comics.edit', compact('comic'));
+    }
+
+    public function update(Request $request, Comic $comic)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+        ]);
+
+        // Update comic details
+        $comic->update([
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+        ]);
+
+        return redirect()->route('comics.show', $comic->id)->with('success', 'Comic updated successfully.');
+    }
+
+    public function reorderPages(Request $request, Comic $comic)
+    {
+        // The incoming request will be a JSON array of page data
+        $orderedPages = $request->input();
+
+        foreach ($orderedPages as $pageData) {
+            $page = Page::findOrFail($pageData['id']);
+            $page->update(['page_number' => $pageData['page_number']]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function deletePage($id)
+    {
+        $page = Page::findOrFail($id);
+
+        // Delete the page and the image file if needed
+        if (Storage::disk('public')->exists($page->image_path)) {
+            Storage::disk('public')->delete($page->image_path);
+        }
+
+        $page->delete();
+
+        return response()->json(['success' => true]);
     }
 
 }
