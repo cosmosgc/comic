@@ -7,26 +7,7 @@
 
     <div class="comics-grid">
         @foreach ($comics as $comic)
-            <div class="comic-card" data-comic-id="{{ $comic->id }}" data-comic-pagecount="{{ $comic->pageCount() }}" style="background-size: 0% 100%;">
-                <div class="progress-background"></div>
-                <a title="{{ $comic->title }}" href="{{ route('comics.showBySlug', ['id' => $comic->id, 'slug' => $comic->slug]) }}">
-                    <img src="{{ asset('storage/' . $comic->image_path) }}" alt="{{ $comic->title }}">
-                    <h2>{{ Str::limit($comic->title, 35) }}</h2>
-                </a>
-
-                <p>By {{ $comic->author }}</p>
-                <p>{{ Str::limit($comic->description, 100) }}</p>
-
-                <div class="comic-tags">
-                    @foreach ($comic->tags as $tag)
-                        <span class="badge badge-info">{{ $tag->name }}</span>
-                    @endforeach
-                </div>
-
-                <!-- You can add a total page count display if needed -->
-                <p>{{ $comic->pageCount() }} paginas</p>
-
-            </div>
+            <x-comic-card :comic="$comic" />
         @endforeach
     </div>
 
@@ -81,7 +62,7 @@
         width: 100%;
         background-color: #4caf50; /* default progress color */
         transition: width 0.8s ease-in-out, height 0.8s ease-in-out;
-        z-index: 1; /* Place behind other content */
+        z-index: -2; /* Place behind other content */
         border-radius: 5px 0 0 5px; /* To match the comic card's border-radius */
     }
     .comic-card a, .comic-card p, .comic-card h2, .comic-card img {

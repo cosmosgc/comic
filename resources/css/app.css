@@ -57,3 +57,13 @@ body {
 .comic-card a:hover h2 {
     color: #007bff; /* Accent color on hover */
 }
+.avatar {
+    width: 40px; /* or whatever size you prefer */
+    height: auto;
+    border-radius: 50% !important; /* Make it circular */
+    margin-bottom: 5px; /* Add some spacing */
+}
+.card-uploader span{
+    color: #f7f0f7;
+    font-weight: bold;
+}
