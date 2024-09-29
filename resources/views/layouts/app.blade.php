@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @yield('styles')
 </head>
-<body class="bg-dark text-light">
+<body class="bg-dark text-light custom-root-container">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" href="{{ url('/') }}">Comic Viewer</a>
@@ -73,8 +73,47 @@
                 url: window.location.href,
                 ip_address: '{{ request()->ip() }}',
                 user_agent: navigator.userAgent,
-                event_type: 'page_view' // You can change this for different types of events
+                event_type: 'page_view',
+                device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+                referral_source: document.referrer || 'Direct',
+                campaign: '',
+                duration: 0,
+                browser: getBrowser(),
+                os: getOS(),
+                user_id: '{{ Auth::id() }}' // Pass the user ID from the server
             };
+
+            // Function to get browser name
+            function getBrowser() {
+                if (navigator.userAgent.indexOf("Chrome") > -1) {
+                    return "Chrome";
+                } else if (navigator.userAgent.indexOf("Firefox") > -1) {
+                    return "Firefox";
+                } else if (navigator.userAgent.indexOf("Safari") > -1) {
+                    return "Safari";
+                } else if (navigator.userAgent.indexOf("Edge") > -1) {
+                    return "Edge";
+                } else {
+                    return "Other";
+                }
+            }
+
+            // Function to get OS name
+            function getOS() {
+                if (navigator.userAgent.indexOf("Win") > -1) {
+                    return "Windows";
+                } else if (navigator.userAgent.indexOf("Mac") > -1) {
+                    return "MacOS";
+                } else if (navigator.userAgent.indexOf("X11") > -1 || navigator.userAgent.indexOf("Linux") > -1) {
+                    return "Linux";
+                } else if (/Android/i.test(navigator.userAgent)) {
+                    return "Android";
+                } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    return "iOS";
+                } else {
+                    return "Other";
+                }
+            }
 
             // Send the analytics data via API
             fetch('/api/analytics', {
@@ -83,7 +122,8 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}' // Include CSRF token for security
                 },
-                body: JSON.stringify(analyticsData)
+                body: JSON.stringify(analyticsData),
+                credentials: 'include'
             })
             .then(response => response.json())
             .then(data => {
@@ -93,6 +133,7 @@
                 console.error('Error storing analytics data:', error);
             });
         });
+
     </script>
 
 

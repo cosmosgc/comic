@@ -13,11 +13,17 @@ return new class extends Migration
     {
         Schema::create('analytics', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade'); // Nullable in case of guest visitors
-            $table->string('ip_address');
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->ipAddress('ip_address');
             $table->string('url');
+            $table->string('event_type');
             $table->string('user_agent')->nullable();
-            $table->string('event_type'); // Can store 'page_view', 'login', etc.
+            $table->string('device_type')->nullable();
+            $table->string('browser')->nullable();
+            $table->string('os')->nullable();
+            $table->unsignedInteger('duration')->nullable(); // Duration in seconds
+            $table->string('referral_source')->nullable();
+            $table->string('campaign')->nullable();
             $table->timestamps();
         });
     }

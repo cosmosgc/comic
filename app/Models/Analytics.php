@@ -12,12 +12,18 @@ class Analytics extends Model
     protected $fillable = [
         'ip_address',
         'url',
-        'user_agent',
         'event_type',
-        'user_id'
+        'user_id',
+        'user_agent',
+        'device_type',
+        'browser',
+        'os',
+        'duration',           // Duration in seconds
+        'referral_source',
+        'campaign'
     ];
 
-    // Define relationship with Comic
+    // Define relationship with User
     public function user()
     {
         return $this->belongsTo(User::class);
