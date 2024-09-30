@@ -19,7 +19,7 @@
         <h2>{{ Str::limit($comic->title, 35) }}</h2>
     </a>
 
-    <p>By {{ $comic->author }}</p>
+    <p>Por {{ $comic->author }}</p>
 
     <!-- Display user avatar -->
 
@@ -32,5 +32,5 @@
         @endforeach
     </div>
 
-    <p>{{ $comic->pageCount() }} pages</p>
+    <p>{{ $comic->pageCount() }} paginas</p>
 </div>

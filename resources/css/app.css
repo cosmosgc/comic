@@ -19,14 +19,14 @@ body {
 
 .comics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
 .comic-card {
     background-color: #1e1e1e; /* Dark background for comic cards */
     border: 1px solid #333; /* Dark border for comic cards */
-    padding: 15px;
+    padding: 10px;
     text-align: center;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
