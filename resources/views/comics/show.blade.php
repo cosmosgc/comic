@@ -2,6 +2,16 @@
 <html>
 <head>
     <title>{{ $comic->title }} - Comic Reader</title>
+    <meta property="og:title" content="{{$comic->title}}" />
+    <meta property="og:description" content="{{$comic->author}}" />
+    <meta property="og:image" content="{{ asset('storage/' . $comic->image_path) }}" />
+    <meta property="og:image:width" content="630">
+    <meta property="og:image:height" content="1200">
+
+    <meta property="twitter:title" content="{{$comic->title}}" />
+    <meta property="twitter:description" content="{{$comic->author}}" />
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:image:src" content="{{ asset('storage/' . $comic->image_path) }}" />
 
     <style>
         body {

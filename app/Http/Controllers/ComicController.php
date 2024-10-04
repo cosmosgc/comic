@@ -13,8 +13,12 @@ use Illuminate\Support\Facades\Auth;
 class ComicController extends Controller
 {
     public function index() {
-        $comics = Comic::paginate(10);
-        return view('comics.index', compact('comics'));
+        $comics = Comic::orderBy('created_at', 'desc')->paginate(10);
+
+        $showPanels = true;
+        $topComics = Comic::orderBy('view_count', 'desc')->take(5)->get();
+        $tags = Tag::all();
+        return view('comics.index', compact('comics', 'topComics', 'tags','showPanels'));
     }
     public function create()
     {
@@ -32,6 +36,7 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->findOrFail($id);
+        $comic->increment('view_count');
 
         return view('comics.show', compact('comic'));
     }
@@ -42,6 +47,7 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->where('slug', $slug)->firstOrFail();
+        $comic->increment('view_count');
 
         return view('comics.show', compact('comic'));
     }
@@ -51,6 +57,7 @@ class ComicController extends Controller
     {
         // Fetch the comic along with its related pages
         $comic = Comic::with('pages')->findOrFail($id);
+        $comic->increment('view_count');
 
         // Return the comic and its pages as a single JSON response
         return response()->json($comic);

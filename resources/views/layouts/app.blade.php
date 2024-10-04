@@ -58,9 +58,24 @@
         </div>
     </nav>
 
-    <div class="container mt-5">
-        @yield('content')
+    <div class="container-fluid">
+        <div class="row">
+            @if (isset($showPanels) && $showPanels)
+                @include('components.left-panel', ['topComics' => $topComics, 'tags' => $tags])
+            @endif
+
+            <!-- Main Content -->
+            <div class="{{ isset($showPanels) && $showPanels ? 'col-md-8' : 'col-md-12' }}">
+                @yield('content')
+            </div>
+
+            @if (isset($showPanels) && $showPanels)
+                @include('components.right-panel')
+            @endif
+        </div>
     </div>
+
+
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

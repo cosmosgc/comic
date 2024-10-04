@@ -21,6 +21,7 @@ class Comic extends Model
         'image_path',
         'slug',
         'user_id',
+        'view_count',
     ];
 
     // If you need to cast any attributes to specific data types
@@ -59,4 +60,9 @@ class Comic extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
+    public function collections()
+    {
+        return $this->belongsToMany(Collection::class);
+    }
+
 }

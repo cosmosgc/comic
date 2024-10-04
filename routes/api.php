@@ -21,3 +21,7 @@ Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId']);
 
 Route::post('/analytics', [AnalyticsController::class, 'store']);
 
+use App\Http\Controllers\TestsController;
+
+Route::get('/restaurants', [TestsController::class, 'getRestaurants']);
+

@@ -67,3 +67,14 @@ body {
     color: #f7f0f7;
     font-weight: bold;
 }
+.sidebar-bg{
+    background-color: #30363d;
+}
+.highlight-comics{
+    background-color: #30363d;
+    padding: 10px;
+    border: solid black 1px;
+    border-radius: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    margin-bottom: 10px;
+}
