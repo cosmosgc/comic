@@ -109,6 +109,3 @@ Este é um sistema de gerenciamento de quadrinhos desenvolvido com Laravel. Ele 
 4. Envie para o branch (`git push origin feature/minha-feature`).
 5. Crie um novo Pull Request.
 
-## Licença
-
-Este projeto está licenciado sob os termos da [MIT License](LICENSE).
