@@ -62,7 +62,9 @@ class Comic extends Model
     }
     public function collections()
     {
-        return $this->belongsToMany(Collection::class);
+        return $this->belongsToMany(Collection::class)
+                    ->withPivot('order') // Include the 'order' column in the pivot table
+                    ->orderBy('pivot_order'); // Order collections by the 'order' field in the pivot table
     }
 
 }

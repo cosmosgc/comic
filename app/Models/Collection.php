@@ -16,7 +16,9 @@ class Collection extends Model
 
     public function comics()
     {
-        return $this->belongsToMany(Comic::class);
+        return $this->belongsToMany(Comic::class)
+                    ->withPivot('order') // Include the 'order' column in the pivot table
+                    ->orderBy('pivot_order'); // Order comics by the 'order' field in the pivot table
     }
 }
 

@@ -100,7 +100,7 @@
             });
 
             // Send the reordered data to the server
-            fetch('{{ route('comics.reorderPages', $comic->id) }}', {
+            fetch('{{ route('collections.update', $comic->id) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

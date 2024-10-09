@@ -1,66 +1,114 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Comic Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este é um sistema de gerenciamento de quadrinhos desenvolvido com Laravel. Ele permite que usuários criem, editem, visualizem e organizem quadrinhos em coleções. O sistema também inclui uma área de administração para gerenciar usuários e realizar análises.
 
-## About Laravel
+## Funcionalidades
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Geral
+- Exibição de quadrinhos, coleções e perfis públicos
+- Autenticação de usuários (login, registro e redefinição de senha)
+- Perfis públicos e privados para cada usuário
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Gerenciamento de Quadrinhos
+- Criação, edição e visualização de quadrinhos
+- Suporte para organização e reordenação de páginas de quadrinhos
+- Acesso a quadrinhos por ID ou slug
+- Upload e gerenciamento de páginas dos quadrinhos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Coleções de Quadrinhos
+- Criação, edição e exibição de coleções
+- Suporte para reordenação de quadrinhos dentro das coleções
 
-## Learning Laravel
+### Administração
+- Dashboard administrativo para gerenciar usuários
+- Análise de tráfego e de referências
+- Exclusão, edição e atualização de usuários
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Análises
+- Coleta de dados de tráfego e visualizações de quadrinhos
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Rotas Web
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Usuários e Autenticação
+- `/login` - Exibe o formulário de login e autentica o usuário.
+- `/register` - Exibe o formulário de registro de novos usuários.
+- `/logout` - Encerra a sessão do usuário.
+- `/password/reset` - Envia o link para redefinir a senha.
+- `/profile` - Exibe o perfil do usuário autenticado.
+- `/profile/edit` - Permite ao usuário editar seu perfil.
+- `/profile/id/{id}` - Exibe o perfil público de um usuário via ID.
+- `/profile/{username}` - Exibe o perfil público de um usuário via nome de usuário.
 
-## Laravel Sponsors
+### Quadrinhos
+- `/comics` - Exibe a lista de todos os quadrinhos.
+- `/comics/create` - Permite a criação de um novo quadrinho.
+- `/comics/id/{id}` - Exibe um quadrinho específico por ID.
+- `/comics/{slug}` - Exibe um quadrinho específico por slug.
+- `/comics/{comic}/edit` - Permite editar um quadrinho existente.
+- `/comics/{comic}/reorder-pages` - Reordena as páginas de um quadrinho.
+- `/comics/{comic}/pages` - Adiciona novas páginas a um quadrinho.
+- `/comics/{page}/deletePage` - Exclui uma página específica de um quadrinho.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Coleções
+- `/collections` - Exibe todas as coleções de quadrinhos.
+- `/collections/create` - Permite a criação de uma nova coleção.
+- `/collections/{collection}` - Exibe uma coleção específica.
+- `/collections/{collection}/edit` - Permite editar uma coleção existente.
+- `/collections/{collection}/sort/update` - Atualiza a ordem dos quadrinhos na coleção.
 
-### Premium Partners
+### Administração (apenas para usuários autenticados)
+- `/admin` - Exibe a lista de usuários.
+- `/admin/dashboard` - Exibe o dashboard de administração.
+- `/admin/analytics` - Exibe a página de análises.
+- `/admin/users` - Exibe e gerencia a lista de usuários.
+- `/admin/users/{id}/edit` - Edita um usuário específico.
+- `/admin/users/{id}` - Exclui um usuário específico.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Rotas API
 
-## Contributing
+### Usuários
+- `/user` - Retorna os dados do usuário autenticado.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Quadrinhos
+- `/comics` - Retorna todos os quadrinhos.
+- `/comics/{id}` - Retorna um quadrinho específico por ID.
+- `/comics/{id}/pages` - Retorna as páginas de um quadrinho por ID.
 
-## Code of Conduct
+### Coleções
+- `/collections` - Retorna todas as coleções de quadrinhos.
+- `/collections/{id}` - Retorna uma coleção específica por ID.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Análises
+- `/analytics` - Armazena os dados de análise.
 
-## Security Vulnerabilities
+## Instalação
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. Clone o repositório:
+    ```bash
+    git clone https://github.com/cosmosgc/comic.git
+    ```
+2. Instale as dependências do Composer:
+    ```bash
+    composer install
+    ```
+3. Configure o arquivo `.env` com as suas informações de banco de dados.
+5. Execute as migrações:
+    ```bash
+    php artisan migrate
+    ```
+6. Execute o laravel:
+    ```bash
+    php artisan serve
+    ```
 
-## License
+## Como contribuir
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. Faça um fork do projeto.
+2. Crie sua feature branch (`git checkout -b feature/minha-feature`).
+3. Faça commit das suas mudanças (`git commit -am 'Adiciona nova feature'`).
+4. Envie para o branch (`git push origin feature/minha-feature`).
+5. Crie um novo Pull Request.
+
+## Licença
+
+Este projeto está licenciado sob os termos da [MIT License](LICENSE).

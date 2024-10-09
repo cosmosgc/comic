@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\CollectionController;
 
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -41,7 +42,7 @@ Route::get('/comics/id/{id}', [ComicController::class, 'showById'])->name('comic
 // Route to access a comic by slug
 Route::get('/comics/{slug}', [ComicController::class, 'showBySlug'])->name('comics.showBySlug');
 
-
+//////////////////////////////////////////////////////////////
 Route::get('comics/upload', [ComicController::class, 'create'])->name('comics.upload');
 Route::post('comics/store', [ComicController::class, 'store'])->name('comics.store');
 
@@ -52,7 +53,25 @@ Route::post('/comics/{comic}/reorder-pages', [ComicController::class, 'reorderPa
 Route::delete('/comics/{page}/deletePage', [ComicController::class, 'deletePage'])->name('comics.deletePage');
 
 Route::post('/comics/{comic}/pages', [PageController::class, 'store'])->name('pages.store');
+//////////////////////////////////////////////////////////////
+// Route to display all collections
+Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 
+// Route to display a specific collection by ID
+Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
+
+// Route to display the form for creating a new collection
+Route::get('/collections/create', [CollectionController::class, 'create'])->name('collections.create');
+// Route to store the new collection
+Route::post('/collections', [CollectionController::class, 'store'])->name('collections.store');
+// Route to display the edit form for a collection
+Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
+// Route to update the collection
+Route::put('/collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
+Route::post('/collections/{collection}/sort/update', [CollectionController::class, 'updateSortOrder'])
+    ->name('collections.sort.update');
+
+//////////////////////////////////////////////////////////////
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);

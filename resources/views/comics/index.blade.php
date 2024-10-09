@@ -17,28 +17,17 @@
 @endsection
 
 @section('content')
-<head>
-<meta name="description" content="Descubra os melhores comics da semana. Veja os comics mais populares e explore nossa coleção completa. Atualizações semanais e novos conteúdos sempre.">
-    <meta name="keywords" content="comics, quadrinhos, leitura online, comics populares, melhores comics, comics da semana">
-    <meta property="og:title" content="Comics Index - Descubra os Melhores Comics da Semana">
-    <meta property="og:description" content="Veja os top comics da semana com os quadrinhos mais visualizados e explore nossa coleção completa.">
-    <meta property="og:image" content="{{ asset('path/to/featured-image.jpg') }}">
-    <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Comics Index - Descubra os Melhores Comics da Semana">
-    <meta name="twitter:description" content="Veja os quadrinhos mais populares da semana e explore nossa vasta coleção.">
-    <meta name="twitter:image" content="{{ asset('path/to/featured-image.jpg') }}">
-</head>
 <div class="container">
-    <h3>Top comics da semana</h3>
-    <div class="comics-grid highlight-comics">
-        @foreach ($topComics as $comic)
-            <li>
-                Views: {{ $comic->view_count }}
-                <x-comic-card :comic="$comic" :minified="true" />
-            </li>
-        @endforeach
+    <div class="hide-in-mobile">
+        <h3>Top comics da semana</h3>
+        <div class="comics-grid highlight-comics">
+            @foreach ($topComics as $comic)
+                <li>
+                    Views: {{ $comic->view_count }}
+                    <x-comic-card :comic="$comic" :minified="true" />
+                </li>
+            @endforeach
+        </div>
     </div>
     <h1>Comics</h1>
     <div class="comics-grid">

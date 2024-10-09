@@ -24,6 +24,7 @@ class CreateCollectionsTable extends Migration
             $table->id();
             $table->foreignId('collection_id')->constrained()->onDelete('cascade');
             $table->foreignId('comic_id')->constrained()->onDelete('cascade');
+            $table->integer('order')->default(0); // Add the 'order' column
             $table->timestamps();
         });
     }
@@ -40,6 +41,10 @@ class CreateCollectionsTable extends Migration
 
         // Then drop the collections table
         Schema::dropIfExists('collections');
+
+        Schema::table('collection_comic', function (Blueprint $table) {
+            $table->dropColumn('order');
+        });
     }
 }
 
