@@ -128,6 +128,7 @@
             pageCount = parseInt(pageCount); // Ensure pageCount is an integer
 
             var progress = (pageCount > 0) ? (currentPage / pageCount) * 100 : 0;
+            //console.log(pageCount, currentPage);
 
             // Get the progress background div and set the width
             var progressBackground = card.querySelector('.progress-background');

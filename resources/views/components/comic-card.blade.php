@@ -35,4 +35,43 @@
 
         <p>{{ $comic->pageCount() }} páginas</p>
     @endif
+    <!-- Botão de Compartilhar no Telegram -->
+    <div class="share-button">
+        <button class="telegram-share" onclick="copyToClipboard(this)" data-link="{{ url('https://t.me/iv?url=' . (route('comics.showBySlug', ['slug' => $comic->slug])) . '&rhash=7dbb018f868695') }}">
+            📋 Telegram
+        </button>
+    </div>
 </div>
+<style>
+    .share-button {
+        margin-top: 10px;
+        text-align: center;
+    }
+
+    .telegram-share {
+        display: inline-block;
+        padding: 8px 12px;
+        background-color: #0088cc;
+        color: white;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+
+    .telegram-share:hover {
+        background-color: #0077b5;
+    }
+</style>
+
+<script>
+    function copyToClipboard(button) {
+        const link = button.getAttribute('data-link');
+        navigator.clipboard.writeText(link).then(() => {
+            alert('Link copiado para a área de transferência!');
+        }).catch(err => {
+            console.error('Erro ao copiar o link: ', err);
+        });
+    }
+</script>

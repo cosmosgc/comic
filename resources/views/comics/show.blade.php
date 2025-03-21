@@ -278,7 +278,13 @@
 
         // Root button event (Go back to root)
         document.getElementById("root-page").addEventListener("click", function() {
-            window.location.href = '/'; // Replace with the actual root URL
+            if ('referrer' in document) {
+                window.location = document.referrer;
+                /* OR */
+                //location.replace(document.referrer);
+            } else {
+                window.history.back();
+            }
         });
 
 
