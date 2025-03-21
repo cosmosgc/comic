@@ -96,23 +96,24 @@ class ComicController extends Controller
 
     public function store(Request $request)
     {
-        //dd($request);
         $request->validate([
             'title' => 'required|string|max:255',
             'folder' => 'required',
         ]);
 
-        // Create a new comic
+        // Generate slug if not provided
         $slug = $request->input('slug') ?: Comic::generateUniqueSlug($request->input('title'));
-        //dd($slug);
-        // Create the comic
+
+        // Create the comic entry
         $comic = Comic::create([
             'title' => $request->input('title'),
             'author' => $request->input('author'),
             'description' => $request->input('desc'),
-            'slug' => $slug, // Store the slug
-            'user_id' => Auth::id(), // Associate with the authenticated user
+            'slug' => $slug,
+            'user_id' => Auth::id(),
         ]);
+
+        // Handle tags
         if ($request->filled('tags')) {
             $tagNames = explode(',', $request->input('tags'));
             $tagIds = [];
@@ -126,31 +127,36 @@ class ComicController extends Controller
             $comic->tags()->sync($tagIds);
         }
 
-        // Define the comic folder path
-        $comicFolderPath = "comics/{$comic->id}";
+        // Define the public folder path
+        $comicFolderPath = public_path("storage/comics/{$comic->id}");
 
-        // Check if the folder exists, if not create it
-        if (!Storage::disk('public')->exists($comicFolderPath)) {
-            Storage::disk('public')->makeDirectory($comicFolderPath);
+        // Check if the folder exists, if not, create it
+        if (!file_exists($comicFolderPath)) {
+            mkdir($comicFolderPath, 0777, true);
         }
+
         $firstImagePath = null;
-        // Handle each image in the folder
+
+        // Handle image uploads
         if ($request->hasFile('folder')) {
             $pageNumber = 1;
 
             foreach ($request->file('folder') as $file) {
                 if ($file->isValid()) {
-
                     $originalFileName = $file->getClientOriginalName();
-                    // Store the image in the folder for the comic
-                    $filePath = $file->storeAs($comicFolderPath, $originalFileName,'public');
+                    $filePath = "{$comicFolderPath}/{$originalFileName}";
+
+                    // Move file to the public directory
+                    $file->move($comicFolderPath, $originalFileName);
+
                     if ($pageNumber === 1) {
-                        $firstImagePath = $filePath;
+                        $firstImagePath = "comics/{$comic->id}/{$originalFileName}"; // Relative path
                     }
+
                     // Create a new Page entry for each image
                     Page::create([
                         'comic_id' => $comic->id,
-                        'image_path' => $filePath,
+                        'image_path' => "comics/{$comic->id}/{$originalFileName}", // Store relative path
                         'page_number' => $pageNumber,
                     ]);
 
@@ -158,12 +164,15 @@ class ComicController extends Controller
                 }
             }
         }
+
+        // Store the first image as the comic cover
         if ($firstImagePath) {
             $comic->update(['image_path' => $firstImagePath]);
         }
-        //dd($request, $comicFolderPath);
+
         return redirect()->route('comics.showBySlug', $comic->slug)->with('success', 'Comic uploaded successfully.');
     }
+
 
     public function updateMissingSlugs()
     {
