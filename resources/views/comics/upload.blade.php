@@ -25,7 +25,7 @@
         </div>
         <div class="form-group">
             <label for="tags">Tags</label>
-            <input type="text" class="form-control"  name="tags" placeholder="Insira tags, separado por virgula">
+            <input type="text" class="form-control" name="tags" placeholder="Insira tags, separado por virgula">
         </div>
 
         <div class="form-group">
@@ -35,6 +35,11 @@
 
         <!-- Preview container for images -->
         <div id="image-preview" class="row"></div>
+
+        <!-- Progress bar -->
+        <div class="progress mt-3" style="display: none;">
+            <div id="upload-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div>
+        </div>
 
         <button type="submit" class="btn btn-primary mt-3">Upload Comic</button>
     </form>
@@ -48,6 +53,9 @@
         max-height: 150px;
         margin: 10px;
     }
+    .progress {
+        height: 25px;
+    }
 </style>
 @endsection
 
@@ -58,12 +66,9 @@
         const previewContainer = document.getElementById('image-preview');
         previewContainer.innerHTML = ''; // Clear previous previews
 
-        //const pattern = /[\[\(](.*?)[\]\)]\s*(.*?)\s*[\[\(](.*?)[\]\)]/;
         const pattern = /^\[(.*?)\]\s*(.*?)\s*(?:\((.*?)\))?$/;
 
-        // Loop through the files and display image previews
         for (const file of files) {
-
             const folderName = file.webkitRelativePath.split('/')[0]; // Extract the folder name
             const match = folderName.match(pattern);
 
@@ -71,7 +76,6 @@
                 document.getElementById("author").value = match[1] ? match[1].trim() : '';
                 document.getElementById("title").value = match[2] ? match[2].trim() : '';
                 document.getElementById("desc").value = match[3] ? match[3].trim() : '';
-                console.log(match);
             }
 
             if (file.type.startsWith('image/')) {
@@ -84,6 +88,38 @@
                 reader.readAsDataURL(file);
             }
         }
+    });
+
+    document.getElementById('comic-upload-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(this);
+        const xhr = new XMLHttpRequest();
+        const progressBar = document.querySelector('.progress');
+        const progress = document.getElementById('upload-progress');
+
+        progressBar.style.display = 'flex'; // Show progress bar
+
+        xhr.upload.addEventListener('progress', function(event) {
+            if (event.lengthComputable) {
+                let percent = Math.round((event.loaded / event.total) * 100);
+                progress.style.width = percent + '%';
+                progress.innerText = percent + '%';
+                console.log(percent);
+            }
+        });
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                alert('Upload Complete');
+                // progressBar.style.display = 'none';
+                // window.location.reload();
+            }
+        };
+
+        xhr.open('POST', "{{ route('comics.store') }}", true);
+        xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+        xhr.send(formData);
     });
 </script>
 @endsection
