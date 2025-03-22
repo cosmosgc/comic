@@ -51,7 +51,7 @@ class AdminController extends Controller
 
     public function analytics()
     {
-        $analytics = Analytics::latest()->paginate(10); // Show recent events
+        $analytics = Analytics::latest()->paginate(1000); // Show recent events
 
         return view('admin.analytics', compact('analytics'));
     }

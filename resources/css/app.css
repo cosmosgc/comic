@@ -1,5 +1,7 @@
 /* resources/css/app.css */
-
+nav.flex.items-center.justify-between svg {
+    display: none;
+}
 body {
     background-color: #121212; /* Dark background for the body */
     color: #e0e0e0; /* Light text color */
