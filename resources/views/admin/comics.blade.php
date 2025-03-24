@@ -35,7 +35,9 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
-            $('#comicsTable').DataTable();
+            $('#comicsTable').DataTable({
+                "order": [[4, "desc"]] // Order by Created At (5th column, index 4) in descending order
+            });
         });
     </script>
 @endsection
