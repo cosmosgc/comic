@@ -56,6 +56,14 @@ class AdminController extends Controller
         return view('admin.analytics', compact('analytics'));
     }
 
+    
+    public function comics()
+    {
+        $comics = Comic::all(); // Fetch all users
+
+        return view('admin.comics', compact('comics'));
+    }
+
     public function users()
     {
         $users = User::all(); // Fetch all users

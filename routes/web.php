@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AnalyticsController;
@@ -17,19 +20,71 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 
 Route::get('/', [ComicController::class, 'index'])->name('comics.index');
 
+
 Route::prefix('admin')->middleware('auth')->group(function () {
-    Route::get('/', [AdminController::class, 'users'])->name('admin.users.index');
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-    Route::get('/analytics', [AdminController::class, 'analytics'])->name('admin.analytics');
-    Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/'); // Redirect non-admin users
+        }
+        return app(AdminController::class)->users();
+    })->name('admin.users.index');
 
-    Route::delete('/users/{id}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
-    Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::get('/analytics/referral', [AnalyticsController::class, 'referralAnalytics'])->name('analytics.referral');
+    Route::get('/dashboard', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->dashboard();
+    })->name('admin.dashboard');
 
+    Route::get('/analytics', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->analytics();
+    })->name('admin.analytics');
+
+    Route::get('/users', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->users();
+    })->name('admin.users');
+
+    Route::delete('/users/{id}', function ($id) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->destroyUser($id);
+    })->name('admin.users.destroy');
+
+    Route::get('/users/{id}/edit', function ($id) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->editUser($id);
+    })->name('admin.users.edit');
+
+    Route::put('/users/{id}', function (Request $request, $id) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->updateUser($request, $id);
+    })->name('admin.users.update');
+
+    Route::get('/comics', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->comics();
+    })->name('admin.comics');
+
+    Route::get('/analytics/referral', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AnalyticsController::class)->referralAnalytics();
+    })->name('analytics.referral');
 });
-
 
 
 Route::get('/comics', [ComicController::class, 'index'])->name('comics.index');

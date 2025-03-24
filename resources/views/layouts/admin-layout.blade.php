@@ -79,7 +79,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('comics.index') }}">
+                            <a class="nav-link" href="{{ route('admin.comics') }}">
                                 <i class="fas fa-book"></i> Comics
                             </a>
                         </li>

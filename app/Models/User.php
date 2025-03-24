@@ -24,6 +24,7 @@ class User extends Authenticatable
         'avatar_image_path',
         'bio',
         'links',
+        'admin_level',
     ];
     protected $casts = [
         'links' => 'array', // Ensure the links field is cast to an array
