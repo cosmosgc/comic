@@ -12,8 +12,20 @@ body {
 }
 
 .navbar-brand, .nav-link {
-    color: #e0e0e0; /* Light color for navbar text */
+    color: #f97070 !important; /* Light color for navbar text */
+    font-weight: bold; /* Makes the text stand out */
+    text-transform: uppercase; /* Gives a stylish look */
+    letter-spacing: 1px; /* More spacing for readability */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1); /* Subtle depth */
+    transition: color 0.3s ease-in-out, text-shadow 0.3s ease-in-out; /* Smooth transitions */
 }
+
+.navbar-brand:hover, .nav-link:hover {
+    color: #ff5757; /* A brighter red on hover */
+    text-shadow: 2px 2px 5px rgba(255, 87, 87, 0.5); /* Glow effect */
+    transform: scale(1.05); /* Slight zoom on hover */
+}
+
 
 .navbar-brand:hover, .nav-link:hover {
     color: #007bff; /* Accent color on hover */
