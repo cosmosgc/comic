@@ -15,7 +15,7 @@
     <div class="card bg-secondary text-light mb-4">
         <div class="card-body text-center">
             <h5 class="card-title">{{ $user->name }}</h5>
-            <img src="{{ $user->avatar_image_path ? asset('storage/' . $user->avatar_image_path) : asset('default-avatar.png') }}"
+            <img src="{{ $user->avatar_image_path ? asset( $user->avatar_image_path) : asset('default-avatar.png') }}"
                  alt="Avatar" class="avatar-img mb-3" />
             <!-- <p class="card-text"><strong>Email:</strong> {{ $user->email }}</p> -->
             <p class="card-text"><strong>Bio:</strong> {{ $user->bio ?? 'Sem bio disponivel' }}</p>

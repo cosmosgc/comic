@@ -4,7 +4,7 @@
         <!-- Link to the user's profile using their username -->
         <a href="{{ route('profile.public.show.username', ['username' => $comic->user->name]) }}">
             @if($comic->user->avatar_image_path || !$minified)
-                <img src="{{ asset('storage/' . $comic->user->avatar_image_path) }}" alt="{{ $comic->user->name }}'s avatar" class="avatar">
+                <img src="{{ asset( $comic->user->avatar_image_path) }}" alt="{{ $comic->user->name }}'s avatar" class="avatar">
             @else
                 <!-- Optional: Placeholder image if avatar does not exist -->
                 <img src="{{ asset('path/to/placeholder.png') }}" alt="Default avatar" class="avatar">

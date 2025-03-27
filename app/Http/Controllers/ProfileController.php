@@ -76,9 +76,20 @@ class ProfileController extends Controller
 
         // Handle avatar image upload
         if ($request->hasFile('avatar_image')) {
-            $avatarPath = $request->file('avatar_image')->store('avatars', 'public');
-            $user->avatar_image_path = $avatarPath; // Store the path
+            $directory = public_path('storage/avatars');
+        
+            // Ensure the directory exists
+            if (!file_exists($directory)) {
+                mkdir($directory, 0777, true);
+            }
+        
+            $avatar = $request->file('avatar_image');
+            $filename = time() . '_' . $avatar->getClientOriginalName(); // Generate a unique filename
+            $avatar->move($directory, $filename); // Move the file to the directory
+        
+            $user->avatar_image_path = 'storage/avatars/' . $filename; // Store the relative path
         }
+        
 
         $user->bio = $request->input('bio');
         $user->links = $request->input('links') ?: []; // Store links as an array

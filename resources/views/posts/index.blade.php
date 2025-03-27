@@ -2,7 +2,9 @@
 @section('content')
     <div class="container">
         <h2>Feed</h2>
-        @include('posts.create')
+        @auth
+            @include('posts.create')
+        @endauth
         @foreach ($posts as $post)
             @include('posts.post', ['post' => $post])
         @endforeach

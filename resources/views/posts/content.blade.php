@@ -1,7 +1,7 @@
 <div class="post-header">
     <a href="{{ route('profile.public.show.username', ['username' => $post->author->name]) }}" class="post-user">
         @if($post->author->avatar_image_path)
-            <img src="{{ asset('storage/' . $post->author->avatar_image_path) }}" alt="{{ $post->author->name }}'s avatar" class="avatar">
+            <img src="{{ asset( $post->author->avatar_image_path) }}" alt="{{ $post->author->name }}'s avatar" class="avatar">
         @else
             <img src="{{ asset('path/to/placeholder.png') }}" alt="Default avatar" class="avatar">
         @endif
@@ -16,7 +16,7 @@
     @if (is_array($mediaFiles))
         <div class="post-media">
             @foreach ($mediaFiles as $media)
-                <img src="{{ asset('storage/' . $media) }}" class="img-fluid" alt="Post Media">
+                <img src="{{ asset( $media) }}" class="img-fluid" alt="Post Media">
             @endforeach
         </div>
     @endif

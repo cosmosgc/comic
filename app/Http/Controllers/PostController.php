@@ -36,13 +36,24 @@ class PostController extends Controller
         ]);
 
         if ($request->hasFile('media')) {
+            $directory = public_path('storage/posts_media');
+        
+            // Ensure the directory exists
+            if (!file_exists($directory)) {
+                mkdir($directory, 0777, true);
+            }
+        
             $mediaPaths = [];
             foreach ($request->file('media') as $media) {
-                $mediaPaths[] = $media->store('posts_media', 'public');
+                $filename = time() . '_' . $media->getClientOriginalName(); // Generate a unique filename
+                $media->move($directory, $filename); // Move file to the directory
+                $mediaPaths[] = 'storage/posts_media/' . $filename; // Store the relative path
             }
+        
             $post->media = json_encode($mediaPaths);
             $post->save();
         }
+            
 
         return redirect()->route('posts.index');
     }
