@@ -24,8 +24,3 @@ Route::get('/collections', [CollectionController::class, 'getAllCollections']);
 Route::get('/collections/{id}', [CollectionController::class, 'showById']);
 
 Route::post('/analytics', [AnalyticsController::class, 'store']);
-
-use App\Http\Controllers\TestsController;
-
-Route::get('/restaurants', [TestsController::class, 'getRestaurants']);
-
