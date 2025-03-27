@@ -18,6 +18,8 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 
+use App\Http\Controllers\PostController;
+
 Route::get('/', [ComicController::class, 'index'])->name('comics.index');
 
 
@@ -126,6 +128,9 @@ Route::put('/collections/{collection}', [CollectionController::class, 'update'])
 Route::post('/collections/{collection}/sort/update', [CollectionController::class, 'updateSortOrder'])
     ->name('collections.sort.update');
 
+//////////////////////////////////////////////////////////////
+// Route::get('/posts', [PostController::class, 'index']);
+Route::resource('posts', PostController::class);
 //////////////////////////////////////////////////////////////
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

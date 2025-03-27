@@ -92,3 +92,78 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     margin-bottom: 10px;
 }
+
+:root {
+    --bg-color: #fff;
+    --text-color: #dbafaf;
+    --card-bg: #1a2026;
+    --card-shadow: rgba(0, 0, 0, 0.1);
+    --primary-color: #007bff;
+}
+
+.dark-mode {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --card-bg: #1e1e1e;
+    --card-shadow: rgba(255, 255, 255, 0.1);
+    --primary-color: #1a73e8;
+}
+
+.post-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 8px var(--card-shadow);
+    padding: 15px;
+    margin-bottom: 15px;
+    background: var(--card-bg);
+}
+
+.post-create {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+}
+.post-create .form-control{
+    background-color: #2f313f;
+    color: white;
+}
+.post-create .form-control::placeholder{
+    color: white;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.post-user {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-color);
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.post-media img {
+    max-width: 100%;
+    border-radius: 10px;
+    margin-top: 10px;
+}
+
+.toggle-dark-mode {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+}

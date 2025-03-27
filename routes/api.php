@@ -7,6 +7,7 @@ use App\Http\Controllers\ComicController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\PostController;
 
 
 Route::get('/user', function (Request $request) {
@@ -22,5 +23,7 @@ Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId']);
 
 Route::get('/collections', [CollectionController::class, 'getAllCollections']);
 Route::get('/collections/{id}', [CollectionController::class, 'showById']);
+
+Route::get('/posts', [PostController::class, 'index']);
 
 Route::post('/analytics', [AnalyticsController::class, 'store']);
