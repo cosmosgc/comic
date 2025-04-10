@@ -98,8 +98,12 @@ class ComicController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'folder' => 'required',
+            'folder' => 'required_without:images|array',
+            'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp',
+            'images' => 'required_without:folder|array',
+            'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp',
         ]);
+        
 
         // Generate slug if not provided
         $slug = $request->input('slug') ?: Comic::generateUniqueSlug($request->input('title'));
@@ -140,37 +144,66 @@ class ComicController extends Controller
         // Handle image uploads
         if ($request->hasFile('folder')) {
             $pageNumber = 1;
-
+        
             foreach ($request->file('folder') as $file) {
                 if ($file->isValid()) {
                     $originalFileName = $file->getClientOriginalName();
                     $filePath = "{$comicFolderPath}/{$originalFileName}";
-
+        
                     // Move file to the public directory
                     $file->move($comicFolderPath, $originalFileName);
-
+        
                     if ($pageNumber === 1) {
                         $firstImagePath = "comics/{$comic->id}/{$originalFileName}"; // Relative path
                     }
-
+        
                     // Create a new Page entry for each image
                     Page::create([
                         'comic_id' => $comic->id,
                         'image_path' => "comics/{$comic->id}/{$originalFileName}", // Store relative path
                         'page_number' => $pageNumber,
                     ]);
-
+        
+                    $pageNumber++;
+                }
+            }
+        } elseif ($request->hasFile('images')) {
+            $pageNumber = 1;
+        
+            foreach ($request->file('images') as $file) {
+                if ($file->isValid()) {
+                    $originalFileName = $file->getClientOriginalName();
+                    $filePath = "{$comicFolderPath}/{$originalFileName}";
+        
+                    // Move file to the public directory
+                    $file->move($comicFolderPath, $originalFileName);
+        
+                    if ($pageNumber === 1) {
+                        $firstImagePath = "comics/{$comic->id}/{$originalFileName}"; // Relative path
+                    }
+        
+                    // Create a new Page entry for each image
+                    Page::create([
+                        'comic_id' => $comic->id,
+                        'image_path' => "comics/{$comic->id}/{$originalFileName}", // Store relative path
+                        'page_number' => $pageNumber,
+                    ]);
+        
                     $pageNumber++;
                 }
             }
         }
+        
 
         // Store the first image as the comic cover
         if ($firstImagePath) {
             $comic->update(['image_path' => $firstImagePath]);
         }
-
-        return redirect()->route('comics.showBySlug', $comic->slug)->with('success', 'Comic uploaded successfully.');
+        return response()->json([
+            'message' => 'Comic uploaded successfully.',
+            'redirect' => route('comics.showBySlug', $comic->slug),
+        ]);
+        
     }
 
 
