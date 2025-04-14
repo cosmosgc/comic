@@ -243,18 +243,18 @@ class ComicController extends Controller
 
     public function update(Request $request, Comic $comic)
     {
+        
         $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            // 'description' => 'required|string',
         ]);
-
         // Update comic details
         $comic->update([
             'title' => $request->input('title'),
-            'description' => $request->input('description'),
+            // 'description' => $request->input('description'),
         ]);
 
-        return redirect()->route('comics.show', $comic->id)->with('success', 'Comic updated successfully.');
+        return redirect()->route('comics.edit', $comic->id)->with('success', 'Comic updated successfully.');
     }
 
     public function reorderPages(Request $request, Comic $comic)

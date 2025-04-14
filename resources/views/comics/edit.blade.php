@@ -22,18 +22,7 @@
 
         <!-- Reorderable Pages -->
         <div class="mb-4">
-            <!-- New page upload form -->
-            <h3>Add New Page</h3>
-            <form action="{{ route('pages.store', $comic->id) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="form-group">
-                    <label for="image">Upload Page Image</label>
-                    <input type="file" class="form-control" id="image" name="image" required>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-success">Upload Page</button>
-                </div>
-            </form>
+            
             <h3>Reorder Pages</h3>
             <ul id="sortable" class="list-group">
                 @foreach($comic->pages as $page)
@@ -48,6 +37,18 @@
 
         <!-- Submit Button -->
         <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+    <!-- New page upload form -->
+    <h3>Add New Page</h3>
+    <form action="{{ route('pages.addPage', $comic->id) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="form-group">
+            <label for="image">Upload Page Image</label>
+            <input type="file" class="form-control" id="image" name="image" required>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-success">Upload Page</button>
+        </div>
     </form>
 </div>
 @endsection
@@ -86,6 +87,10 @@
 @section('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
+    const deletePageBaseUrl = "{{ url('page') }}"; // This will give http://localhost:3000/comic/public/page
+</script>
+
+<script>
     // Initialize Sortable.js on the pages list
     var sortable = new Sortable(document.getElementById('sortable'), {
         animation: 150,
@@ -100,7 +105,7 @@
             });
 
             // Send the reordered data to the server
-            fetch('{{ route('collections.update', $comic->id) }}', {
+            fetch('{{ route('comics.reorderPages', $comic->id) }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -115,7 +120,8 @@
     document.querySelectorAll('.delete-page').forEach(function (button) {
         button.addEventListener('click', function () {
             let pageId = this.getAttribute('data-id');
-            fetch(`/comics/${pageId}/deletePage`, {
+            console.log('{{ route('pages.deletePage', $comic->id) }}');
+            fetch(`${deletePageBaseUrl}/${pageId}`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'

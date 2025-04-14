@@ -104,10 +104,11 @@ Route::get('comics/upload', [ComicController::class, 'create'])->name('comics.up
 Route::post('comics/store', [ComicController::class, 'store'])->name('comics.store');
 
 Route::get('/comics/{comic}/edit', [ComicController::class, 'edit'])->name('comics.edit');
-Route::put('/comics/{comic}', [ComicController::class, 'update'])->name('comics.update');
+Route::put('/comics/{comic}/update', [ComicController::class, 'update'])->name('comics.update');
 
 Route::post('/comics/{comic}/reorder-pages', [ComicController::class, 'reorderPages'])->name('comics.reorderPages');
-Route::delete('/comics/{page}/deletePage', [ComicController::class, 'deletePage'])->name('comics.deletePage');
+Route::delete('/page/{page}', [ComicController::class, 'deletePage'])->name('pages.deletePage');
+Route::post('/comics/{comic}/add-pages', [PageController::class, 'addPage'])->name('pages.addPage');
 
 Route::post('/comics/{comic}/pages', [PageController::class, 'store'])->name('pages.store');
 //////////////////////////////////////////////////////////////

@@ -16,11 +16,12 @@ class PageController extends Controller
 
     public function store(Request $request, $comicId)
     {
+        
+        dd($request);
         $request->validate([
             'image' => 'required|image',
-            'page_number' => 'required|integer',
+            // 'page_number' => 'required|integer',
         ]);
-
         $comic = Comic::findOrFail($comicId);
 
         // Handle image upload
