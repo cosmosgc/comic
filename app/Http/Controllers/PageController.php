@@ -16,43 +16,98 @@ class PageController extends Controller
 
     public function store(Request $request, $comicId)
     {
-        
-        dd($request);
         $request->validate([
-            'image' => 'required|image',
-            // 'page_number' => 'required|integer',
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
+
         $comic = Comic::findOrFail($comicId);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('comics/pages');
+        // Get uploaded file
+        $file = $request->file('image');
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+
+        // Define destination
+        $destinationPath = public_path("storage/comics/{$comic->id}/pages");
+
+        // Ensure directory exists
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
         }
 
+        // Build filename and check for duplicates
+        $filename = "{$originalName}.{$extension}";
+        $fullPath = "{$destinationPath}/{$filename}";
+
+        if (file_exists($fullPath)) {
+            $hash = substr(md5(now() . rand()), 0, 8);
+            $filename = "{$originalName}_{$hash}.{$extension}";
+        }
+
+        // Move the file
+        $file->move($destinationPath, $filename);
+
+        // Get page number or calculate it
+        $inputPageNumber = $request->input('page_number');
+        $pageNumber = (is_numeric($inputPageNumber) && (int)$inputPageNumber > 0)
+            ? (int)$inputPageNumber
+            : $comic->pages()->max('page_number') + 1;
+
+        // Save relative path
+        $relativePath = "comics/{$comic->id}/pages/{$filename}";
+
+        // Create Page entry
         Page::create([
             'comic_id' => $comic->id,
-            'image_path' => $path,
-            'page_number' => $request->input('page_number'),
+            'image_path' => $relativePath,
+            'page_number' => $pageNumber,
         ]);
 
-        return redirect()->route('comics.show', $comic->id);
+        return redirect()->route('comics.show', $comic->id)->with('success', 'Page uploaded successfully.');
     }
+
     public function addPage(Request $request, $comicId)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048', // Adjust as necessary
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Store the new page image
         $comic = Comic::findOrFail($comicId);
-        $pageNumber = $comic->pages()->count() + 1; // Set page number to next available
+        $pageNumber = $comic->pages()->count() + 1;
 
-        $path = $request->file('image')->store("comics/{$comic->id}/pages", 'public');
+        // Get uploaded file
+        $file = $request->file('image');
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
 
-        // Create a new Page entry
+        // Define destination
+        $destinationPath = public_path("storage/comics/{$comic->id}");
+
+        // Ensure directory exists
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        // Final filename
+        $filename = "{$originalName}.{$extension}";
+        $fullPath = "{$destinationPath}/{$filename}";
+
+        // If file exists, add a hash
+        if (file_exists($fullPath)) {
+            $hash = substr(md5(now() . rand()), 0, 8);
+            $filename = "{$originalName}_{$hash}.{$extension}";
+        }
+
+        // Move the file
+        $file->move($destinationPath, $filename);
+
+        // Relative path for storage
+        $relativePath = "comics/{$comic->id}/{$filename}";
+
+        // Create page entry
         Page::create([
             'comic_id' => $comic->id,
-            'image_path' => $path,
+            'image_path' => $relativePath,
             'page_number' => $pageNumber,
         ]);
 

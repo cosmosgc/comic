@@ -274,14 +274,16 @@ class ComicController extends Controller
     {
         $page = Page::findOrFail($id);
 
-        // Delete the page and the image file if needed
-        if (Storage::disk('public')->exists($page->image_path)) {
-            Storage::disk('public')->delete($page->image_path);
+        $filePath = public_path('storage/' . $page->image_path);
+
+        if (file_exists($filePath)) {
+            unlink($filePath);
         }
 
         $page->delete();
 
         return response()->json(['success' => true]);
     }
+
 
 }
