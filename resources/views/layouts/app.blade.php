@@ -155,7 +155,7 @@
             }
 
             // Send the analytics data via API
-            fetch('/api/analytics', {
+            fetch("{{ route('analytics') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

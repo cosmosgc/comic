@@ -15,7 +15,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-Route::get('/comics/update-slugs', [ComicController::class, 'updateMissingSlugs'])->name('comics.updateSlugs');
+Route::get('/comics/update-slugs', [ComicController::class, 'updateMissingSlugs'])->name(name: 'comics.updateSlugs');
 
 Route::get('/comics', [ComicController::class, 'getAllComics']);
 Route::get('/comics/{id}', [ComicController::class, 'getComic']);
@@ -26,4 +26,4 @@ Route::get('/collections/{id}', [CollectionController::class, 'showById']);
 
 Route::get('/posts', [PostController::class, 'index']);
 
-Route::post('/analytics', [AnalyticsController::class, 'store']);
+Route::post('/analytics', [AnalyticsController::class, 'store'])->name(name: 'analytics');

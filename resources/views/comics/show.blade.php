@@ -356,13 +356,14 @@
                 url: window.location.href,
                 ip_address: '{{ request()->ip() }}',
                 user_agent: navigator.userAgent,
-                event_type: 'page_view', // You can change this for different types of events
-                device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop', // Determine device type
-                referral_source: document.referrer || 'Direct', // Capture the referral source
-                campaign: '', // You can set this dynamically if needed
-                duration: 0, // Initialize duration, set it later if needed
-                browser: getBrowser(), // Call a function to get the browser name
-                os: getOS() // Call a function to get the OS name
+                event_type: 'comic_show',
+                device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+                referral_source: document.referrer || 'Direct',
+                campaign: '',
+                duration: 0,
+                browser: getBrowser(),
+                os: getOS(),
+                user_id: '{{ Auth::id() }}' // Pass the user ID from the server
             };
 
             // Function to get browser name
@@ -398,7 +399,7 @@
             }
 
             // Send the analytics data via API
-            fetch('/api/analytics', {
+            fetch("{{ route('analytics') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -415,7 +416,6 @@
                 console.error('Error storing analytics data:', error);
             });
         });
-
 
     </script>
 </body>

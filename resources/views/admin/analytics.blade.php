@@ -48,7 +48,10 @@
 @section('scripts')
     <script>
         $(document).ready(function() {
-            $('#analyticsTable').DataTable();
+            $('#analyticsTable').DataTable({
+                order: [[10, 'desc']] // Sort by the 11th column (created_at), descending
+            });
         });
     </script>
 @endsection
+

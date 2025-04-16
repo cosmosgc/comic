@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 
 
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -23,31 +24,61 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('pageViews', 'logins', 'analytics'));
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $totalUsers = User::count();
-    $totalComics = Comic::count();
+        $totalComics = Comic::count();
 
-    // Fetch analytics data grouped by day
-    $analyticsData = Analytics::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-                              ->groupBy('date')
-                              ->orderBy('date')
-                              ->get();
+        // Handle optional date filters from the request
+        $startDate = $request->input('start_date', Carbon::now()->subDays(30)->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
 
-    // Example: Fetch logins data grouped by day
-    $loginsData = Analytics::where('event_type', 'login')
-                           ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
-                           ->groupBy('date')
-                           ->orderBy('date')
-                           ->get();
-    // Pass this data to the view
-    return view('admin.dashboard', [
-        'totalUsers' => $totalUsers,
-        'totalComics' => $totalComics,
-        'analyticsData' => $analyticsData,
-        'loginsData' => $loginsData
-    ]);
+        // Helper function to apply date range
+        $applyDateRange = function ($query) use ($startDate, $endDate) {
+            if ($startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
+            }
+            return $query;
+        };
+
+        // Daily Page Views
+        $dailyAnalytics = $applyDateRange(
+            Analytics::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+        )->groupBy('date')
+        ->orderBy('date')
+        ->get();
+
+        // Monthly Page Views
+        $monthlyAnalytics = $applyDateRange(
+            Analytics::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as date, COUNT(*) as count')
+        )->groupBy('date')
+        ->orderBy('date')
+        ->get();
+
+        // Annual Page Views
+        $annualAnalytics = $applyDateRange(
+            Analytics::selectRaw('YEAR(created_at) as date, COUNT(*) as count')
+        )->groupBy('date')
+        ->orderBy('date')
+        ->get();
+
+        return view('admin.dashboard', [
+            'totalUsers' => $totalUsers,
+            'totalComics' => $totalComics,
+            'analyticsData' => [
+                'daily' => $dailyAnalytics,
+                'monthly' => $monthlyAnalytics,
+                'annual' => $annualAnalytics
+            ],
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ]);
     }
+
+
 
     public function analytics()
     {

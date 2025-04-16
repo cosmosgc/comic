@@ -31,12 +31,14 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->users();
     })->name('admin.users.index');
 
-    Route::get('/dashboard', function () {
+    Route::get('/dashboard', function (Request $request) {
         if (Auth::user()->admin_level < 1) {
             return redirect('/');
         }
-        return app(AdminController::class)->dashboard();
+
+        return app(AdminController::class)->dashboard($request);
     })->name('admin.dashboard');
+
 
     Route::get('/analytics', function () {
         if (Auth::user()->admin_level < 1) {
