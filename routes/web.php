@@ -88,6 +88,8 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         }
         return app(AnalyticsController::class)->referralAnalytics();
     })->name('analytics.referral');
+    Route::get('/phpinfo', [AdminController::class, 'phpinfo'])->name('phpinfo');
+
 });
 
 
