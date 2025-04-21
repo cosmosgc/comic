@@ -83,6 +83,11 @@
                                 <i class="fas fa-book"></i> Comics
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.widgets') }}">
+                                <i class="fas fa-book"></i> Widgets
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>

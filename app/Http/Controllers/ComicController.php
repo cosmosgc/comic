@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Models\tag;
+use App\Models\Widget;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,11 +15,11 @@ class ComicController extends Controller
 {
     public function index() {
         $comics = Comic::orderBy('created_at', 'desc')->paginate(10);
-
+        $widgets = Widget::all();
         $showPanels = true;
         $topComics = Comic::orderBy('view_count', 'desc')->take(5)->get();
         $tags = Tag::all();
-        return view('comics.index', compact('comics', 'topComics', 'tags','showPanels'));
+        return view('comics.index', compact('comics', 'topComics', 'tags','showPanels', 'widgets'));
     }
     public function create()
     {

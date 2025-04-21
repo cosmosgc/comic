@@ -85,7 +85,7 @@
     <div class="container-fluid">
         <div class="row">
             @if (isset($showPanels) && $showPanels)
-                @include('components.left-panel', ['topComics' => $topComics, 'tags' => $tags])
+                @include('components.left-panel', ['topComics' => $topComics, 'tags' => $tags, 'widgets' => $widgets])
             @endif
 
             <!-- Main Content -->
@@ -94,7 +94,7 @@
             </div>
 
             @if (isset($showPanels) && $showPanels)
-                @include('components.right-panel')
+                @include('components.right-panel', ['widgets' => $widgets])
             @endif
         </div>
     </div>

@@ -82,6 +82,15 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->comics();
     })->name('admin.comics');
 
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/widgets', [AdminController::class, 'widgets'])->name('widgets');
+        Route::post('/widgets', [AdminController::class, 'storeWidget'])->name('widgets.store');
+        Route::get('/widgets/{id}/edit', [AdminController::class, 'editWidget'])->name('widgets.edit');
+        Route::put('/widgets/{id}', [AdminController::class, 'updateWidget'])->name('widgets.update');
+        Route::delete('/widgets/{id}', [AdminController::class, 'destroyWidget'])->name('widgets.destroy');
+    });
+    
+
     Route::get('/analytics/referral', function () {
         if (Auth::user()->admin_level < 1) {
             return redirect('/');

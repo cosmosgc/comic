@@ -1,4 +1,6 @@
 <div class="col-md-2 d-none d-md-block sidebar-bg sidebar">
+    
+    @include('components.widget', ['widgets' => $widgets, 'position' => 2])
     <h5 class="p-3">Latest Uploads</h5>
     <ul class="list-unstyled px-3">
         <!-- Add your latest uploads content here -->

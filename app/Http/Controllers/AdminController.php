@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Comic;
 use App\Models\Analytics;
+use App\Models\Widget;
 
 use Illuminate\Support\Facades\Hash;
 
@@ -95,6 +96,7 @@ class AdminController extends Controller
         return view('admin.comics', compact('comics'));
     }
 
+
     public function users()
     {
         $users = User::all(); // Fetch all users
@@ -151,6 +153,53 @@ class AdminController extends Controller
 
     public function phpinfo(){
         return view('admin.phpinfo');
+    }
+    public function widgets()
+    {
+        $widgets = Widget::orderBy('position_index')->get();
+        return view('admin.widgets', compact('widgets'));
+    }
+
+    // Store new widget
+    public function storeWidget(Request $request)
+    {
+        $request->validate([
+            'position_index' => 'required|integer',
+            'content' => 'required|string',
+        ]);
+
+        Widget::create($request->only('title', 'position_index', 'content'));
+
+        return redirect()->route('admin.widgets')->with('success', 'Widget created successfully!');
+    }
+
+    // Show edit form
+    public function editWidget($id)
+    {
+        $widget = Widget::findOrFail($id);
+        return view('admin.widget-edit', compact('widget'));
+    }
+
+    // Update widget
+    public function updateWidget(Request $request, $id)
+    {
+        $widget = Widget::findOrFail($id);
+
+        $request->validate([
+            'position_index' => 'required|integer',
+            'content' => 'required|string',
+        ]);
+
+        $widget->update($request->only('title', 'position_index', 'content'));
+
+        return redirect()->route('admin.widgets')->with('success', 'Widget updated!');
+    }
+
+    // Delete widget
+    public function destroyWidget($id)
+    {
+        Widget::destroy($id);
+        return redirect()->route('admin.widgets')->with('success', 'Widget deleted!');
     }
 
 }
