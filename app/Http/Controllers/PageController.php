@@ -69,9 +69,8 @@ class PageController extends Controller
     public function addPage(Request $request, $comicId)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:10024',
         ]);
-
         $comic = Comic::findOrFail($comicId);
         $pageNumber = $comic->pages()->count() + 1;
 

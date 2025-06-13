@@ -45,11 +45,15 @@
         <div class="form-group">
             <label for="image">Upload Page Image</label>
             <input type="file" class="form-control" id="image" name="image" required>
+            <small class="form-text text-muted">
+                Accepted formats: JPG, JPEG, PNG. Maximum size: 10MB.
+            </small>
         </div>
         <div class="form-group">
             <button type="submit" class="btn btn-success">Upload Page</button>
         </div>
     </form>
+
 </div>
 @endsection
 
