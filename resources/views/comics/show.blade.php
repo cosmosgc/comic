@@ -82,6 +82,27 @@
         .back-button:hover {
             background-color: rgba(80, 80, 80, 0.8);
         }
+        .back-to-top-button {
+            position: fixed;
+            background-color: #444;
+            color: white;
+            border: none;
+            
+            top: 10px;
+            left: 100px;
+            background-color: rgba(50, 50, 50, 0.8);
+            padding: 6px 12px;
+            margin-left: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .back-to-top-button:hover {
+            background-color: #666;
+        }
+
         .magnified {
             width: 100vw;
             height: auto;
@@ -99,6 +120,7 @@
 <body>
     
 <a href="{{ url()->previous() }}" class="back-button">← Back</a>
+<button onclick="topFunction()" id="backToTopButton" class="back-to-top-button">↑ Top</button>
 <div class="progress-indicator" id="progress">Page 1 of {{ $comic->pages->count() }}</div>
 
 <div class="comic-header">
@@ -171,6 +193,12 @@
 
         
     });
+    function topFunction() {
+     window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
 
     function setCookie(name, value, days) {
             var expires = "";
