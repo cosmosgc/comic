@@ -12,107 +12,167 @@
     <meta property="twitter:description" content="{{$comic->author}}" />
     <meta name="twitter:card" content="summary_large_image">
     <meta property="twitter:image:src" content="{{ asset('storage/' . $comic->image_path) }}" />
-
     <style>
         body {
             margin: 0;
             padding: 0;
             background-color: #1a1a1a;
+            color: #fff;
+            font-family: sans-serif;
         }
-
-        .comic-container {
-            position: relative;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
+        .comic-header {
+            padding: 20px;
+            background-color: #2a2a2a;
+            text-align: center;
         }
-
-        .comic-image {
-            max-height: 100vh;
-            max-width: 100%;
-            object-fit: contain;
-            transform-origin: center center;
+        .comic-header h1 {
+            margin: 0;
+            font-size: 2em;
         }
-
-        .arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            display: none;
-            cursor: pointer;
+        .comic-meta {
+            margin-top: 10px;
+            font-size: 0.9em;
         }
-
-        .arrow-left {
-            left: 10px;
+        .tags, .collections {
+            margin: 10px 0;
         }
-
-        .arrow-right {
-            right: 10px;
-        }
-
-        .arrow:hover {
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            padding: 10px;
-            background-color: #333;
-        }
-
-        .pagination a {
-            margin: 0 5px;
+        .tag, .collection {
+            display: inline-block;
+            background-color: #444;
+            color: #fff;
             padding: 5px 10px;
-            background-color: #fff;
-            color: #000;
-            text-decoration: none;
+            margin: 3px;
             border-radius: 5px;
+            font-size: 0.8em;
+        }
+        .comic-pages {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .comic-pages img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        .progress-indicator {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(50, 50, 50, 0.8);
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-size: 0.9em;
+        z-index: 1000;
+        }
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(50, 50, 50, 0.8);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #fff;
+            text-decoration: none;
+            z-index: 1000;
+        }
+        .back-button:hover {
+            background-color: rgba(80, 80, 80, 0.8);
+        }
+        .magnified {
+            width: 100vw;
+            height: auto;
+            max-height: none;
+            object-fit: contain;
+            cursor: zoom-out;
+            transition: width 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+            position: relative;
         }
 
-        .pagination a.active {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        .pagination a:hover {
-            background-color: #555;
-            color: #fff;
-        }
     </style>
+    
 </head>
 <body>
-    <div class="comic-container">
-        @foreach ($comic->pages as $page)
-            <img class="comic-image" src="{{ asset('storage/' . $page->image_path) }}" alt="Page {{ $page->page_number }}" style="display: none;">
-        @endforeach
+    
+<a href="{{ url()->previous() }}" class="back-button">← Back</a>
+<div class="progress-indicator" id="progress">Page 1 of {{ $comic->pages->count() }}</div>
 
-        <div class="arrow arrow-left"></div>
-        <div class="arrow arrow-right"></div>
+<div class="comic-header">
+    <h1>{{ $comic->title }}</h1>
+    <div class="comic-meta">
+        <p>By {{ $comic->author ?? 'Unknown Author' }}</p>
+        @if ($comic->user)
+            <div class="uploader-info">
+                <h5 class="card-title">{{ $comic->user->name }}</h5>
+                <img 
+                    src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}" 
+                    alt="{{ $comic->user->name }}'s avatar" 
+                    class="avatar-image"
+                    style="max-width: 100px; border-radius: 50%;"
+                >
+            </div>
+        @else
+            <p>Uploaded By Unknown Uploader</p>
+        @endif
+        
+        <p>{{ $comic->description }}</p>
+        <p>Views: {{ $comic->view_count }}</p>
     </div>
+    @if($comic->tags->count())
+        <div class="tags">
+            <strong>Tags:</strong>
+            @foreach($comic->tags as $tag)
+                <span class="tag">{{ $tag->name }}</span>
+            @endforeach
+        </div>
+    @endif
+    @if($comic->collections->count())
+        <div class="collections">
+            <strong>Collections:</strong>
+            @foreach($comic->collections as $collection)
+                <span class="collection">{{ $collection->name }}</span>
+            @endforeach
+        </div>
+    @endif
+</div>
 
-    <!-- Pagination at the bottom -->
-    <div class="pagination">
+<div class="comic-pages">
+    @foreach ($comic->pages as $page)
+        <a id="page-{{ $page->page_number }}"></a>
+        <img 
+            src="{{ asset('storage/' . $page->image_path) }}" 
+            data-page="{{ $page->page_number }}"
+            id="page-{{ $page->page_number }}"
+            alt="Page {{ $page->page_number }}"
+            loading="lazy"
+        >
+    @endforeach
+</div>
 
-        <button class="pagination-btn" id="root-page">Voltar</button>
-        <button class="pagination-btn" id="first-page" style="
-    display: none;
-">First</button>
 
-        <span id="pagination-links"></span>
+<script>
+        let pages = 0;
+        let totalPages = 1;
+        let progress = document.getElementById('progress');
+        var comicId = '{{ $comic->id }}'; // Get comic ID from the backend
+        var storedPage = getCookie("comic_" + comicId + "_page");
 
-        <button class="pagination-btn" id="last-page" style="
-    display: none;
-">Last</button>
-    </div>
 
-    <script>
-        function setCookie(name, value, days) {
+
+    document.addEventListener('DOMContentLoaded', () => {
+         pages = Array.from(document.querySelectorAll('.comic-pages img'));
+         totalPages = pages.length;
+         progress = document.getElementById('progress');
+         scrollToPage(storedPage);
+
+        
+    });
+
+    function setCookie(name, value, days) {
             var expires = "";
             if (days) {
                 var date = new Date();
@@ -139,284 +199,159 @@
             document.cookie = name + '=; Max-Age=-99999999;';
         }
 
-        var currentPage = 0;
-        var currentZoom = 1;
-        var zoomIncrement = 0.1;
-        var minZoom = 0.5;
-        var maxZoom = 2;
-
-        var comicPages = document.getElementsByClassName("comic-image");
-        var comicId = '{{ $comic->id }}'; // Get comic ID from the backend
-
-        // Retrieve stored page from cookie, or start at the first page if no cookie exists
-        var storedPage = getCookie("comic_" + comicId + "_page");
-        if (storedPage !== null && !isNaN(storedPage) && storedPage != '') {
-            currentPage = parseInt(storedPage);
-            console.log(comicPages, currentPage, storedPage);
-            comicPages[1].style.display = "none";
-            comicPages[currentPage].style.display = "block";
-        }
-
-        comicPages[currentPage].style.display = "block"; // Show first page initially
-        var arrowLeft = document.querySelector(".arrow-left");
-        var arrowRight = document.querySelector(".arrow-right");
-
-        arrowLeft.addEventListener("click", showPreviousPage);
-        arrowRight.addEventListener("click", showNextPage);
-
-        document.addEventListener("keydown", function (event) {
-            console.log(event.key);
-            switch (event.key) {
-                case "ArrowLeft":
-                case "a":
-                    showPreviousPage();
-                    break;
-                case "ArrowRight":
-                case "d":
-                    showNextPage();
-                    break;
-                case "z": // Zoom in
-                    currentZoom = Math.min(currentZoom + zoomIncrement, maxZoom);
-                    updateZoom();
-                    break;
-                case "x": // Zoom out
-                    currentZoom = Math.max(currentZoom - zoomIncrement, minZoom);
-                    updateZoom();
-                    break;
-                case "Escape":
-                    exitToRoot();
-                    break;
-            }
-        });
-        var touchstartX = 0;
-        var touchendX = 0;
-        var touchZoomDistance = 0;
-
-        document.addEventListener("touchstart", function (event) {
-            touchstartX = event.changedTouches[0].screenX;
-        });
-
-        document.addEventListener("touchend", function (event) {
-            touchendX = event.changedTouches[0].screenX;
-            handleSwipe();
-        });
-
-        function updateZoom() {
-            comicPages[currentPage].style.transform = `scale(${currentZoom})`;
-        }
-        function handleSwipe() {
-            if (touchendX < touchstartX) {
-                showNextPage();
-            } else if (touchendX > touchstartX) {
-                showPreviousPage();
-            }
-        }
-        var totalPages = comicPages.length;
-
-        function renderPagination() {
-            var paginationLinks = document.getElementById("pagination-links");
-            paginationLinks.innerHTML = ""; // Clear the pagination links
-
-            var startPage = Math.max(0, currentPage - 3);
-            var endPage = Math.min(totalPages - 1, currentPage + 3);
-
-            // Add "First" button if not on the first page
-            if (currentPage > 0) {
-                var firstButton = document.createElement("button");
-                firstButton.innerHTML = "Primeiro";
-                firstButton.classList.add("pagination-btn");
-                firstButton.addEventListener("click", function() {
-                    goToPage(0); // Go to the first page
-                });
-                paginationLinks.appendChild(firstButton);
-            }
-
-            // Add page links
-            for (var i = startPage; i <= endPage; i++) {
-                var pageButton = document.createElement("button");
-                pageButton.innerHTML = i + 1; // Pages are 1-based in UI
-                pageButton.classList.add("pagination-btn");
-
-                if (i === currentPage) {
-                    pageButton.classList.add("active");
-                }
-
-                pageButton.addEventListener("click", (function(page) {
-                    return function() {
-                        goToPage(page); // Go to the clicked page
-                    };
-                })(i));
-
-                paginationLinks.appendChild(pageButton);
-            }
-
-            // Add "Last" button if not on the last page
-            if (currentPage < totalPages - 1) {
-                var lastButton = document.createElement("button");
-                lastButton.innerHTML = "Ultimo";
-                lastButton.classList.add("pagination-btn");
-                lastButton.addEventListener("click", function() {
-                    goToPage(totalPages - 1); // Go to the last page
-                });
-                paginationLinks.appendChild(lastButton);
-            }
-        }
-
-        // Go to a specific page
-        function goToPage(page) {
-            if (page >= 0 && page < totalPages) {
-                comicPages[currentPage].style.display = "none";
-                currentPage = page;
-                comicPages[currentPage].style.display = "block";
-                setCookie("comic_" + comicId + "_page", currentPage, 30);
-                renderPagination(); // Re-render pagination links
-            }
-        }
-        function exitToRoot(){
-            window.location.href = '/';
-        }
-
-        // Root button event (Go back to root)
-        document.getElementById("root-page").addEventListener("click", function() {
-            if ('referrer' in document) {
-                window.location = document.referrer;
-                /* OR */
-                //location.replace(document.referrer);
-            } else {
-                window.history.back();
-            }
-        });
-
-
-        // First button event
-        document.getElementById("first-page").addEventListener("click", function() {
-            goToPage(0);
-        });
-
-        // Last button event
-        document.getElementById("last-page").addEventListener("click", function() {
-            goToPage(totalPages - 1);
-        });
-
-        // Initial rendering of pagination when page is loaded
-        renderPagination();
-
-
-        function setCurrentPage(page) {
-            comicPages[currentPage].style.display = "none";
-            currentPage = page;
-            comicPages[currentPage].style.display = "block";
+    function updateProgress(currentPage) {
             setCookie("comic_" + comicId + "_page", currentPage, 30);
-
-            // Update pagination active class
-            updatePaginationActiveClass();
+            progress.textContent = `Page ${currentPage} of ${totalPages}`;
         }
 
-
-        function showPreviousPage() {
-            if (currentPage > 0) {
-                comicPages[currentPage].style.display = "none";
-                currentPage--;
-                comicPages[currentPage].style.display = "block";
-                setCookie("comic_" + comicId + "_page", currentPage, 30);
+        function scrollToPage(pageNumber) {
+            const anchor = document.getElementById(`page-${pageNumber}`);
+            if (anchor) {
+                window.location.hash = `page-${pageNumber}`;
+                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                updateProgress(pageNumber);
             }
         }
 
-        function showNextPage() {
-            if (currentPage < comicPages.length - 1) {
-                comicPages[currentPage].style.display = "none";
-                currentPage++;
-                comicPages[currentPage].style.display = "block";
-                setCookie("comic_" + comicId + "_page", currentPage, 30);
-            }
-        }
-
-        document.querySelector(".comic-container").addEventListener("mousemove", function (event) {
-            var containerWidth = this.offsetWidth;
-            var mouseX = event.clientX;
-
-            if (mouseX < containerWidth / 2) {
-                arrowLeft.style.display = "block";
-                arrowRight.style.display = "none";
-            } else {
-                arrowLeft.style.display = "none";
-                arrowRight.style.display = "block";
-            }
-        });
-
-        document.querySelector(".comic-container").addEventListener("mouseleave", function () {
-            arrowLeft.style.display = "none";
-            arrowRight.style.display = "none";
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Get the necessary data for analytics
-            const analyticsData = {
-                url: window.location.href,
-                ip_address: '{{ request()->ip() }}',
-                user_agent: navigator.userAgent,
-                event_type: 'comic_show',
-                device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
-                referral_source: document.referrer || 'Direct',
-                campaign: '',
-                duration: 0,
-                browser: getBrowser(),
-                os: getOS(),
-                user_id: '{{ Auth::id() }}' // Pass the user ID from the server
-            };
-
-            // Function to get browser name
-            function getBrowser() {
-                if (navigator.userAgent.indexOf("Chrome") > -1) {
-                    return "Chrome";
-                } else if (navigator.userAgent.indexOf("Firefox") > -1) {
-                    return "Firefox";
-                } else if (navigator.userAgent.indexOf("Safari") > -1) {
-                    return "Safari";
-                } else if (navigator.userAgent.indexOf("Edge") > -1) {
-                    return "Edge";
-                } else {
-                    return "Other";
+        function getCurrentPage() {
+            let closest = {page: 1, offset: Infinity};
+            const scrollY = window.scrollY;
+            pages.forEach(img => {
+                const rect = img.getBoundingClientRect();
+                const offset = Math.abs(rect.top);
+                const page = parseInt(img.dataset.page) || 1;
+                if (offset < closest.offset) {
+                    closest = {page, offset};
                 }
-            }
-
-            // Function to get OS name
-            function getOS() {
-                if (navigator.userAgent.indexOf("Win") > -1) {
-                    return "Windows";
-                } else if (navigator.userAgent.indexOf("Mac") > -1) {
-                    return "MacOS";
-                } else if (navigator.userAgent.indexOf("X11") > -1 || navigator.userAgent.indexOf("Linux") > -1) {
-                    return "Linux";
-                } else if (/Android/i.test(navigator.userAgent)) {
-                    return "Android";
-                } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    return "iOS";
-                } else {
-                    return "Other";
-                }
-            }
-
-            // Send the analytics data via API
-            fetch("{{ route('analytics') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Include CSRF token for security
-                },
-                body: JSON.stringify(analyticsData),
-                credentials: 'include'
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Analytics data stored:', data);
-            })
-            .catch(error => {
-                console.error('Error storing analytics data:', error);
             });
+            return closest.page;
+        }
+
+        // Initial load
+        const hash = window.location.hash;
+        if (hash.startsWith('#page-')) {
+            const pageNumber = parseInt(hash.replace('#page-', ''));
+            if (!isNaN(pageNumber)) {
+                scrollToPage(pageNumber);
+            }
+        }
+
+        // Update progress on scroll
+        window.addEventListener('scroll', () => {
+            const currentPage = getCurrentPage();
+            updateProgress(currentPage);
         });
 
-    </script>
+        // Keyboard navigation
+let scrollInterval = null;
+const scrollSpeed = 15; // pixels per frame (adjust for desired speed)
+let isMagnified = false;
+let magnifiedImg = null;
+
+function getCurrentImageElement() {
+    let closest = {page: null, offset: Infinity, element: null};
+    pages.forEach(img => {
+        const rect = img.getBoundingClientRect();
+        const offset = Math.abs(rect.top);
+        const page = parseInt(img.dataset.page);
+        if (offset < closest.offset) {
+            closest = {page, offset, element: img};
+        }
+    });
+    return closest.element;
+}
+
+function toggleMagnify(img) {
+    console.log(img);
+    if (!img) return;
+    if (isMagnified) {
+        img.classList.remove('magnified');
+        isMagnified = false;
+        magnifiedImg = null;
+    } else {
+        img.classList.add('magnified');
+        isMagnified = true;
+        magnifiedImg = img;
+        img.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+document.querySelectorAll('.comic-pages img').forEach(img => {
+    img.addEventListener('click', () => {
+        if (isMagnified && magnifiedImg === img) {
+            toggleMagnify(img);
+        } else {
+            if (isMagnified && magnifiedImg) {
+                toggleMagnify(magnifiedImg);
+            }
+            toggleMagnify(img);
+        }
+    });
+});
+
+
+function startScroll(direction) {
+    if (scrollInterval) return; // prevent multiple intervals
+    scrollInterval = setInterval(() => {
+        window.scrollBy(0, direction * scrollSpeed);
+    }, 16); // roughly 60fps
+}
+
+function stopScroll() {
+    if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const key = e.key.toLowerCase();
+    const currentPage = getCurrentPage();
+
+    if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+        // Next page
+        if (currentPage < totalPages) {
+            scrollToPage(currentPage + 1);
+        }
+    }
+
+    if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+        // Previous page
+        if (currentPage > 1) {
+            scrollToPage(currentPage - 1);
+        }
+    }
+    if (key === 'w') {
+        startScroll(-1);
+    }
+    if (key === 's') {
+        startScroll(1);
+    }
+    if (key === 'f') {
+        const currentImg = getCurrentImageElement();
+        if (isMagnified && magnifiedImg) {
+            toggleMagnify(magnifiedImg);
+        } else {
+            toggleMagnify(currentImg);
+        }
+    }
+    const navKeys = ['w', 'a', 's', 'd', 'arrowright', 'arrowleft', 'arrowup', 'arrowdown'];
+    if (navKeys.includes(e.key.toLowerCase())) {
+        if (isMagnified && magnifiedImg) {
+            toggleMagnify(magnifiedImg);
+        }
+    }
+
+});
+
+document.addEventListener('keyup', (e) => {
+    const key = e.key.toLowerCase();
+    if (key === 'w' || key === 's') {
+        stopScroll();
+    }
+});
+
+</script>
 </body>
 </html>
