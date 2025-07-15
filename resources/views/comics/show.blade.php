@@ -33,6 +33,9 @@
             margin-top: 10px;
             font-size: 0.9em;
         }
+        h5.card-title {
+            color: white;
+        }
         .tags, .collections {
             margin: 10px 0;
         }
@@ -128,15 +131,18 @@
     <div class="comic-meta">
         <p>By {{ $comic->author ?? 'Unknown Author' }}</p>
         @if ($comic->user)
-            <div class="uploader-info">
-                <h5 class="card-title">{{ $comic->user->name }}</h5>
-                <img 
-                    src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}" 
-                    alt="{{ $comic->user->name }}'s avatar" 
-                    class="avatar-image"
-                    style="max-width: 100px; border-radius: 50%;"
-                >
-            </div>
+            <a href="{{ route('profile.public.show.username', ['username' => $comic->user->name]) }}">
+
+                <div class="uploader-info">
+                    <h5 class="card-title">{{ $comic->user->name }}</h5>
+                    <img 
+                        src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}" 
+                        alt="{{ $comic->user->name }}'s avatar" 
+                        class="avatar-image"
+                        style="max-width: 100px; border-radius: 50%;"
+                    >
+                </div>
+            </a>
         @else
             <p>Uploaded By Unknown Uploader</p>
         @endif

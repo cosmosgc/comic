@@ -1,7 +1,7 @@
 <div class="post-header">
     <a href="{{ route('profile.public.show.username', ['username' => $post->author->name]) }}" class="post-user">
         @if($post->author->avatar_image_path)
-            <img src="{{ asset( $post->author->avatar_image_path) }}" alt="{{ $post->author->name }}'s avatar" class="avatar">
+            <img src="{{ $post->author->avatar_image_path ? asset( $post->author->avatar_image_path) : asset('default-avatar.png') }}" class="avatar">
         @else
             <img src="{{ asset('path/to/placeholder.png') }}" alt="Default avatar" class="avatar">
         @endif
