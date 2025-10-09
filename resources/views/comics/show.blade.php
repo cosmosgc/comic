@@ -48,13 +48,13 @@
             border-radius: 5px;
             font-size: 0.8em;
         }
-        .comic-pages {
+        .comic-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
         }
-        .comic-pages img {
+        .comic-container img {
             max-width: 100%;
             height: auto;
             margin-bottom: 20px;
@@ -168,7 +168,7 @@
     @endif
 </div>
 
-<div class="comic-pages">
+<div class="comic-container">
     @foreach ($comic->pages as $page)
         <a id="page-{{ $page->page_number }}"></a>
         <img 
@@ -192,7 +192,7 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
-         pages = Array.from(document.querySelectorAll('.comic-pages img'));
+         pages = Array.from(document.querySelectorAll('.comic-container img'));
          totalPages = pages.length;
          progress = document.getElementById('progress');
          scrollToPage(storedPage);
@@ -310,7 +310,7 @@ function toggleMagnify(img) {
     }
 }
 
-document.querySelectorAll('.comic-pages img').forEach(img => {
+document.querySelectorAll('.comic-container img').forEach(img => {
     img.addEventListener('click', () => {
         if (isMagnified && magnifiedImg === img) {
             toggleMagnify(img);

@@ -53,6 +53,25 @@ class ComicController extends Controller
         return view('comics.show', compact('comic'));
     }
 
+    public function search(Request $request)
+    {
+        $query = Comic::query();
+
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                ->orWhere('author', 'like', "%{$search}%");
+            });
+        }
+
+        $comics = $query->paginate(10); // You can use get() too, but paginate is nice for longer lists.
+
+        return view('comics.search', [
+            'comics' => $comics,
+            'searchTerm' => $request->input('search')
+        ]);
+    }
 
     public function getComic($id)
     {
@@ -83,6 +102,10 @@ class ComicController extends Controller
             }
         }
 
+        // ⏳ Optional limit
+        if ($request->has('limit')) {
+            $query->limit((int) $request->input('limit'));
+        }
 
         // Get the results
         $comics = $query->get();

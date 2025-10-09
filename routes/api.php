@@ -17,7 +17,7 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/comics/update-slugs', [ComicController::class, 'updateMissingSlugs'])->name(name: 'comics.updateSlugs');
 
-Route::get('/comics', [ComicController::class, 'getAllComics']);
+Route::get('/comics', [ComicController::class, 'getAllComics'])->name('api.comics');
 Route::get('/comics/{id}', [ComicController::class, 'getComic']);
 Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId']);
 

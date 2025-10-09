@@ -167,3 +167,12 @@ body {
     border-radius: 5px;
     cursor: pointer;
 }
+
+#comic-search-results {
+    max-height: 250px;
+    overflow-y: auto;
+    cursor: pointer;
+}
+#comic-search-results li:hover {
+    background-color: #f0f0f0;
+}

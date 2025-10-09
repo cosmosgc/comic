@@ -105,6 +105,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 Route::get('/comics', [ComicController::class, 'index'])->name('comics.index');
 Route::get('/comics/create', [ComicController::class, 'create'])->name('comics.create');
 Route::post('/comics', [ComicController::class, 'store'])->name('comics.store');
+Route::get('/comics/search', [ComicController::class, 'search'])->name('comics.search');
 
 // Route to access a comic by ID
 Route::get('/comics/id/{id}', [ComicController::class, 'showById'])->name('comics.showById');

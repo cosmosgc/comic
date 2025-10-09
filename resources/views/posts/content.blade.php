@@ -3,7 +3,7 @@
         @if($post->author->avatar_image_path)
             <img src="{{ $post->author->avatar_image_path ? asset( $post->author->avatar_image_path) : asset('default-avatar.png') }}" class="avatar">
         @else
-            <img src="{{ asset('path/to/placeholder.png') }}" alt="Default avatar" class="avatar">
+            <img src="{{ asset('default-avatar.png') }}" alt="Default avatar" class="avatar">
         @endif
         <span>{{ $post->author->name }}</span>
     </a>

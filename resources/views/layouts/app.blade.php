@@ -43,6 +43,26 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
+
+
+                <li class="nav-item position-relative">
+                    <form action="{{ route('comics.search') }}" method="GET" class="d-flex">
+                        <input type="text" 
+                            name="search" 
+                            id="comic-search" 
+                            class="form-control" 
+                            placeholder="Search comics..." 
+                            autocomplete="off">
+
+                        <button type="submit" class="btn btn-primary ml-2">Search</button>
+                    </form>
+
+                    <ul id="comic-search-results" 
+                        class="list-group position-absolute w-100" 
+                        style="z-index: 1000; display: none;"></ul>
+                </li>
+
+
             <li class="nav-item">
                     <a class="nav-link" href="{{ route('posts.index') }}">Social</a>
                 </li>
@@ -174,6 +194,56 @@
         });
 
     </script>
+
+    <script>
+    const BASE_URL = "{{ url('') }}";
+     const SEARCH_URL = "{{ route('comics.search') }}";
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('comic-search');
+        const resultsBox = document.getElementById('comic-search-results');
+        let timeout = null;
+
+        searchInput.addEventListener('input', function () {
+            clearTimeout(timeout);
+            const query = this.value.trim();
+            if (query.length < 2) {
+                resultsBox.style.display = 'none';
+                return;
+            }
+
+            // Add a small debounce to avoid hammering the server
+            timeout = setTimeout(() => {
+                fetch(`{{ route('api.comics') }}?search=${encodeURIComponent(query)}&limit=5`)
+                    .then(response => response.json())
+                    .then(data => {
+                        resultsBox.innerHTML = '';
+                        if (data.length === 0) {
+                            resultsBox.style.display = 'none';
+                            return;
+                        }
+                        data.forEach(comic => {
+                            const li = document.createElement('li');
+                            li.classList.add('list-group-item', 'list-group-item-action');
+                            li.textContent = `${comic.title} (${comic.author})`;
+                            li.addEventListener('click', () => {
+                                window.location.href = `${BASE_URL}/comics/${comic.slug}`;
+                            });
+                            resultsBox.appendChild(li);
+                        });
+                        resultsBox.style.display = 'block';
+                    });
+            }, 300); // 300ms debounce
+        });
+
+        // Close the dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!resultsBox.contains(e.target) && e.target !== searchInput) {
+                resultsBox.style.display = 'none';
+            }
+        });
+    });
+    </script>
+
 
 
     @yield('scripts')
