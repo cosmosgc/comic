@@ -17,7 +17,16 @@ class ComicController extends Controller
         $comics = Comic::orderBy('created_at', 'desc')->paginate(10);
         $widgets = Widget::all();
         $showPanels = true;
-        $topComics = Comic::orderBy('view_count', 'desc')->take(5)->get();
+        // Get IDs of the last 20 comics posted
+        $lastTwentyIds = Comic::orderBy('created_at', 'desc')
+            ->take(20)
+            ->pluck('id');
+
+        // Now get top 5 from those 20 by view_count
+        $topComics = Comic::whereIn('id', $lastTwentyIds)
+            ->orderBy('view_count', 'desc')
+            ->take(5)
+            ->get();
         $tags = Tag::all();
         return view('comics.index', compact('comics', 'topComics', 'tags','showPanels', 'widgets'));
     }
@@ -57,6 +66,7 @@ class ComicController extends Controller
     {
         $query = Comic::query();
 
+        // 🔎 Text search
         if ($request->has('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -65,13 +75,23 @@ class ComicController extends Controller
             });
         }
 
-        $comics = $query->paginate(10); // You can use get() too, but paginate is nice for longer lists.
+        // 🏷️ Tag filter
+        if ($request->has('tag')) {
+            $tagName = $request->input('tag');
+            $query->whereHas('tags', function ($q) use ($tagName) {
+                $q->where('name', $tagName);
+            });
+        }
+
+        $comics = $query->paginate(10);
 
         return view('comics.search', [
             'comics' => $comics,
-            'searchTerm' => $request->input('search')
+            'searchTerm' => $request->input('search'),
+            'tagTerm' => $request->input('tag')
         ]);
     }
+
 
     public function getComic($id)
     {

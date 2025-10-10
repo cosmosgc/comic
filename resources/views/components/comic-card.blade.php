@@ -7,7 +7,7 @@
                 <img src="{{ $comic->user->avatar_image_path ? asset( $comic->user->avatar_image_path) : asset('default-avatar.png') }}" alt="{{ $comic->user->name }}'s avatar" class="avatar">
             @else
                 <!-- Optional: Placeholder image if avatar does not exist -->
-                <img src="{{ asset('path/to/placeholder.png') }}" alt="Default avatar" class="avatar">
+                <img src="{{ asset('default-avatar.png') }}" alt="Default avatar" class="avatar">
             @endif
             <span>{{ $comic->user->name }}</span>
         </a>
