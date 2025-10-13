@@ -12,6 +12,7 @@
         <div class="form-group">
             <label for="title">Comic Title</label>
             <input type="text" class="form-control" id="title" name="title" required>
+            <small id="duplicate-warning" class="text-danger" style="display: none;"></small>
         </div>
 
         <div class="form-group">
@@ -86,6 +87,42 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadImages = document.getElementById('upload_images');
     const folderUpload = document.getElementById('folder-upload');
     const imagesUpload = document.getElementById('images-upload');
+    
+    const titleInput = document.getElementById('title');
+    const warning = document.getElementById('duplicate-warning');
+    const apiUrl = `{{ route('api.comics') }}`;
+
+    let checkTimeout = null;
+
+    titleInput.addEventListener('input', function () {
+        clearTimeout(checkTimeout);
+
+        const title = this.value.trim();
+        if (title.length === 0) {
+            warning.style.display = 'none';
+            return;
+        }
+
+        // Add a small delay to avoid too many requests
+        checkTimeout = setTimeout(() => {
+            fetch(`${apiUrl}?search=${encodeURIComponent(title)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Check if any comic has EXACTLY the same title
+                    const duplicate = data.find(c => c.title.toLowerCase() === title.toLowerCase());
+
+                    if (duplicate) {
+                        warning.innerText = `⚠️ Já existe um quadrinho com este título: "${duplicate.title}"`;
+                        warning.style.display = 'block';
+                    } else {
+                        warning.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar duplicidade:', error);
+                });
+        }, 300);
+    });
 
     // Função pra criar cookie
     function setCookie(name, value, days) {
@@ -156,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById("author").value = match[1] ? match[1].trim() : '';
                 document.getElementById("title").value = match[2] ? match[2].trim() : '';
                 document.getElementById("desc").value = match[3] ? match[3].trim() : '';
+                document.getElementById("title").dispatchEvent(new Event('input')); 
             }
 
             // Preview das imagens
@@ -200,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
             previewContainer.innerHTML = ''; // Limpa previews quando troca modo
         });
     });
+    
 });
 </script>
 
