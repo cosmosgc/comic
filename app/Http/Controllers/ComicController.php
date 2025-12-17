@@ -62,6 +62,23 @@ class ComicController extends Controller
         return view('comics.show', compact('comic'));
     }
 
+    /**
+    * Handle search and filtering of comics by text or tag.
+    *
+    * This method retrieves comics from the database based on optional query parameters:
+    * - `search`: Filters comics whose title or author contains the given search term.
+    * - `tag`: Filters comics associated with a specific tag name.
+    * Both filters can be combined — if both are provided, only comics matching both
+    * conditions will be returned.
+    *
+    * Usage examples:
+    * - /search?search=Batman          → Finds comics with "Batman" in title or author.
+    * - /search?tag=Action            → Finds comics with the "Action" tag.
+    * - /search?search=Batman&tag=DC  → Finds comics with "Batman" in title/author and tagged "DC".
+    *
+    * @param  \Illuminate\Http\Request  $request
+    * @return \Illuminate\View\View
+    */
     public function search(Request $request)
     {
         $query = Comic::query();

@@ -3,70 +3,153 @@
 @section('title', 'Upload Comic')
 
 @section('content')
-<div class="container">
-    <h1>Upload Comic</h1>
+<div class="mx-auto max-w-4xl px-4 py-6">
 
-    <!-- Form to upload the comic -->
-    <form id="comic-upload-form" action="{{ route('comics.store') }}" method="POST" enctype="multipart/form-data">
+    <h1 class="mb-6 text-2xl font-bold">Upload Comic</h1>
+
+    <form id="comic-upload-form"
+          action="{{ route('comics.store') }}"
+          method="POST"
+          enctype="multipart/form-data"
+          class="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
+
         @csrf
-        <div class="form-group">
-            <label for="title">Comic Title</label>
-            <input type="text" class="form-control" id="title" name="title" required>
-            <small id="duplicate-warning" class="text-danger" style="display: none;"></small>
+
+        <!-- Title -->
+        <div>
+            <label for="title" class="mb-1 block text-sm font-medium text-zinc-300">
+                Comic Title
+            </label>
+            <input type="text"
+                   id="title"
+                   name="title"
+                   required
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                          focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            <p id="duplicate-warning"
+               class="mt-1 hidden text-sm text-red-400"></p>
         </div>
 
-        <div class="form-group">
-            <label for="author">Autor</label>
-            <input type="text" class="form-control" id="author" name="author">
+        <!-- Author -->
+        <div>
+            <label for="author" class="mb-1 block text-sm font-medium text-zinc-300">
+                Autor
+            </label>
+            <input type="text"
+                   id="author"
+                   name="author"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
         </div>
 
-        <div class="form-group">
-            <label for="desc">Descrição</label>
-            <input type="text" class="form-control" id="desc" name="desc">
+        <!-- Description -->
+        <div>
+            <label for="desc" class="mb-1 block text-sm font-medium text-zinc-300">
+                Descrição
+            </label>
+            <input type="text"
+                   id="desc"
+                   name="desc"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
         </div>
-        <div class="form-group">
-            <label for="tags">Tags</label>
-            <input type="text" class="form-control" name="tags" placeholder="Insira tags, separado por virgula">
+
+        <!-- Tags -->
+        <div>
+            <label for="tags" class="mb-1 block text-sm font-medium text-zinc-300">
+                Tags
+            </label>
+            <input type="text"
+                   name="tags"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm"
+                   placeholder="Insira tags, separado por vírgula">
         </div>
 
-        <div class="form-group">
-    <label>Selecione o modo de upload</label><br>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="upload_mode" id="upload_folder" value="folder" checked>
-        <label class="form-check-label" for="upload_folder">Enviar Pasta</label>
-    </div>
-    <div class="form-check form-check-inline">
-        <input class="form-check-input" type="radio" name="upload_mode" id="upload_images" value="images">
-        <label class="form-check-label" for="upload_images">Escolher Imagens</label>
-    </div>
-    </div>
+        <!-- Upload mode -->
+        <div>
+            <p class="mb-2 text-sm font-medium text-zinc-300">
+                Selecione o modo de upload
+            </p>
 
-    <div class="form-group" id="folder-upload">
-        <label for="folder">Selecione uma Pasta</label>
-        <input type="file" id="folder" name="folder[]" webkitdirectory directory multiple>
-    </div>
+            <div class="flex gap-6">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="radio"
+                           name="upload_mode"
+                           id="upload_folder"
+                           value="folder"
+                           checked
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                    Enviar Pasta
+                </label>
 
-    <div class="form-group" id="images-upload" style="display: none;">
-        <label for="images">Escolha as Imagens</label>
-        <input type="file" id="images" name="images[]" multiple accept="image/*">
-    </div>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="radio"
+                           name="upload_mode"
+                           id="upload_images"
+                           value="images"
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                    Escolher Imagens
+                </label>
+            </div>
+        </div>
 
-    <!-- Preview container for images -->
-    <div id="image-preview" class="row"></div>
+        <!-- Folder upload -->
+        <div id="folder-upload">
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Selecione uma Pasta
+            </label>
+            <input type="file"
+                   id="folder"
+                   name="folder[]"
+                   webkitdirectory
+                   directory
+                   multiple
+                   class="block w-full rounded-lg border border-zinc-700 bg-zinc-950 text-sm
+                          file:mr-4 file:rounded-md file:border-0
+                          file:bg-indigo-600 file:px-4 file:py-2
+                          file:text-sm file:font-medium file:text-white
+                          hover:file:bg-indigo-500">
+        </div>
 
+        <!-- Images upload -->
+        <div id="images-upload" class="hidden">
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Escolha as Imagens
+            </label>
+            <input type="file"
+                   id="images"
+                   name="images[]"
+                   multiple
+                   accept="image/*"
+                   class="block w-full rounded-lg border border-zinc-700 bg-zinc-950 text-sm
+                          file:mr-4 file:rounded-md file:border-0
+                          file:bg-indigo-600 file:px-4 file:py-2
+                          file:text-sm file:font-medium file:text-white
+                          hover:file:bg-indigo-500">
+        </div>
 
-        <!-- Preview container for images -->
-        <div id="image-preview" class="row"></div>
+        <!-- Image preview -->
+        <div>
+            <div id="image-preview"
+                 class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"></div>
+        </div>
 
         <!-- Progress bar -->
-        <div class="progress mt-3" style="display: none;">
-            <div id="upload-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div>
+        <div class="hidden h-6 overflow-hidden rounded-lg bg-zinc-800">
+            <div id="upload-progress"
+                 class="h-full w-0 bg-indigo-600 text-center text-sm font-medium text-white transition-all">
+                0%
+            </div>
         </div>
 
-        <button type="submit" class="btn btn-primary mt-3">Upload Comic</button>
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
+                       transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+            Upload Comic
+        </button>
     </form>
 </div>
 @endsection
+
 
 @section('styles')
 <style>
@@ -248,11 +331,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const formData = new FormData(this);
         const xhr = new XMLHttpRequest();
-        const progressBar = document.querySelector('.progress');
+        // const progressBar = document.querySelector('.progress');
         const progress = document.getElementById('upload-progress');
 
-        progressBar.style.display = 'flex'; // Show progress bar
-
+        // progressBar.style.display = 'flex'; // Show progress bar
+        progress.parentElement.style.display = 'block'; // Show progress bar container
         xhr.upload.addEventListener('progress', function(event) {
             if (event.lengthComputable) {
                 let percent = Math.round((event.loaded / event.total) * 100);

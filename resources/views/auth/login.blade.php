@@ -3,69 +3,110 @@
 @section('title', 'Login')
 
 @section('content')
-<canvas id="canvas" class="canvas" style="position:absolute; top:0; left:0; z-index:-1;"></canvas>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="
-    position: absolute;
-"   >
-  <defs>
-  <filter id="liquid">
-      <!-- Apply Gaussian Blur -->
-      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
 
-      <!-- Generate turbulence (noise) for displacement -->
-      <!-- <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="1" result="turbulence" /> -->
+<!-- Background canvas -->
+<!-- Background canvas -->
+<canvas
+    id="canvas"
+    class="fixed inset-0 z-0 block"></canvas>
 
-      <!-- Use displacement map to create the liquid-like effect -->
-      <feDisplacementMap in2="turbulence" in="blur" scale="30" xChannelSelector="B" yChannelSelector="G" />
-    </filter>
-  </defs>
+<!-- SVG filter (must not affect layout) -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     class="fixed inset-0 z-0 pointer-events-none">
+    <defs>
+        <filter id="liquid">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
+            <feDisplacementMap in="blur" scale="30"
+                               xChannelSelector="B"
+                               yChannelSelector="G" />
+        </filter>
+    </defs>
 </svg>
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card bg-dark text-light p-4" style="width: 100%; max-width: 400px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);">
-        <h3 class="text-center mb-4">Login</h3>
-        <form method="POST" action="{{ route('login') }}">
+
+
+<div class="relative z-10 flex min-h-screen items-center justify-center px-4">
+    <div
+        class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
+
+        <h1 class="mb-6 text-center text-2xl font-bold tracking-tight">
+            Login
+        </h1>
+
+        <form method="POST" action="{{ route('login') }}" class="space-y-4">
             @csrf
 
-            <!-- Email Field -->
-            <div class="form-group mb-3">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required>
+            <!-- Email -->
+            <div>
+                <label for="email" class="mb-1 block text-sm font-medium text-zinc-300">
+                    Email address
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    placeholder="you@example.com"
+                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                           focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                >
             </div>
 
-            <!-- Password Field -->
-            <div class="form-group mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+            <!-- Password -->
+            <div>
+                <label for="password" class="mb-1 block text-sm font-medium text-zinc-300">
+                    Password
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    placeholder="••••••••"
+                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                           focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                >
             </div>
 
-            <!-- Submit Button -->
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-block" style="background-color: #007bff; border: none; padding: 10px 15px; font-size: 16px;">
-                    Login
-                </button>
-            </div>
+            <!-- Submit -->
+            <button
+                type="submit"
+                class="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
+                       transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+                Login
+            </button>
 
-            <!-- Forgot Password and Register Links -->
-            <div class="text-center mt-3">
-                <a href="{{ route('password.request') }}">Forgot Password?</a>
-                <br>
-                <a href="{{ route('register') }}">Don't have an account? Sign up</a>
+            <!-- Links -->
+            <div class="pt-4 text-center text-sm text-zinc-400">
+                <a href="{{ route('password.request') }}"
+                   class="hover:text-white underline-offset-4 hover:underline">
+                    Forgot password?
+                </a>
+                <div class="mt-2">
+                    <a href="{{ route('register') }}"
+                       class="hover:text-white underline-offset-4 hover:underline">
+                        Don’t have an account? Sign up
+                    </a>
+                </div>
             </div>
         </form>
     </div>
 </div>
+
 @endsection
+
 
 @section('styles')
 <style>
-    .canvas{
+    html, body {
+        width: 100%;
+        height: 100%;
+    }
+
+    #canvas {
+        width: 100vw;
+        height: 100vh;
         background-color: #272c31;
-    }
-    #canvas{
-        position: absolute;
-    }
-    .custom-root-container{
-        overflow: hidden;
+        display: block;
     }
 
 
