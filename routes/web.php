@@ -125,6 +125,8 @@ Route::delete('/page/{page}', [ComicController::class, 'deletePage'])->name('pag
 Route::post('/comics/{comic}/add-pages', [PageController::class, 'addPage'])->name('pages.addPage');
 
 Route::post('/comics/{comic}/pages', [PageController::class, 'store'])->name('pages.store');
+Route::post('/comics/{comic}/set-cover', [ComicController::class, 'setCover'])
+    ->name('comics.setCover');
 //////////////////////////////////////////////////////////////
 // Route to display all collections
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
