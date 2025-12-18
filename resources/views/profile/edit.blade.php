@@ -3,131 +3,187 @@
 @section('title', 'Edit Profile')
 
 @section('content')
-<div class="container">
-    <h1>Edit Profile</h1>
+<div class="mx-auto max-w-3xl px-4 py-6">
 
-    <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data">
+    <h1 class="mb-6 text-2xl font-bold">Edit Profile</h1>
+
+    <form action="{{ route('profile.update') }}"
+          method="POST"
+          enctype="multipart/form-data"
+          class="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
+
         @csrf
 
-        <!-- Name Field -->
-        <div class="form-group">
-            <label for="name">Name</label>
-            <input type="text" class="form-control @error('name') is-invalid @enderror"
-                   id="name" name="name" value="{{ old('name', $user->name) }}" required>
+        <!-- Name -->
+        <div>
+            <label for="name" class="mb-1 block text-sm font-medium text-zinc-300">
+                Name
+            </label>
+            <input type="text"
+                   id="name"
+                   name="name"
+                   value="{{ old('name', $user->name) }}"
+                   required
+                   class="w-full rounded-lg border px-3 py-2 text-sm
+                          bg-zinc-950
+                          @error('name') border-red-500 @else border-zinc-700 @enderror
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
             @error('name')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Email Field -->
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                   id="email" name="email" value="{{ old('email', $user->email) }}" required>
+        <!-- Email -->
+        <div>
+            <label for="email" class="mb-1 block text-sm font-medium text-zinc-300">
+                Email
+            </label>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   value="{{ old('email', $user->email) }}"
+                   required
+                   class="w-full rounded-lg border px-3 py-2 text-sm
+                          bg-zinc-950
+                          @error('email') border-red-500 @else border-zinc-700 @enderror
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
             @error('email')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Avatar Image Upload Field -->
-        <div class="form-group">
-            <label for="avatar_image">Avatar Image</label>
-            <input type="file" class="form-control @error('avatar_image') is-invalid @enderror"
-                   id="avatar_image" name="avatar_image" accept="image/*">
+        <!-- Avatar -->
+        <div>
+            <label for="avatar_image" class="mb-1 block text-sm font-medium text-zinc-300">
+                Avatar Image
+            </label>
+            <input type="file"
+                   id="avatar_image"
+                   name="avatar_image"
+                   accept="image/*"
+                   class="block w-full rounded-lg border border-zinc-700 bg-zinc-950 text-sm
+                          file:mr-4 file:rounded-md file:border-0
+                          file:bg-indigo-600 file:px-4 file:py-2
+                          file:text-sm file:font-medium file:text-white
+                          hover:file:bg-indigo-500">
             @error('avatar_image')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Bio Field -->
-        <div class="form-group">
-            <label for="bio">Bio</label>
-            <textarea class="form-control @error('bio') is-invalid @enderror"
-                      id="bio" name="bio">{{ old('bio', $user->bio) }}</textarea>
+        <!-- Bio -->
+        <div>
+            <label for="bio" class="mb-1 block text-sm font-medium text-zinc-300">
+                Bio
+            </label>
+            <textarea id="bio"
+                      name="bio"
+                      rows="4"
+                      class="w-full rounded-lg border px-3 py-2 text-sm
+                             bg-zinc-950
+                             @error('bio') border-red-500 @else border-zinc-700 @enderror
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30">{{ old('bio', $user->bio) }}</textarea>
             @error('bio')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Links Field -->
-        <div class="form-group" id="links-container">
-            <label for="links">Links</label>
-            <div id="links-list">
+        <!-- Links -->
+        <div id="links-container">
+            <label class="mb-2 block text-sm font-medium text-zinc-300">
+                Links
+            </label>
+
+            <div id="links-list" class="space-y-2">
                 @foreach (old('links', $user->links ?? []) as $link)
-                    <div class="link-item">
-                        <input type="text" class="form-control link-input" name="links[]" value="{{ $link }}">
-                        <button type="button" class="btn btn-danger remove-link">Remove</button>
+                    <div class="flex gap-2">
+                        <input type="text"
+                               name="links[]"
+                               value="{{ $link }}"
+                               class="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
+                        <button type="button"
+                                class="remove-link rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500">
+                            Remove
+                        </button>
                     </div>
                 @endforeach
             </div>
-            <button type="button" id="add-link" class="btn btn-secondary">Add Link</button>
+
+            <button type="button"
+                    id="add-link"
+                    class="mt-3 inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-800">
+                Add Link
+            </button>
         </div>
 
-        <!-- Password Field -->
-        <div class="form-group">
-            <label for="password">New Password (leave blank to keep current password)</label>
-            <input type="password" class="form-control @error('password') is-invalid @enderror"
-                   id="password" name="password">
+        <!-- Password -->
+        <div>
+            <label for="password" class="mb-1 block text-sm font-medium text-zinc-300">
+                New Password <span class="text-zinc-500">(leave blank to keep current)</span>
+            </label>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   class="w-full rounded-lg border px-3 py-2 text-sm
+                          bg-zinc-950
+                          @error('password') border-red-500 @else border-zinc-700 @enderror">
             @error('password')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Password Confirmation Field -->
-        <div class="form-group">
-            <label for="password_confirmation">Confirm New Password</label>
-            <input type="password" class="form-control"
-                   id="password_confirmation" name="password_confirmation">
+        <!-- Password Confirmation -->
+        <div>
+            <label for="password_confirmation" class="mb-1 block text-sm font-medium text-zinc-300">
+                Confirm New Password
+            </label>
+            <input type="password"
+                   id="password_confirmation"
+                   name="password_confirmation"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
         </div>
 
-        <button type="submit" class="btn btn-primary">Update Profile</button>
-        <a href="{{ route('profile.show') }}" class="btn btn-secondary">Cancel</a>
+        <!-- Actions -->
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <a href="{{ route('profile.show') }}"
+               class="inline-flex justify-center rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
+                Update Profile
+            </button>
+        </div>
+
     </form>
 </div>
-
+@endsection
 @section('scripts')
 <script>
-    document.getElementById('add-link').addEventListener('click', function() {
-        const linksContainer = document.getElementById('links-list');
-        const linkItem = document.createElement('div');
-        linkItem.className = 'link-item';
-        linkItem.innerHTML = `
-            <input type="text" class="form-control link-input" name="links[]" placeholder="Enter link">
-            <button type="button" class="btn btn-danger remove-link">Remove</button>
-        `;
-        linksContainer.appendChild(linkItem);
-    });
+document.getElementById('add-link').addEventListener('click', function () {
+    const linksContainer = document.getElementById('links-list');
 
-    document.getElementById('links-container').addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-link')) {
-            e.target.parentElement.remove();
-        }
-    });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex gap-2';
+
+    wrapper.innerHTML = `
+        <input type="text"
+               name="links[]"
+               placeholder="Enter link"
+               class="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm">
+        <button type="button"
+                class="remove-link rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500">
+            Remove
+        </button>
+    `;
+
+    linksContainer.appendChild(wrapper);
+});
+
+document.getElementById('links-container').addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove-link')) {
+        e.target.parentElement.remove();
+    }
+});
 </script>
-@endsection
-@endsection
-
-@section('styles')
-<style>
-    /* Add any custom styles for the edit profile form here */
-    .link-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    .link-item .link-input {
-        flex: 1;
-        margin-right: 10px;
-    }
-</style>
 @endsection

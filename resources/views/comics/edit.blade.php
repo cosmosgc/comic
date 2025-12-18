@@ -3,90 +3,142 @@
 @section('title', 'Edit Comic')
 
 @section('content')
-<div class="container">
-    <h1>Edit Comic: {{ $comic->title }}</h1>
+<div class="mx-auto max-w-5xl px-4 py-6">
 
-    <form action="{{ route('comics.update', $comic->id) }}" method="POST" enctype="multipart/form-data">
+    <h1 class="mb-6 text-2xl font-bold">
+        Edit Comic: {{ $comic->title }}
+    </h1>
+
+    <!-- Edit comic form -->
+    <form action="{{ route('comics.update', $comic->id) }}"
+          method="POST"
+          enctype="multipart/form-data"
+          class="mb-10 space-y-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
         @csrf
         @method('PUT')
 
-        <!-- Comic Details -->
-        <div class="mb-4">
-            <label for="title" class="form-label">Title</label>
-            <input type="text" class="form-control" name="title" value="{{ $comic->title }}">
-        </div>
-        <div class="mb-4">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" name="description">{{ $comic->description }}</textarea>
-        </div>
-
-        <!-- Reorderable Pages -->
-        <div class="mb-4">
-            
-            <h3>Reorder Pages</h3>
-            <ul id="sortable" class="list-group">
-                @foreach($comic->pages as $page)
-                    <li class="list-group-item" data-id="{{ $page->id }}">
-                        <img src="{{ asset('storage/' . $page->image_path) }}" alt="Page {{ $page->page_number }}" style="width: 100px;">
-                        <span>Page {{ $page->page_number }}</span>
-                        <button type="button" class="btn btn-danger btn-sm float-right delete-page" data-id="{{ $page->id }}">Delete</button>
-                    </li>
-                @endforeach
-            </ul>
+        <!-- Title -->
+        <div>
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Title
+            </label>
+            <input type="text"
+                   name="title"
+                   value="{{ $comic->title }}"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
         </div>
 
-        <!-- Submit Button -->
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-    </form>
-    <!-- New page upload form -->
-    <h3>Add New Page</h3>
-    <form action="{{ route('pages.addPage', $comic->id) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        <div class="form-group">
-            <label for="image">Upload Page Image</label>
-            <input type="file" class="form-control" id="image" name="image" required>
-            <small class="form-text text-muted">
-                Accepted formats: JPG, JPEG, PNG. Maximum size: 10MB.
-            </small>
+        <!-- Description -->
+        <div>
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Description
+            </label>
+            <textarea name="description"
+                      rows="4"
+                      class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30">{{ $comic->description }}</textarea>
         </div>
-        <div class="form-group">
-            <button type="submit" class="btn btn-success">Upload Page</button>
-        </div>
+
+        <button type="submit"
+                class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
+                       hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+            Save Changes
+        </button>
     </form>
+
+    <!-- Reorder pages -->
+    <div class="mb-10">
+        <h2 class="mb-4 text-xl font-semibold">
+            Reorder Pages
+        </h2>
+
+        <ul id="sortable"
+            class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+
+            @foreach($comic->pages as $page)
+                <li data-id="{{ $page->id }}"
+                    class="group relative flex flex-col items-center rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow">
+
+                    <!-- Cover badge -->
+                    @if($comic->image_path === $page->image_path)
+                        <span class="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">
+                            Cover
+                        </span>
+                    @endif
+
+                    <img src="{{ asset('storage/' . $page->image_path) }}"
+                        alt="Page {{ $page->page_number }}"
+                        class="mb-2 w-full rounded-lg object-cover">
+
+                    <span class="mb-2 text-sm text-zinc-300">
+                        Page {{ $page->page_number }}
+                    </span>
+
+                    <div class="flex gap-2">
+                        <button type="button"
+                                data-page-id="{{ $page->id }}"
+                                class="set-cover rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white
+                                    hover:bg-indigo-500">
+                            Set as Cover
+                        </button>
+
+                        <button type="button"
+                                data-id="{{ $page->id }}"
+                                class="delete-page rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white
+                                    hover:bg-red-500">
+                            Delete
+                        </button>
+                    </div>
+                </li>
+
+            @endforeach
+
+        </ul>
+    </div>
+
+    <!-- Add new page -->
+    <div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
+        <h2 class="mb-4 text-xl font-semibold">
+            Add New Page
+        </h2>
+
+        <form action="{{ route('pages.addPage', $comic->id) }}"
+              method="POST"
+              enctype="multipart/form-data"
+              class="space-y-4">
+            @csrf
+
+            <div>
+                <label class="mb-1 block text-sm font-medium text-zinc-300">
+                    Upload Page Image
+                </label>
+                <input type="file"
+                       id="image"
+                       name="image"
+                       required
+                       accept="image/*"
+                       class="block w-full rounded-lg border border-zinc-700 bg-zinc-950 text-sm
+                              file:mr-4 file:rounded-md file:border-0
+                              file:bg-indigo-600 file:px-4 file:py-2
+                              file:text-sm file:font-medium file:text-white
+                              hover:file:bg-indigo-500">
+                <p class="mt-1 text-xs text-zinc-500">
+                    Accepted formats: JPG, JPEG, PNG. Maximum size: 10MB.
+                </p>
+            </div>
+
+            <button type="submit"
+                    class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white
+                           hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                Upload Page
+            </button>
+        </form>
+    </div>
 
 </div>
 @endsection
 
-@section('styles')
-
-<style>
-    .list-group{
-        display: -ms-flexbox;
-        display: flex;
-        -ms-flex-direction: column;
-        padding-left: 0;
-        margin-bottom: 0;
-        border-radius: .25rem;
-        flex-wrap: wrap;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 5px;
-    }
-    .list-group-item {
-        position: relative;
-        display: block;
-        padding: .75rem 1.25rem;
-        background-color: #536271;
-        border: 1px solid rgb(0 0 0);
-        border-radius: 10px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-</style>
-
-@endsection
 
 @section('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -141,4 +193,36 @@
         });
     });
 </script>
+<script>
+document.querySelectorAll('.set-cover').forEach(button => {
+    button.addEventListener('click', function () {
+        const pageId = this.getAttribute('data-page-id');
+
+        fetch('{{ route('comics.setCover', $comic->id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            },
+            body: JSON.stringify({ page_id: pageId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Optional: visual feedback
+                document.querySelectorAll('[data-page-id]').forEach(btn => {
+                    btn.closest('li').querySelector('.absolute')?.remove();
+                });
+
+                const badge = document.createElement('span');
+                badge.className = 'absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white';
+                badge.innerText = 'Cover';
+
+                this.closest('li').appendChild(badge);
+            }
+        });
+    });
+});
+</script>
+
 @endsection

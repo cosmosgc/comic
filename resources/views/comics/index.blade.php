@@ -5,11 +5,13 @@
 @section('meta')
     <meta name="description" content="Descubra os melhores comics da semana. Veja os comics mais populares e explore nossa coleção completa. Atualizações semanais e novos conteúdos sempre.">
     <meta name="keywords" content="comics, quadrinhos, leitura online, comics populares, melhores comics, comics da semana">
+
     <meta property="og:title" content="Comics Index - Descubra os Melhores Comics da Semana">
     <meta property="og:description" content="Veja os top comics da semana com os quadrinhos mais visualizados e explore nossa coleção completa.">
     <meta property="og:image" content="{{ asset('icon.jpg') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
+
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Comics Index - Descubra os Melhores Comics da Semana">
     <meta name="twitter:description" content="Veja os quadrinhos mais populares da semana e explore nossa vasta coleção.">
@@ -17,38 +19,51 @@
 @endsection
 
 @section('content')
-<div class="container">
-    <div class="hide-in-mobile">
-        <h3>Top comics da semana</h3>
-        <div class="comics-grid highlight-comics">
+<div class="mx-auto max-w-7xl px-4 py-6">
+
+    <!-- Top comics (desktop only) -->
+    <section class="mb-10 hidden md:block">
+        <h2 class="mb-4 text-xl font-semibold">
+            Top comics da semana
+        </h2>
+
+        <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($topComics as $comic)
-                <li>
-                    Views: {{ $comic->view_count }}
+                <li class="relative">
+                    <span class="absolute left-2 top-2 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white">
+                        👁 {{ $comic->view_count }}
+                    </span>
+
                     <x-comic-card :comic="$comic" :minified="true" />
                 </li>
             @endforeach
-        </div>
-    </div>
-    <h1>Comics</h1>
-    <div class="comics-grid">
-        @foreach ($comics as $comic)
-            <x-comic-card :comic="$comic" />
-        @endforeach
-    </div>
+        </ul>
+    </section>
 
-    <!-- Pagination links -->
-    <div class="pagination d-flex custom-pagination">
-        {{ $comics->links() }}
-    </div>
+    <!-- All comics -->
+    <section>
+        <h1 class="mb-6 text-2xl font-bold">
+            Comics
+        </h1>
+
+        <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            @foreach ($comics as $comic)
+                <x-comic-card :comic="$comic" />
+            @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex justify-center">
+            {{ $comics->links() }}
+        </div>
+    </section>
+
 </div>
 @endsection
 
+
 @section('styles')
 <style>
-    .pagination {
-    margin: 20px 0;
-    text-align: center;
-    }
 
     span.relative.z-0.inline-flex.rtl\:flex-row-reverse.shadow-sm.rounded-md {
         display: flex;
@@ -80,19 +95,10 @@
         transition: transform 0.5s ease, box-shadow 0.5s ease;
     }
     .progress-background {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 0;
         width: 100%;
-        background-color: #4caf50; /* default progress color */
-        transition: width 0.8s ease-in-out, height 0.8s ease-in-out;
-        z-index: -2; /* Place behind other content */
-        border-radius: 5px 0 0 5px; /* To match the comic card's border-radius */
-    }
-    .comic-card a, .comic-card p, .comic-card h2, .comic-card img {
-        position: relative;
-        z-index: 2; /* Ensure content stays above the progress background */
+        height: 100px;
+        background-color: #4caf50;
+        /* border-radius: 0 0 0.75rem 0.75rem; */
     }
 </style>
 @endsection
@@ -126,25 +132,24 @@
                 currentPage++;
             }
             pageCount = parseInt(pageCount); // Ensure pageCount is an integer
-
+            
             var progress = (pageCount > 0) ? (currentPage / pageCount) * 100 : 0;
             //console.log(pageCount, currentPage);
 
             // Get the progress background div and set the width
             var progressBackground = card.querySelector('.progress-background');
-            progressBackground.style.height = progress + '%';
+            progressBackground.style.height = `${progress}%`;
 
             // Optionally change the color of the background based on progress
             if (progress < 30) {
-                progressBackground.style.backgroundColor = '#ff6f61'; // Red
+                progressBackground.style.backgroundColor = '#ff6e6160'; // Red
             } else if (progress < 70) {
-                progressBackground.style.backgroundColor = '#ff3b93'; // Pink
+                progressBackground.style.backgroundColor = '#ff3b9360'; // Pink
             } else {
-                progressBackground.style.backgroundColor = '#2a1531'; // Dark purple
+                progressBackground.style.backgroundColor = '#2a153160'; // Dark purple
             }
         });
     }
-
 
     // Call the function after DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -152,3 +157,4 @@
     });
 </script>
 @endsection
+@push('scripts')

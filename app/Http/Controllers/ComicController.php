@@ -345,6 +345,24 @@ class ComicController extends Controller
 
         return response()->json(['success' => true]);
     }
+    public function setCover(Comic $comic, Request $request)
+    {
+        $request->validate([
+            'page_id' => 'required|exists:pages,id',
+        ]);
+
+        $page = Page::where('id', $request->page_id)
+            ->where('comic_id', $comic->id) // security check
+            ->firstOrFail();
+
+        $comic->image_path = $page->image_path;
+        $comic->save();
+
+        return response()->json([
+            'success' => true,
+            'image_path' => asset('storage/' . $comic->image_path),
+        ]);
+    }
 
 
 }

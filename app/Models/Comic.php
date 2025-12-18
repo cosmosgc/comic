@@ -67,5 +67,11 @@ class Comic extends Model
                     ->withPivot('order') // Include the 'order' column in the pivot table
                     ->orderBy('pivot_order'); // Order collections by the 'order' field in the pivot table
     }
+    public function setCoverFromPage(Page $page)
+    {
+        $this->image_path = $page->image_path;
+        $this->save();
+    }
+
 
 }
