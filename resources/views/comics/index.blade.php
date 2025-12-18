@@ -30,7 +30,7 @@
         <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ($topComics as $comic)
                 <li class="relative">
-                    <span class="absolute left-2 top-2 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white">
+                    <span class="absolute right-2 top-2 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white">
                         👁 {{ $comic->view_count }}
                     </span>
 

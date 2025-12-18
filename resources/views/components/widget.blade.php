@@ -3,7 +3,7 @@
 @endphp
 
 @if ($widget)
-    <div class="p-3 widget-box">
+    <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow">
         {!! $widget->content !!}
     </div>
 @endif
