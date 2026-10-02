@@ -6,4 +6,7 @@ echo Starting php artisan serve...
 start cmd /k "php artisan serve"
 
 echo Both tasks have been started.
-exit
+echo.
+echo Press any key to close this window...
+pause
+
