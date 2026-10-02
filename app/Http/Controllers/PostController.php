@@ -9,7 +9,10 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $posts = Post::with(['author', 'referencedPost'])->latest()->paginate(20);
+        $posts = Post::with(['author', 'referencedPost.author'])
+            ->withCount('quotes')
+            ->latest()
+            ->paginate(20);
 
         if ($request->wantsJson()) {
             return response()->json(['data' => $posts]);
@@ -22,35 +25,39 @@ class PostController extends Controller
     {
         $request->validate([
             'text' => 'nullable|string|max:280',
-            'media.*' => 'nullable|image|max:4048'
+            'media.*' => 'nullable|image|max:4048',
+            'referenced_post_id' => 'nullable|exists:posts,id',
         ]);
 
         // Certifica que pelo menos um dos campos (texto ou mídia) está preenchido
-        if (!$request->text && !$request->hasFile('media')) {
+        if (!$request->text && !$request->hasFile('media') && !$request->referenced_post_id) {
             return redirect()->back()->withErrors(['error' => 'O post precisa ter texto ou mídia.']);
         }
 
         $post = Post::create([
             'author_id' => auth()->id(),
-            'text' => $request->text
+            'text' => $request->text,
+            'referenced_post_id' => $request->referenced_post_id,
         ]);
 
         if ($request->hasFile('media')) {
             $directory = public_path('storage/posts_media');
-        
+
             // Ensure the directory exists
             if (!file_exists($directory)) {
                 mkdir($directory, 0777, true);
             }
-        
+
             $mediaPaths = [];
             foreach ($request->file('media') as $media) {
                 $filename = time() . '_' . $media->getClientOriginalName(); // Generate a unique filename
                 $media->move($directory, $filename); // Move file to the directory
                 $mediaPaths[] = 'storage/posts_media/' . $filename; // Store the relative path
             }
-        
-            $post->media = json_encode($mediaPaths);
+
+            // NOTE: assign the array, not a JSON string — the
+            // Post::$casts['media' => 'array'] handles encoding.
+            $post->media = $mediaPaths;
             $post->save();
         }
             

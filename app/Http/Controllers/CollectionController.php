@@ -32,7 +32,7 @@ class CollectionController extends Controller
         $query = Collection::query();
 
         // Check if there is a search query
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
 
             // Filter by name or description

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\Page;
-use App\Models\tag;
+use App\Models\Tag;
 use App\Models\Widget;
 
 use Illuminate\Http\Request;
@@ -84,7 +84,7 @@ class ComicController extends Controller
         $query = Comic::query();
 
         // 🔎 Text search
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
@@ -93,7 +93,7 @@ class ComicController extends Controller
         }
 
         // 🏷️ Tag filter
-        if ($request->has('tag')) {
+        if ($request->filled('tag')) {
             $tagName = $request->input('tag');
             $query->whereHas('tags', function ($q) use ($tagName) {
                 $q->where('name', $tagName);
@@ -125,18 +125,18 @@ class ComicController extends Controller
         $query = Comic::query();
 
         // Check if there is a search query
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
 
             // Filter by title or author
             $query->where('title', 'like', '%' . $search . '%')
                   ->orWhere('author', 'like', '%' . $search . '%');
         }
-        if ($request->has('tag')) {
-            $tag = Tag::where('name', $request->input('tag'))->first();
-            if ($tag) {
-                $comics = $tag->comics()->get();
-            }
+        if ($request->filled('tag')) {
+            $tagName = $request->input('tag');
+            $query->whereHas('tags', function ($q) use ($tagName) {
+                $q->where('name', $tagName);
+            });
         }
 
         // ⏳ Optional limit

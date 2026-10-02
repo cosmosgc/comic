@@ -1,3 +1,3 @@
-<div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow">
+<article class="border-b border-zinc-800 px-4 py-3 transition hover:bg-zinc-900/40">
     @include('posts.content', ['post' => $post])
-</div>
+</article>

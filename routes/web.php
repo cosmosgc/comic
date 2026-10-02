@@ -82,7 +82,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->comics();
     })->name('admin.comics');
 
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::name('admin.')->group(function () {
         Route::get('/widgets', [AdminController::class, 'widgets'])->name('widgets');
         Route::post('/widgets', [AdminController::class, 'storeWidget'])->name('widgets.store');
         Route::get('/widgets/{id}/edit', [AdminController::class, 'editWidget'])->name('widgets.edit');
@@ -97,7 +97,12 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         }
         return app(AnalyticsController::class)->referralAnalytics();
     })->name('analytics.referral');
-    Route::get('/phpinfo', [AdminController::class, 'phpinfo'])->name('phpinfo');
+    Route::get('/phpinfo', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->phpinfo();
+    })->name('phpinfo');
 
 });
 
@@ -114,9 +119,6 @@ Route::get('/comics/id/{id}', [ComicController::class, 'showById'])->name('comic
 Route::get('/comics/{slug}', [ComicController::class, 'showBySlug'])->name('comics.showBySlug');
 
 //////////////////////////////////////////////////////////////
-Route::get('comics/upload', [ComicController::class, 'create'])->name('comics.upload');
-Route::post('comics/store', [ComicController::class, 'store'])->name('comics.store');
-
 Route::get('/comics/{comic}/edit', [ComicController::class, 'edit'])->name('comics.edit');
 Route::put('/comics/{comic}/update', [ComicController::class, 'update'])->name('comics.update');
 
@@ -131,11 +133,14 @@ Route::post('/comics/{comic}/set-cover', [ComicController::class, 'setCover'])
 // Route to display all collections
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 
+// Route to display the form for creating a new collection
+// (must be registered before /collections/{collection}, otherwise
+// "create" is captured as the {collection} parameter and 404s)
+Route::get('/collections/create', [CollectionController::class, 'create'])->name('collections.create');
+
 // Route to display a specific collection by ID
 Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
-// Route to display the form for creating a new collection
-Route::get('/collections/create', [CollectionController::class, 'create'])->name('collections.create');
 // Route to store the new collection
 Route::post('/collections', [CollectionController::class, 'store'])->name('collections.store');
 // Route to display the edit form for a collection
@@ -146,8 +151,11 @@ Route::post('/collections/{collection}/sort/update', [CollectionController::clas
     ->name('collections.sort.update');
 
 //////////////////////////////////////////////////////////////
-// Route::get('/posts', [PostController::class, 'index']);
-Route::resource('posts', PostController::class);
+// Only index + store exist on PostController, so register just those:
+// index is public, store requires login (guests would otherwise 500 on
+// the non-nullable author_id column).
+Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
+Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('auth');
 //////////////////////////////////////////////////////////////
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

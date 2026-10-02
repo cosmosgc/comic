@@ -12,4 +12,5 @@ class Post extends Model
     protected $casts = ['media' => 'array'];
     public function author() { return $this->belongsTo(User::class, 'author_id'); }
     public function referencedPost() { return $this->belongsTo(Post::class, 'referenced_post_id'); }
+    public function quotes() { return $this->hasMany(Post::class, 'referenced_post_id'); }
 }
