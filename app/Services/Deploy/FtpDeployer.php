@@ -83,20 +83,56 @@ class FtpDeployer
     /**
      * Build the upload plan without transferring anything.
      *
-     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int}
+     * @param callable(int $dirsListed): void|null $onProgress heartbeat per listed dir.
+     * @param callable(): bool|null $shouldStop cancel hook (checked per dir).
+     * @param bool $includeVendor false to skip vendor/ (it rarely changes).
+     * @param bool $quick only consider files changed since the last success.
+     *
+     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int, vendor_skipped: int, vendor_forced: bool, quick: bool, since: int|null}
      */
-    public function plan(FtpTransport $ftp, bool $force = false): array
+    public function plan(FtpTransport $ftp, bool $force = false, ?callable $onProgress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false): array
     {
-        $remoteIndex = $this->remoteIndex($ftp);
-        $uploads = [];
-        $skipped = 0;
-        $excluded = 0;
+        // Quick mode narrows candidates to files changed since the last
+        // successful sync. Without a baseline it degrades to a full walk.
+        $since = $quick ? $this->lastSuccessAt() : null;
+        $quickActive = $quick && $since !== null;
 
+        // Filter first so the remote walk only covers dirs we may upload to
+        // (never the whole account home when FTP_ROOT is `/`).
+        $included = [];
+        $vendorFiles = [];
+        $excluded = 0;
+        $quickSkipped = 0;
         foreach ($this->localFiles() as $relative => $absolute) {
             if ($this->isExcluded($relative)) {
                 $excluded++;
                 continue;
             }
+            if (! $includeVendor && $this->isVendorPath($relative)) {
+                $vendorFiles[$relative] = $absolute;
+                continue;
+            }
+            if ($quickActive && filemtime($absolute) !== false && filemtime($absolute) <= $since) {
+                $quickSkipped++;
+                continue;
+            }
+            $included[$relative] = $absolute;
+        }
+
+        // Fresh-host guard: a host without vendor/ is a broken app, so vendor
+        // is pulled back in automatically (single cheap listing to check).
+        $vendorForced = false;
+        if (! $includeVendor && $vendorFiles !== [] && ! $this->remoteHasVendor($ftp)) {
+            $included += $vendorFiles;
+            $vendorFiles = [];
+            $vendorForced = true;
+        }
+
+        $remoteIndex = $this->remoteIndex($ftp, array_keys($included), $onProgress, $shouldStop);
+        $uploads = [];
+        $skipped = 0;
+
+        foreach ($included as $relative => $absolute) {
             $remote = $this->remotePath($relative);
             $size = filesize($absolute);
             $remoteEntry = $remoteIndex[$remote] ?? null;
@@ -108,17 +144,33 @@ class FtpDeployer
             }
         }
 
-        return ['uploads' => $uploads, 'skipped' => $skipped, 'excluded' => $excluded];
+        return [
+            'uploads' => $uploads,
+            'skipped' => $skipped,
+            'excluded' => $excluded,
+            'vendor_skipped' => count($vendorFiles),
+            'vendor_forced' => $vendorForced,
+            'quick' => $quickActive,
+            'quick_skipped' => $quickSkipped,
+            'since' => $since,
+        ];
     }
 
     /**
      * Verify, then upload. Aborts before any transfer when verification fails.
      *
      * @param callable(string): void|null $log
+     * @param array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int}|null $plan
+     *   Precomputed plan (avoids walking the remote tree twice).
+     * @param callable(int $done, int $total): void|null $progress called per uploaded file.
+     * @param callable(): bool|null $shouldStop cancel hook (checked per file).
+     * @param bool $includeVendor false to skip vendor/ (fresh hosts still get it).
+     * @param bool $quick only consider files changed since the last success.
+     * @param callable(string $remote, int $doneSoFar, int $total): void|null $onFile called before each upload.
      *
      * @return array{ok: bool, message: string, uploaded: int, skipped: int, log: list<string>}
      */
-    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null): array
+    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null, ?array $plan = null, ?callable $progress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, ?callable $onFile = null): array
     {
         $lines = [];
         $emit = function (string $line) use (&$lines, $log) {
@@ -147,8 +199,22 @@ class FtpDeployer
         }
         $emit('Verification passed: remote directory is this Laravel project.');
 
-        $plan = $this->plan($ftp, $force);
-        $emit(count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.');
+        $plan ??= $this->plan($ftp, $force, null, $shouldStop, $includeVendor, $quick);
+        if ($plan['quick'] ?? false) {
+            $since = isset($plan['since']) && $plan['since']
+                ? date('Y-m-d H:i', $plan['since'])
+                : 'unknown time';
+            $emit("Quick mode: only files changed since {$since} are considered (".($plan['quick_skipped'] ?? 0).' older files skipped).');
+        } elseif ($quick) {
+            $emit('Quick mode requested but no previous success found — full walk instead.');
+        }
+        if ($plan['vendor_forced'] ?? false) {
+            $emit('Remote has no vendor/ yet (fresh host) — including it automatically.');
+        }
+        $emit(
+            count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.'
+            .(($plan['vendor_skipped'] ?? 0) > 0 ? ' '.($plan['vendor_skipped'] ?? 0).' vendor skipped.' : '')
+        );
 
         if ($dryRun) {
             foreach (array_slice($plan['uploads'], 0, 50) as $item) {
@@ -168,10 +234,23 @@ class FtpDeployer
         }
 
         $uploaded = 0;
+        $total = count($plan['uploads']);
         foreach ($plan['uploads'] as $item) {
+            // Outside the try below: cancellation must bubble up, not be
+            // misreported as an upload failure (DeployCancelled extends
+            // DeployException).
+            if ($shouldStop !== null && $shouldStop()) {
+                throw new DeployCancelled("Cancelled by operator after {$uploaded} file(s). Re-run to resume.");
+            }
+            if ($onFile !== null) {
+                $onFile($item['remote'], $uploaded, $total);
+            }
             try {
                 $ftp->write($item['local'], $item['remote']);
                 $uploaded++;
+                if ($progress !== null) {
+                    $progress($uploaded, $total);
+                }
                 if ($uploaded <= 50 || $uploaded % 100 === 0) {
                     $emit('uploaded: '.ltrim($item['remote'], '/'));
                 }
@@ -199,33 +278,94 @@ class FtpDeployer
     }
 
     /**
-     * Map of remote path => entry for every file under the project root.
-     * Directories are listed lazily and cached per run.
+     * Map of remote path => entry, listing ONLY the directories that can
+     * receive uploads (parents of included local files). A full recursive
+     * walk would crawl the whole account home when FTP_ROOT is `/` and
+     * outlast the web request timeout.
      *
+     * @param list<string> $relatives included local paths (forward slashes)
+     * @param callable(int $dirsListed): void|null $onProgress
+     * @param callable(): bool|null $shouldStop
      * @return array<string, array{name: string, type: string, size: int, mtime: int|null}>
      */
-    protected function remoteIndex(FtpTransport $ftp): array
+    protected function remoteIndex(FtpTransport $ftp, array $relatives, ?callable $onProgress = null, ?callable $shouldStop = null): array
     {
-        $index = [];
-        $dirs = [$this->root() === '' ? '/' : $this->root()];
+        $root = $this->root() === '' ? '/' : $this->root();
+        $base = rtrim($root, '/');
+        $dirs = [$root => true];
+        foreach ($relatives as $relative) {
+            $dir = $this->parentDir($base.'/'.ltrim($relative, '/'));
+            while (true) {
+                $dirs[$dir] = true;
+                if ($dir === $root) {
+                    break;
+                }
+                $dir = $this->parentDir($dir);
+            }
+        }
 
-        while ($dirs !== []) {
-            $dir = array_pop($dirs);
+        $index = [];
+        $listed = 0;
+        foreach (array_keys($dirs) as $dir) {
+            if ($shouldStop !== null && $shouldStop()) {
+                throw new DeployCancelled('Cancelled by operator.');
+            }
             try {
                 $entries = $ftp->listDir($dir);
             } catch (DeployException) {
+                // Missing remote dir: its files simply count as missing.
                 continue;
+            } finally {
+                $listed++;
+                if ($onProgress !== null) {
+                    $onProgress($listed);
+                }
             }
             foreach ($entries as $entry) {
-                $full = rtrim($dir, '/').'/'.$entry['name'];
-                $index[$full] = $entry;
-                if ($entry['type'] === 'dir') {
-                    $dirs[] = $full;
-                }
+                $index[rtrim($dir, '/').'/'.$entry['name']] = $entry;
             }
         }
 
         return $index;
+    }
+
+    protected function isVendorPath(string $relative): bool
+    {
+        return $relative === 'vendor' || str_starts_with($relative, 'vendor/');
+    }
+
+    /**
+     * Single cheap listing: does the remote project already have vendor/?
+     */
+    protected function remoteHasVendor(FtpTransport $ftp): bool
+    {
+        $root = $this->root() === '' ? '/' : $this->root();
+        try {
+            foreach ($ftp->listDir(rtrim($root, '/').'/vendor') as $entry) {
+                if ($entry['name'] === 'autoload.php' && $entry['type'] === 'file') {
+                    return true;
+                }
+            }
+        } catch (DeployException) {
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Forward-slash parent dir (PHP dirname() returns `\` for root-level
+     * paths on Windows, which breaks FTP paths).
+     */
+    protected function parentDir(string $path): string
+    {
+        $pos = strrpos(rtrim($path, '/'), '/');
+
+        if ($pos === false || $pos === 0) {
+            return '/';
+        }
+
+        return substr($path, 0, $pos);
     }
 
     /**
@@ -298,6 +438,38 @@ class FtpDeployer
         $decoded = json_decode((string) file_get_contents($path), true);
 
         return is_array($decoded) ? (string) ($decoded['name'] ?? '') : '';
+    }
+
+    public function lastSuccessPath(): string
+    {
+        return $this->localRoot.'/storage/app/deploy/last-success.json';
+    }
+
+    /**
+     * Unix timestamp of the last successful real (non-dry) sync, if any.
+     */
+    public function lastSuccessAt(): ?int
+    {
+        $path = $this->lastSuccessPath();
+        if (! is_file($path)) {
+            return null;
+        }
+        $decoded = json_decode((string) file_get_contents($path), true);
+        $ts = is_array($decoded) ? (int) ($decoded['timestamp'] ?? 0) : 0;
+
+        return $ts > 0 ? $ts : null;
+    }
+
+    public function recordSuccess(int $uploaded): void
+    {
+        $path = $this->lastSuccessPath();
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+        file_put_contents($path, json_encode([
+            'timestamp' => time(),
+            'uploaded' => $uploaded,
+        ]));
     }
 
     /** @param list<string> $lines @return list<string> */

@@ -189,32 +189,98 @@ class MigrationInspector
         $database = $this->resolveDatabaseName($connection);
         $driver = config("database.connections.{$connection}.driver", $connection);
 
-        try {
-            // IMPORTANT: with no $schema argument MySQL compiles
-            // `table_schema NOT IN (system schemas)`, i.e. every user database
-            // on the whole server. Scope it to this project's database.
-            $schemaArg = in_array($driver, ['mysql', 'mariadb'], true) && $database !== ''
-                ? $database
-                : null;
+        // IMPORTANT: with no $schema argument MySQL compiles
+        // `table_schema NOT IN (system schemas)`, i.e. every user database
+        // on the whole server. Scope it to this project's database.
+        $schemaArg = in_array($driver, ['mysql', 'mariadb'], true) && $database !== ''
+            ? $database
+            : null;
 
+        try {
             $rows = Schema::connection($connection)->getTables($schemaArg);
+            $tables = $this->filterTableRows($rows, $schemaArg, $database);
+            if ($tables !== []) {
+                return $this->finalizeTables($tables);
+            }
+            // An empty result may mean a genuinely empty database — or an
+            // older framework whose query shape differs (e.g. Laravel 11
+            // omits the schema column). Confirm with a portable raw query
+            // before believing "empty".
         } catch (\Throwable) {
-            return [];
+            // Fall through to the raw query below.
         }
 
+        return $this->finalizeTables($this->rawTableListing($connection, $driver, $database));
+    }
+
+    /**
+     * Keep rows belonging to this project's database. Older frameworks
+     * omit the schema column even though their grammar already scopes the
+     * query — so only filter when the row actually carries a schema value.
+     *
+     * @param list<array{name: string, schema?: string|null}> $rows
+     * @return list<string>
+     */
+    protected function filterTableRows(array $rows, ?string $schemaArg, string $database): array
+    {
         $tables = [];
         foreach ($rows as $row) {
-            // Belt-and-braces: ignore rows from other schemas even if the
-            // grammar returned them.
-            if ($schemaArg !== null && ($row['schema'] ?? null) !== $database) {
+            $rowSchema = $row['schema'] ?? null;
+            if ($schemaArg !== null && $rowSchema !== null && $rowSchema !== $database) {
                 continue;
             }
             $tables[] = $row['name'];
         }
 
+        return array_values(array_unique($tables));
+    }
+
+    /**
+     * Portable fallback listing that does not depend on the framework's
+     * schema-inspection API shape (verified against MySQL 5.7 / Laravel 11).
+     *
+     * @return list<string>
+     */
+    protected function rawTableListing(string $connection, string $driver, string $database): array
+    {
+        try {
+            $db = DB::connection($connection);
+            if (in_array($driver, ['mysql', 'mariadb'], true)) {
+                $rows = $db->select(
+                    "select table_name as name from information_schema.tables ".
+                    "where table_schema = ? and table_type in ('BASE TABLE', 'SYSTEM VERSIONED') ".
+                    'order by table_name',
+                    [$database]
+                );
+                $tables = array_map(fn ($r) => is_array($r) ? $r['name'] : $r->name, $rows);
+            } elseif ($driver === 'sqlite') {
+                $rows = $db->select(
+                    "select name from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name"
+                );
+                $tables = array_map(fn ($r) => is_array($r) ? $r['name'] : $r->name, $rows);
+            } elseif ($driver === 'pgsql') {
+                $rows = $db->select(
+                    "select tablename as name from pg_tables where schemaname not in ('pg_catalog', 'information_schema') order by tablename"
+                );
+                $tables = array_map(fn ($r) => is_array($r) ? $r['name'] : $r->tablename, $rows);
+            } elseif ($driver === 'sqlsrv') {
+                $rows = $db->select('select name from sys.tables order by name');
+                $tables = array_map(fn ($r) => is_array($r) ? $r['name'] : $r->name, $rows);
+            } else {
+                return [];
+            }
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_values(array_unique($tables));
+    }
+
+    /** @param list<string> $tables @return list<string> */
+    protected function finalizeTables(array $tables): array
+    {
         // Exclude SQLite internals.
         $tables = array_values(array_unique(array_diff($tables, ['sqlite_sequence'])));
-
         sort($tables);
 
         return $tables;

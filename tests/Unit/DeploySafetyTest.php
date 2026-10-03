@@ -106,6 +106,299 @@ class DeploySafetyTest extends TestCase
         $this->assertSame(0, $second['uploaded'], 'Second run must skip unchanged files.');
     }
 
+    public function test_verify_never_requests_backslash_paths(): void
+    {
+        // Regression: PHP dirname() returns `\` for root-level paths on
+        // Windows, which URL-encodes to broken FTP paths like `/%5C/`.
+        $ftp = $this->seedValidRemote();
+
+        $this->deployer()->verify($ftp);
+
+        $this->assertNotEmpty($ftp->listed);
+        foreach ($ftp->listed as $path) {
+            $this->assertStringNotContainsString('\\', $path, "Backslash in FTP path: {$path}");
+            $this->assertStringNotContainsString('%5C', $path, "Encoded backslash in FTP path: {$path}");
+        }
+    }
+
+    public function test_verify_suggests_public_dir_candidate(): void
+    {
+        // Host keeps the web root in public_html instead of public/.
+        $ftp = new FakeFtpTransport;
+        $ftp->seedFile('/composer.json', json_encode(['name' => 'laravel/laravel']));
+        $ftp->seedFile('/artisan', '#!/usr/bin/env php artisan');
+        $ftp->seedFile('/bootstrap/app.php', '<?php // app');
+        $ftp->seedFile('/vendor/autoload.php', '<?php // autoload');
+        $ftp->seedFile('/public_html/index.php', '<?php require bootstrap/autoload');
+
+        $config = config('deploy');
+        $config['root'] = '/';
+        $config['public_dir'] = 'public';
+        $deployer = new FtpDeployer(new ProjectVerifier, $this->localProject(), $config);
+
+        $result = $deployer->verify($ftp);
+
+        $this->assertFalse($result['ok']);
+        $this->assertContains('public_html', $result['root_entries']);
+        $failed = array_filter($result['checks'], fn ($c) => ! $c['ok']);
+        $details = implode(' ', array_column($failed, 'detail'));
+        $this->assertStringContainsString('public_html', $details);
+    }
+
+    public function test_sync_reuses_precomputed_plan_without_rewalking(): void
+    {
+        $ftp = $this->seedValidRemote();
+        $deployer = $this->deployer();
+
+        $plan = $deployer->plan($ftp);
+        $this->assertGreaterThan(0, count($plan['uploads']));
+        $listedAfterPlan = count($ftp->listed);
+
+        $result = $deployer->sync($ftp, false, false, null, $plan);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(count($plan['uploads']), $result['uploaded']);
+        // Only the verification listings may add traffic (root + a few
+        // marker/public dirs) — never a second full tree walk.
+        $this->assertLessThanOrEqual(6, count($ftp->listed) - $listedAfterPlan);
+    }
+
+    public function test_sync_reports_progress_per_file(): void
+    {
+        $ftp = $this->seedValidRemote();
+        $deployer = $this->deployer();
+
+        $seen = [];
+        $totals = [];
+        $result = $deployer->sync(
+            $ftp, false, false, null, null,
+            function (int $done, int $total) use (&$seen, &$totals) {
+                $seen[] = $done;
+                $totals[] = $total;
+            }
+        );
+
+        $this->assertTrue($result['ok']);
+        $this->assertNotEmpty($seen);
+        $this->assertSame($result['uploaded'], end($seen));
+        $this->assertTrue(count(array_unique($totals)) === 1, 'Total must stay constant.');
+        $sorted = $seen;
+        sort($sorted);
+        $this->assertSame($sorted, $seen, 'Progress must increase monotonically.');
+    }
+
+    public function test_plan_reports_listing_progress(): void
+    {
+        $ftp = $this->seedValidRemote();
+
+        $heartbeats = [];
+        $this->deployer()->plan($ftp, false, function (int $dirs) use (&$heartbeats) {
+            $heartbeats[] = $dirs;
+        });
+
+        $this->assertNotEmpty($heartbeats);
+        $sorted = $heartbeats;
+        sort($sorted);
+        $this->assertSame($sorted, $heartbeats, 'Dir count must increase monotonically.');
+    }
+
+    public function test_plan_aborts_immediately_when_cancel_requested(): void
+    {
+        $ftp = $this->seedValidRemote();
+
+        try {
+            $this->deployer()->plan($ftp, false, null, fn () => true);
+            $this->fail('Expected DeployCancelled.');
+        } catch (\App\Services\Deploy\DeployCancelled $e) {
+            $this->assertSame([], $ftp->writes);
+            $this->assertSame([], $ftp->listed, 'No remote traffic after instant cancel.');
+        }
+    }
+
+    public function test_sync_stops_uploading_when_cancel_requested(): void
+    {
+        $ftp = $this->seedValidRemote();
+        // Force local files to differ so there is plenty to upload.
+        // (public/index.php keeps a bootstrap reference so verification passes.)
+        $ftp->seedFile('/bootstrap/app.php', 'stale');
+        $ftp->seedFile('/vendor/autoload.php', 'stale');
+        $ftp->seedFile('/public/index.php', '<?php // bootstrap entry');
+        $calls = 0;
+
+        // Precomputed plan: cancellation must hit the upload loop (planning
+        // already finished), leaving earlier files uploaded for resume.
+        $plan = $this->deployer()->plan($ftp);
+        $this->assertGreaterThanOrEqual(3, count($plan['uploads']));
+
+        try {
+            $this->deployer()->sync(
+                $ftp, false, false, null, $plan, null,
+                function () use (&$calls): bool {
+                    $calls++;
+
+                    return $calls > 2;
+                }
+            );
+            $this->fail('Expected DeployCancelled.');
+        } catch (\App\Services\Deploy\DeployCancelled $e) {
+            // Earlier files stay uploaded — re-running resumes incrementally.
+            $this->assertCount(2, $ftp->writes);
+        }
+    }
+
+    public function test_vendor_skipped_unless_requested(): void
+    {
+        $ftp = $this->seedValidRemote();
+
+        $without = $this->deployer()->plan($ftp, false, null, null, false);
+
+        $this->assertGreaterThan(0, $without['vendor_skipped']);
+        $this->assertFalse($without['vendor_forced']);
+        foreach ($without['uploads'] as $item) {
+            $this->assertStringNotContainsString('/vendor/', $item['remote']);
+        }
+
+        $with = $this->deployer()->plan($ftp, false, null, null, true);
+        $this->assertSame(0, $with['vendor_skipped']);
+    }
+
+    public function test_vendor_auto_included_on_fresh_host(): void
+    {
+        // Remote project without vendor/ yet: skipping it would break the app.
+        $ftp = new FakeFtpTransport;
+        $ftp->seedFile('/composer.json', json_encode(['name' => 'laravel/laravel']));
+        $ftp->seedFile('/artisan', '#!/usr/bin/env php artisan');
+        $ftp->seedFile('/bootstrap/app.php', '<?php // app');
+        $ftp->seedFile('/public/index.php', '<?php require bootstrap/autoload');
+
+        $plan = $this->deployer()->plan($ftp, false, null, null, false);
+
+        $this->assertTrue($plan['vendor_forced']);
+        $this->assertSame(0, $plan['vendor_skipped']);
+        $vendorUploads = array_filter(
+            $plan['uploads'],
+            fn ($item) => str_contains($item['remote'], '/vendor/')
+        );
+        $this->assertNotEmpty($vendorUploads);
+    }
+
+    public function test_curl_transport_reuses_and_resets_shared_handle(): void
+    {
+        if (! function_exists('curl_init')) {
+            $this->markTestSkipped('ext-curl missing.');
+        }
+        $transport = new \App\Services\Deploy\CurlFtpTransport([
+            'host' => 'example.invalid',
+            'username' => 'u',
+            'password' => 'p',
+        ]);
+        $ref = new \ReflectionClass($transport);
+        $shared = $ref->getMethod('sharedHandle');
+        $shared->setAccessible(true);
+        $reset = $ref->getMethod('resetSharedHandle');
+        $reset->setAccessible(true);
+        $prop = $ref->getProperty('sharedHandle');
+        $prop->setAccessible(true);
+
+        $this->assertNull($prop->getValue($transport));
+        $first = $shared->invoke($transport);
+        $this->assertSame($first, $shared->invoke($transport), 'Handle must be reused.');
+        $reset->invoke($transport);
+        $this->assertNull($prop->getValue($transport));
+        $this->assertNotSame($first, $shared->invoke($transport), 'Reset must drop the handle.');
+    }
+
+    public function test_quick_mode_only_considers_recently_changed_files(): void
+    {
+        $ftp = $this->seedValidRemote();
+        $root = $this->localProject();
+        $old = time() - 7200;
+        foreach (['composer.json', 'artisan', 'bootstrap/app.php', 'vendor/autoload.php', 'public/index.php', 'app/Models/Comic.php'] as $rel) {
+            touch($root.'/'.$rel, $old);
+        }
+        // One file changed after the last success.
+        file_put_contents($root.'/app/Models/Comic.php', '<?php // comic model v2');
+        $successFile = $root.'/storage/app/deploy/last-success.json';
+        if (! is_dir(dirname($successFile))) {
+            mkdir(dirname($successFile), 0777, true);
+        }
+        file_put_contents($successFile, json_encode(['timestamp' => time() - 3600, 'uploaded' => 1]));
+
+        $plan = $this->deployer()->plan($ftp, false, null, null, true, true);
+
+        $this->assertTrue($plan['quick']);
+        $this->assertGreaterThan(0, $plan['quick_skipped']);
+        $remotes = array_column($plan['uploads'], 'remote');
+        $this->assertContains('/app/Models/Comic.php', $remotes);
+        foreach ($remotes as $remote) {
+            $this->assertSame('/app/Models/Comic.php', $remote, 'Only the changed file may upload.');
+        }
+    }
+
+    public function test_quick_mode_without_baseline_falls_back_to_full(): void
+    {
+        $ftp = $this->seedValidRemote();
+
+        $plan = $this->deployer()->plan($ftp, false, null, null, true, true);
+
+        $this->assertFalse($plan['quick']);
+        $this->assertGreaterThan(0, count($plan['uploads']));
+    }
+
+    public function test_record_success_anchors_later_quick_runs(): void
+    {
+        $deployer = $this->deployer();
+
+        $this->assertNull($deployer->lastSuccessAt());
+        $deployer->recordSuccess(3);
+
+        $this->assertNotNull($deployer->lastSuccessAt());
+        $this->assertEqualsWithDelta(time(), $deployer->lastSuccessAt(), 5);
+    }
+
+    public function test_sync_reports_current_file_via_on_file_hook(): void
+    {
+        $ftp = $this->seedValidRemote();
+        $plan = $this->deployer()->plan($ftp);
+        $this->assertGreaterThan(0, count($plan['uploads']));
+
+        $seen = [];
+        $result = $this->deployer()->sync(
+            $ftp, false, false, null, $plan, null, null, true, false,
+            function (string $remote, int $doneSoFar, int $total) use (&$seen, $plan) {
+                $seen[] = [$remote, $doneSoFar, $total];
+            }
+        );
+
+        $this->assertTrue($result['ok']);
+        $this->assertCount(count($plan['uploads']), $seen);
+        // doneSoFar starts at 0 and total stays constant.
+        $this->assertSame(0, $seen[0][1]);
+        $this->assertSame(count($plan['uploads']), $seen[0][2]);
+        $this->assertSame(
+            array_column($plan['uploads'], 'remote'),
+            array_column($seen, 0),
+            'Hook must fire for every upload in plan order.'
+        );
+    }
+
+    public function test_curl_transport_references_only_defined_constants(): void
+    {
+        // The fake transport masks typos like CURLOPT_FTP_CREATE_DIRS
+        // (correct: CURLOPT_FTP_CREATE_MISSING_DIRS) — misspelled constants
+        // only blow up on a live run, so assert them statically here.
+        if (! function_exists('curl_init')) {
+            $this->markTestSkipped('ext-curl missing.');
+        }
+        $source = (string) file_get_contents(app_path('Services/Deploy/CurlFtpTransport.php'));
+        preg_match_all('/\b(CURLOPT_[A-Z_]+|CURLFTP_[A-Z_]+|CURLUSESSL_[A-Z_]+)\b/', $source, $matches);
+        $constants = array_unique($matches[1]);
+        $this->assertNotEmpty($constants);
+        foreach ($constants as $constant) {
+            $this->assertTrue(defined($constant), "Undefined curl constant referenced: {$constant}");
+        }
+    }
+
     public function test_dry_run_uploads_nothing(): void
     {
         $ftp = $this->seedValidRemote();

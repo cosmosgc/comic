@@ -1,5 +1,7 @@
 # TODO — Comic Features
 
+> Shipped changes move to [CHANGELOG.md](CHANGELOG.md) — add one entry per PR.
+
 > Current state (checked 2026-10-02): `Collection` model + `collections` / `collection_comic`
 > tables exist, but collections are **global** (no owner, no public/private, no favorites).
 > No `Comment` or `Like` models exist yet.

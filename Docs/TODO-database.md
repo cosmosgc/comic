@@ -1,5 +1,7 @@
 # TODO (database) — New features that need schema changes
 
+> Shipped changes move to [CHANGELOG.md](CHANGELOG.md) — add one entry per PR.
+
 > Already possible WITHOUT migrations (done): quote posts
 > (`posts.referenced_post_id` existed, now wired in `PostController@store`,
 > counted via `Post::quotes()` + `withCount`, shown in the feed).

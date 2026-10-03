@@ -139,6 +139,20 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->runDeploy($request, $deployer);
     })->name('admin.deploy.run');
 
+    Route::get('/deploy/status/{id}', function (string $id) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->deployStatus($id);
+    })->name('admin.deploy.status');
+
+    Route::post('/deploy/cancel/{id}', function (string $id) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->cancelDeploy($id);
+    })->name('admin.deploy.cancel');
+
 });
 
 

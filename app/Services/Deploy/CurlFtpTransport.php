@@ -15,9 +15,13 @@ class CurlFtpTransport implements FtpTransport
     protected bool $ssl;
     protected bool $verifySsl;
     protected int $timeout;
+    protected bool $freshConnection;
+
+    /** @var resource|\CurlHandle|null shared handle for connection reuse */
+    protected $sharedHandle = null;
 
     /**
-     * @param array{host: string, port?: int, username?: string, password?: string, ssl?: bool, verify_ssl?: bool, timeout?: int} $config
+     * @param array{host: string, port?: int, username?: string, password?: string, ssl?: bool, verify_ssl?: bool, timeout?: int, fresh_connection?: bool} $config
      *
      * @throws DeployException
      */
@@ -34,10 +38,16 @@ class CurlFtpTransport implements FtpTransport
         $this->ssl = (bool) ($config['ssl'] ?? true);
         $this->verifySsl = (bool) ($config['verify_ssl'] ?? false);
         $this->timeout = (int) ($config['timeout'] ?? 30);
+        $this->freshConnection = (bool) ($config['fresh_connection'] ?? false);
 
         if ($this->host === '') {
             throw new DeployException('FTP host is not configured (FTP_HOST).');
         }
+    }
+
+    public function __destruct()
+    {
+        $this->resetSharedHandle();
     }
 
     public function listDir(string $path): array
@@ -69,12 +79,18 @@ class CurlFtpTransport implements FtpTransport
         }
 
         try {
-            $ch = $this->baseHandle($this->encodePath($remotePath));
-            curl_setopt($ch, CURLOPT_UPLOAD, true);
-            curl_setopt($ch, CURLOPT_FTP_CREATE_DIRS, true);
-            curl_setopt($ch, CURLOPT_INFILE, $handle);
-            curl_setopt($ch, CURLOPT_INFILESIZE, filesize($localFile));
-            $this->execute($ch, "upload {$remotePath}");
+            $this->perform(
+                $this->encodePath($remotePath),
+                function ($ch) use ($handle, $localFile) {
+                    curl_setopt($ch, CURLOPT_UPLOAD, true);
+                    // Create missing remote dirs and retry (value 2; the newer
+                    // _ALL alias for this mode isn't defined in PHP).
+                    curl_setopt($ch, CURLOPT_FTP_CREATE_MISSING_DIRS, CURLFTP_CREATE_DIR_RETRY);
+                    curl_setopt($ch, CURLOPT_INFILE, $handle);
+                    curl_setopt($ch, CURLOPT_INFILESIZE, filesize($localFile));
+                },
+                "upload {$remotePath}"
+            );
         } finally {
             fclose($handle);
         }
@@ -92,11 +108,16 @@ class CurlFtpTransport implements FtpTransport
         $current = '';
         foreach ($segments as $segment) {
             $current .= '/'.$segment;
-            $ch = $this->baseHandle($this->encodePath('/'));
-            curl_setopt($ch, CURLOPT_POSTQUOTE, ["MKD {$current}"]);
-            curl_setopt($ch, CURLOPT_NOBODY, true);
+            $mkd = $current;
             try {
-                $this->execute($ch, "mkdir {$current}");
+                $this->perform(
+                    $this->encodePath('/'),
+                    function ($ch) use ($mkd) {
+                        curl_setopt($ch, CURLOPT_POSTQUOTE, ["MKD {$mkd}"]);
+                        curl_setopt($ch, CURLOPT_NOBODY, true);
+                    },
+                    "mkdir {$current}"
+                );
             } catch (DeployException $e) {
                 // 550 "already exists" (or similar) is fine — anything else aborts.
                 if (! $this->isAlreadyExistsError($e->getMessage())) {
@@ -111,20 +132,104 @@ class CurlFtpTransport implements FtpTransport
      */
     protected function request(string $encodedPath, ?string $command): string
     {
-        $ch = $this->baseHandle($encodedPath);
-        if ($command !== null) {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $command);
+        return $this->perform(
+            $encodedPath,
+            $command !== null
+                ? function ($ch) use ($command) {
+                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $command);
+                }
+                : null,
+            ($command ?? 'GET')." {$encodedPath}"
+        );
+    }
+
+    /**
+     * Run one FTP operation. Reuses a single connection for the whole run
+     * (a fresh TLS handshake per op costs ~1s); on any failure the shared
+     * connection is dropped and the op retried once on a fresh one.
+     *
+     * @param callable(resource|\CurlHandle): void|null $configure per-op options
+     */
+    protected function perform(string $encodedPath, ?callable $configure, string $action): string
+    {
+        if ($this->freshConnection) {
+            $ch = curl_init();
+            $this->setupHandle($ch, $encodedPath);
+            if ($configure !== null) {
+                $configure($ch);
+            }
+            try {
+                return $this->execute($ch, $action);
+            } finally {
+                $this->closeHandle($ch);
+            }
         }
 
-        return $this->execute($ch, ($command ?? 'GET')." {$encodedPath}");
+        try {
+            $ch = $this->sharedHandle();
+            $this->setupHandle($ch, $encodedPath);
+            if ($configure !== null) {
+                $configure($ch);
+            }
+
+            return $this->execute($ch, $action);
+        } catch (DeployConnectionException $e) {
+            // Possibly a poisoned persistent connection — retry once fresh.
+            // Plain FTP reply errors (missing file, …) are NOT retried: the
+            // connection is healthy, the answer is just "no".
+            $this->resetSharedHandle();
+            $ch = $this->sharedHandle();
+            $this->setupHandle($ch, $encodedPath);
+            if ($configure !== null) {
+                $configure($ch);
+            }
+
+            return $this->execute($ch, $action);
+        }
     }
 
     /**
      * @return resource|\CurlHandle
      */
-    protected function baseHandle(string $encodedPath)
+    protected function sharedHandle()
     {
-        $ch = curl_init("ftp://{$this->host}:{$this->port}{$encodedPath}");
+        if ($this->sharedHandle === null) {
+            $this->sharedHandle = curl_init();
+        }
+
+        return $this->sharedHandle;
+    }
+
+    protected function resetSharedHandle(): void
+    {
+        if ($this->sharedHandle !== null) {
+            $this->closeHandle($this->sharedHandle);
+            $this->sharedHandle = null;
+        }
+    }
+
+    /**
+     * @param resource|\CurlHandle $ch
+     */
+    protected function closeHandle($ch): void
+    {
+        try {
+            curl_close($ch);
+        } catch (\Throwable) {
+            // Already closed — nothing to do.
+        }
+    }
+
+    /**
+     * Apply URL + common options. Always called on a fresh or reset handle,
+     * so per-op options (UPLOAD, CUSTOMREQUEST, …) can never leak across ops.
+     *
+     * @param resource|\CurlHandle $ch
+     */
+    protected function setupHandle($ch, string $encodedPath): void
+    {
+        curl_reset($ch);
+        curl_setopt($ch, CURLOPT_URL, "ftp://{$this->host}:{$this->port}{$encodedPath}");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERPWD, "{$this->username}:{$this->password}");
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, min(15, $this->timeout));
@@ -137,8 +242,6 @@ class CurlFtpTransport implements FtpTransport
                 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             }
         }
-
-        return $ch;
     }
 
     /**
@@ -150,10 +253,9 @@ class CurlFtpTransport implements FtpTransport
         $errno = curl_errno($ch);
         $error = curl_error($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
 
         if ($body === false || $errno !== 0) {
-            throw new DeployException("FTP {$action} failed: {$error} (curl {$errno})");
+            throw new DeployConnectionException("FTP {$action} failed: {$error} (curl {$errno})");
         }
         // FTP 4xx/5xx replies surface as codes here for quote commands.
         if ($code >= 400) {

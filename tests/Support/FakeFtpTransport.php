@@ -16,6 +16,9 @@ class FakeFtpTransport implements FtpTransport
     /** @var list<string> */
     public array $writes = [];
 
+    /** @var list<string> raw paths requested via listDir (no normalization) */
+    public array $listed = [];
+
     public function seedFile(string $path, string $content = 'x'): void
     {
         $path = $this->normalize($path);
@@ -25,6 +28,7 @@ class FakeFtpTransport implements FtpTransport
 
     public function listDir(string $path): array
     {
+        $this->listed[] = $path;
         $path = $this->normalize($path);
         if ($path !== '/' && ! isset($this->nodes[$path])) {
             throw new DeployException("No such directory: {$path}");

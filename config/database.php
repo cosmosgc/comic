@@ -1,7 +1,21 @@
 <?php
 
 use Illuminate\Support\Str;
-use Pdo\Mysql;
+
+/*
+ * The `Pdo\Mysql::ATTR_SSL_CA` constant only exists on PHP 8.4+. Hosts
+ * still on 8.2/8.3 fatal with "Class Pdo\Mysql not found" when the stock
+ * Laravel 12 config references it, so resolve the option key safely:
+ * prefer Pdo\Mysql on 8.4+, fall back to PDO::MYSQL_ATTR_SSL_CA below
+ * that (not deprecated there), and to its raw value (1011) if neither
+ * exists (e.g. pdo_mysql missing entirely).
+ */
+$mysqlSslCa = 1011;
+if (PHP_VERSION_ID >= 80400 && defined('Pdo\Mysql::ATTR_SSL_CA')) {
+    $mysqlSslCa = \Pdo\Mysql::ATTR_SSL_CA;
+} elseif (defined('PDO::MYSQL_ATTR_SSL_CA')) {
+    $mysqlSslCa = \PDO::MYSQL_ATTR_SSL_CA;
+}
 
 return [
 
@@ -59,7 +73,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                $mysqlSslCa => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -79,7 +93,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                $mysqlSslCa => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 

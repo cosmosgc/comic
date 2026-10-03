@@ -29,6 +29,10 @@ return [
     'verify_ssl' => env('FTP_SSL_VERIFY', false),
     'timeout' => (int) env('FTP_TIMEOUT', 30),
 
+    // Reuses one FTPS connection per run (much faster). Set to true if a
+    // server misbehaves with reused connections.
+    'fresh_connection' => env('FTP_FRESH_CONNECTION', false),
+
     // Files/dirs that prove the remote directory is a Laravel project.
     'markers' => [
         'artisan',

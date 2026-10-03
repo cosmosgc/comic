@@ -11,7 +11,7 @@ class ProjectVerifier
     /**
      * @param list<string> $markers  e.g. ['artisan', 'composer.json', 'bootstrap/app.php']
      *
-     * @return array{ok: bool, checks: list<array{label: string, ok: bool, detail: string}>, remote_composer_name: string|null}
+     * @return array{ok: bool, checks: list<array{label: string, ok: bool, detail: string}>, remote_composer_name: string|null, root_entries: list<string>}
      */
     public function verify(FtpTransport $ftp, string $root, string $publicDir, array $markers, string $localComposerName): array
     {
@@ -34,14 +34,16 @@ class ProjectVerifier
         } catch (DeployException $e) {
             $fail('Remote directory is reachable', "Cannot list {$root}: {$e->getMessage()}");
 
-            return ['ok' => false, 'checks' => $checks, 'remote_composer_name' => null];
+            return ['ok' => false, 'checks' => $checks, 'remote_composer_name' => null, 'root_entries' => []];
         }
+
+        $rootNames = array_keys($rootEntries);
 
         // 2. Every marker must exist (nested markers checked via parent listing).
         $listingCache = [$root => $rootEntries];
         foreach ($markers as $marker) {
             $remote = $root.'/'.ltrim($marker, '/');
-            $parent = dirname($remote);
+            $parent = $this->parentDir($remote);
             $base = basename($remote);
             try {
                 if (! isset($listingCache[$parent])) {
@@ -78,7 +80,10 @@ class ProjectVerifier
         try {
             $publicEntries = $this->entryMap($ftp->listDir($publicPath));
             if (! isset($publicEntries['index.php'])) {
-                $fail("Web root has index.php ({$publicDir})", 'index.php missing — is FTP_PUBLIC_DIR correct?');
+                $fail(
+                    "Web root has index.php ({$publicDir})",
+                    'index.php missing — is FTP_PUBLIC_DIR correct?'.$this->suggestPublicDir($rootNames, $publicDir)
+                );
             } else {
                 $head = substr($ftp->read($publicPath.'/index.php'), 0, 2000);
                 if (str_contains($head, 'bootstrap') || str_contains($head, 'autoload')) {
@@ -88,7 +93,10 @@ class ProjectVerifier
                 }
             }
         } catch (DeployException $e) {
-            $fail("Web root reachable ({$publicDir})", "Cannot list {$publicPath}: {$e->getMessage()}");
+            $fail(
+                "Web root reachable ({$publicDir})",
+                "Cannot list {$publicPath}: {$e->getMessage()}.".$this->suggestPublicDir($rootNames, $publicDir)
+            );
         }
 
         // 5. Informational: remote .env exists (it is never overwritten).
@@ -102,7 +110,29 @@ class ProjectVerifier
             // Informational only; never fails the run.
         }
 
-        return ['ok' => $ok, 'checks' => $checks, 'remote_composer_name' => $remoteName];
+        return [
+            'ok' => $ok,
+            'checks' => $checks,
+            'remote_composer_name' => $remoteName,
+            'root_entries' => array_slice($rootNames, 0, 100),
+        ];
+    }
+
+    /**
+     * @param list<string> $rootNames
+     */
+    protected function suggestPublicDir(array $rootNames, string $configured): string
+    {
+        $candidates = ['public', 'public_html', 'www', 'htdocs', 'httpdocs', 'web'];
+        $found = array_values(array_intersect($candidates, $rootNames));
+        // Don't suggest what's already configured.
+        $found = array_values(array_diff($found, [trim($configured, '/')]));
+
+        if ($found === []) {
+            return ' Top-level folders here: '.implode(', ', array_slice($rootNames, 0, 20));
+        }
+
+        return ' Did you mean FTP_PUBLIC_DIR='.implode(' or ', $found).'?';
     }
 
     /**
@@ -117,5 +147,21 @@ class ProjectVerifier
         }
 
         return $map;
+    }
+
+    /**
+     * Forward-slash parent dir. PHP's dirname() returns a backslash for
+     * root-level paths on Windows (e.g. `\` for `/artisan`), which then
+     * gets URL-encoded into broken FTP paths like `/%5C/`.
+     */
+    protected function parentDir(string $path): string
+    {
+        $pos = strrpos(rtrim($path, '/'), '/');
+
+        if ($pos === false || $pos === 0) {
+            return '/';
+        }
+
+        return substr($path, 0, $pos);
     }
 }
