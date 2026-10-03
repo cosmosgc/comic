@@ -16,8 +16,9 @@ class PageController extends Controller
 
     public function store(Request $request, $comicId)
     {
+        // webp allowed: the upload page recompresses big images to webp in-browser.
         $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:'.(config('upload.max_file_mb', 10) * 1024),
         ]);
 
         $comic = Comic::findOrFail($comicId);
@@ -63,13 +64,14 @@ class PageController extends Controller
             'page_number' => $pageNumber,
         ]);
 
-        return redirect()->route('comics.show', $comic->id)->with('success', 'Page uploaded successfully.');
+        // NOTE: route is `comics.showById` — there is no `comics.show` route.
+        return redirect()->route('comics.showById', $comic->id)->with('success', 'Page uploaded successfully.');
     }
 
     public function addPage(Request $request, $comicId)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:10024',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:'.(config('upload.max_file_mb', 10) * 1024),
         ]);
         $comic = Comic::findOrFail($comicId);
         $pageNumber = $comic->pages()->count() + 1;

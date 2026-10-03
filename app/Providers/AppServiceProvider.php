@@ -11,7 +11,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\Deploy\FtpDeployer::class, function () {
+            return \App\Services\Deploy\FtpDeployer::fromConfig(
+                new \App\Services\Deploy\ProjectVerifier,
+                base_path()
+            );
+        });
     }
 
     /**

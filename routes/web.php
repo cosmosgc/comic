@@ -104,6 +104,41 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->phpinfo();
     })->name('phpinfo');
 
+    Route::get('/migrations', function (App\Services\MigrationInspector $inspector) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->migrations($inspector);
+    })->name('admin.migrations');
+
+    Route::post('/migrations/run', function (Request $request) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->runMigrations($request);
+    })->name('admin.migrations.run');
+
+    Route::get('/deploy', function (App\Services\Deploy\FtpDeployer $deployer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->deploy($deployer);
+    })->name('admin.deploy');
+
+    Route::post('/deploy/verify', function (App\Services\Deploy\FtpDeployer $deployer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->verifyDeploy($deployer);
+    })->name('admin.deploy.verify');
+
+    Route::post('/deploy/run', function (Request $request, App\Services\Deploy\FtpDeployer $deployer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->runDeploy($request, $deployer);
+    })->name('admin.deploy.run');
+
 });
 
 

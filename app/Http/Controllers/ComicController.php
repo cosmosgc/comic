@@ -157,12 +157,17 @@ class ComicController extends Controller
 
     public function store(Request $request)
     {
+        // Per-file cap (KB). The total-request cap is checked in the browser
+        // before sending; nginx rejects oversized bodies with 413 before
+        // Laravel ever runs, so this is the second line of defense (422).
+        $maxFileKb = config('upload.max_file_mb', 10) * 1024;
+
         $request->validate([
             'title' => 'required|string|max:255',
             'folder' => 'required_without:images|array',
-            'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp',
+            'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
             'images' => 'required_without:folder|array',
-            'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp',
+            'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
         ]);
         
 
@@ -263,6 +268,9 @@ class ComicController extends Controller
         return response()->json([
             'message' => 'Comic uploaded successfully.',
             'redirect' => route('comics.showBySlug', $comic->slug),
+            // Lets the upload page append remaining pages one small
+            // request at a time (avoids nginx 413 on huge single POSTs).
+            'comic_id' => $comic->id,
         ]);
         
     }

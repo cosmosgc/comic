@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Hash;
 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use App\Services\MigrationInspector;
+use App\Services\Deploy\CurlFtpTransport;
+use App\Services\Deploy\DeployException;
+use App\Services\Deploy\FtpDeployer;
+use Illuminate\Support\Facades\Artisan;
 
 class AdminController extends Controller
 {
@@ -153,6 +158,124 @@ class AdminController extends Controller
 
     public function phpinfo(){
         return view('admin.phpinfo');
+    }
+
+    /**
+     * Show migration status: files on disk vs. tables in the database.
+     * Works without console access — the Run button calls migrate via HTTP.
+     */
+    public function migrations(MigrationInspector $inspector)
+    {
+        $report = $inspector->report();
+
+        return view('admin.migrations', ['report' => $report]);
+    }
+
+    /**
+     * Run pending migrations from the admin panel (POST only).
+     */
+    public function runMigrations(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:migrate',
+        ]);
+
+        try {
+            $exitCode = Artisan::call('migrate', ['--force' => true]);
+            $output = Artisan::output() ?: '(no output)';
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.migrations')
+                ->with('error', 'Migration failed: '.$e->getMessage());
+        }
+
+        if ($exitCode !== 0) {
+            return redirect()->route('admin.migrations')
+                ->with('error', 'Migration exited with code '.$exitCode)
+                ->with('migrate_output', $output);
+        }
+
+        return redirect()->route('admin.migrations')
+            ->with('success', 'Migrations executed successfully.')
+            ->with('migrate_output', $output);
+    }
+
+    /**
+     * Show the FTP deploy panel (push code to the host without console).
+     * Deploys are meant to run from a local/staging copy of this panel.
+     */
+    public function deploy(FtpDeployer $deployer)
+    {
+        return view('admin.deploy', [
+            'configured' => $deployer->isConfigured(),
+            'missing' => $deployer->missingConfig(),
+            'curlAvailable' => function_exists('curl_init'),
+            'host' => config('deploy.host'),
+            'username' => config('deploy.username'),
+            'port' => config('deploy.port'),
+            'root' => config('deploy.root'),
+            'publicDir' => config('deploy.public_dir'),
+            'ssl' => (bool) config('deploy.ssl'),
+            'verification' => session('deploy_verify'),
+            'result' => session('deploy_result'),
+        ]);
+    }
+
+    /**
+     * Test the FTPS connection and verify the remote dir is this project.
+     */
+    public function verifyDeploy(FtpDeployer $deployer)
+    {
+        if (! $deployer->isConfigured()) {
+            return redirect()->route('admin.deploy')
+                ->with('error', 'FTP is not configured. Missing: '.implode(', ', $deployer->missingConfig()));
+        }
+
+        try {
+            $transport = new CurlFtpTransport(config('deploy'));
+            $verification = $deployer->verify($transport);
+        } catch (DeployException $e) {
+            return redirect()->route('admin.deploy')
+                ->with('error', 'Connection failed: '.$e->getMessage());
+        }
+
+        return redirect()->route('admin.deploy')
+            ->with('deploy_verify', $verification)
+            ->with($verification['ok'] ? 'success' : 'error',
+                $verification['ok']
+                    ? 'Verification passed — the remote directory is this Laravel project.'
+                    : 'Verification FAILED — the update will be refused until this is fixed.');
+    }
+
+    /**
+     * Run the FTP update. Always re-verifies first; aborts on any mismatch.
+     */
+    public function runDeploy(Request $request, FtpDeployer $deployer)
+    {
+        $request->validate([
+            'confirm' => 'accepted',
+        ]);
+        $dryRun = $request->boolean('dry_run');
+        $force = $request->boolean('force');
+
+        if (! $deployer->isConfigured()) {
+            return redirect()->route('admin.deploy')
+                ->with('error', 'FTP is not configured. Missing: '.implode(', ', $deployer->missingConfig()));
+        }
+
+        set_time_limit(0);
+
+        try {
+            $transport = new CurlFtpTransport(config('deploy'));
+            $result = $deployer->sync($transport, $force, $dryRun);
+        } catch (DeployException $e) {
+            return redirect()->route('admin.deploy')
+                ->with('error', 'Deploy failed: '.$e->getMessage());
+        }
+
+        return redirect()->route('admin.deploy')
+            ->with('deploy_verify', null)
+            ->with('deploy_result', $result)
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
     public function widgets()
     {

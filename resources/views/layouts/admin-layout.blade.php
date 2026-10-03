@@ -88,6 +88,16 @@
                                 <i class="fas fa-book"></i> Widgets
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.migrations') }}">
+                                <i class="fas fa-database"></i> Migrations
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.deploy') }}">
+                                <i class="fas fa-upload"></i> Deploy
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>
