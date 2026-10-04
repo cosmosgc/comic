@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\ChangelogController;
 
 Route::get('/', [ComicController::class, 'index'])->name('comics.index');
@@ -206,6 +207,8 @@ Route::post('/collections/{collection}/sort/update', [CollectionController::clas
 // the non-nullable author_id column).
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('auth');
+Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like')->middleware('auth');
+Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 //////////////////////////////////////////////////////////////
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

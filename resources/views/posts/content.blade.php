@@ -89,6 +89,61 @@
 
         {{-- Action bar --}}
         <div class="mt-2 flex max-w-md items-center justify-between text-zinc-500">
+            @php
+                $isLiked = in_array($post->id, $likedPostIds ?? []);
+                $likeCount = $post->liked_by_users_count ?? 0;
+            @endphp
+            {{-- Like: toggles without reload --}}
+            @once
+                <script>
+                    window.togglePostLike = async function (url, btn) {
+                        let res;
+                        try {
+                            res = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                },
+                            });
+                        } catch (e) {
+                            return;
+                        }
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const liked = !!data.liked;
+                        btn.dataset.liked = liked ? '1' : '0';
+                        btn.classList.toggle('text-rose-500', liked);
+                        btn.classList.toggle('hover:text-rose-500', !liked);
+                        btn.querySelector('.like-heart').setAttribute('fill', liked ? 'currentColor' : 'none');
+                        btn.querySelector('.like-count').textContent = data.count > 0 ? data.count : '';
+                    };
+                </script>
+            @endonce
+            @auth
+                <button type="button"
+                        onclick="togglePostLike('{{ route('posts.like', $post) }}', this)"
+                        title="Like"
+                        data-liked="{{ $isLiked ? '1' : '0' }}"
+                        class="group flex items-center gap-1 text-xs transition {{ $isLiked ? 'text-rose-500' : 'hover:text-rose-500' }}">
+                    <span class="rounded-full p-2 transition group-hover:bg-rose-500/10">
+                        <svg class="h-[18px] w-[18px] like-heart" fill="{{ $isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </span>
+                    <span class="like-count">{{ $likeCount > 0 ? $likeCount : '' }}</span>
+                </button>
+            @else
+                <span class="flex items-center gap-1 text-xs" title="{{ $likeCount }} likes">
+                    <span class="rounded-full p-2">
+                        <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </span>
+                    <span>{{ $likeCount > 0 ? $likeCount : '' }}</span>
+                </span>
+            @endauth
+
             {{-- Reply: prefills the composer --}}
             <button type="button"
                     onclick="replyToPost('{{ addslashes($handle) }}')"
@@ -100,6 +155,14 @@
                     </svg>
                 </span>
             </button>
+            {{-- Reply count opens the thread --}}
+            <a href="{{ route('posts.show', $post) }}"
+               title="Open thread"
+               class="text-xs transition hover:text-sky-500">
+                @if (($post->replies_count ?? 0) > 0)
+                    <span>{{ $post->replies_count }}</span>
+                @endif
+            </a>
 
             {{-- Repost (quote): prefills the composer with a quote --}}
             <button type="button"
@@ -116,10 +179,23 @@
                 @endif
             </button>
 
-            {{-- Share: copies the post text --}}
+            {{-- Views: counted once per viewer on the thread page --}}
+            <span class="flex items-center gap-1 text-xs" title="{{ $post->view_count ?? 0 }} views">
+                <span class="rounded-full p-2">
+                    <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </span>
+                @if (($post->view_count ?? 0) > 0)
+                    <span>{{ $post->view_count }}</span>
+                @endif
+            </span>
+
+            {{-- Share: copies the post permalink --}}
             <button type="button"
-                    onclick="sharePost(this, '{{ addslashes(Str::limit($post->text ?? 'photo', 120)) }}')"
-                    title="Copy text"
+                    onclick="sharePost(this, '{{ route('posts.show', $post) }}')"
+                    title="Copy link"
                     class="group flex items-center gap-1 text-xs transition hover:text-indigo-500">
                 <span class="rounded-full p-2 transition group-hover:bg-indigo-500/10">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
