@@ -39,7 +39,7 @@
                   action="{{ route('posts.store') }}"
                   enctype="multipart/form-data">
                 @csrf
-                <input type="hidden" name="parent_id" value="{{ $post->id }}">
+                <input type="hidden" name="parent_id" id="replyParentId" value="{{ $post->id }}">
 
                 <div class="flex gap-3">
                     <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : asset('default-avatar.png') }}"
@@ -47,6 +47,15 @@
                          class="h-10 w-10 shrink-0 rounded-full border border-zinc-800 object-cover">
 
                     <div class="min-w-0 flex-1">
+                        {{-- Reply target chip (shown when answering a nested reply) --}}
+                        <div id="replyTargetChip" class="mb-1 hidden items-center gap-2 text-sm">
+                            <span class="text-zinc-400">
+                                Replying to <span id="replyTargetHandle" class="font-semibold text-zinc-200"></span>
+                            </span>
+                            <button type="button" onclick="clearReplyTarget()"
+                                    class="rounded-full px-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200">✕</button>
+                        </div>
+
                         <textarea
                             name="text"
                             id="replyText"
@@ -90,7 +99,7 @@
     </div>
     <div>
         @forelse ($replies as $reply)
-            @include('posts.post', ['post' => $reply, 'likedPostIds' => $likedPostIds ?? []])
+            @include('posts.thread-node', ['node' => $reply, 'depth' => 1, 'likedPostIds' => $likedPostIds ?? []])
         @empty
             <div class="p-8 text-center text-zinc-500">
                 No replies yet. Be the first!
@@ -111,6 +120,10 @@
     // Thread-local fallbacks for the shared action bar. The feed defines
     // richer versions alongside its composer; here they target this page.
     const replyBox = document.getElementById('replyText');
+    const replyParentInput = document.getElementById('replyParentId');
+    const replyTargetChip = document.getElementById('replyTargetChip');
+    const replyTargetHandle = document.getElementById('replyTargetHandle');
+    const rootPostId = replyParentInput ? replyParentInput.value : null;
 
     function scrollToReplyBox() {
         if (!replyBox) return;
@@ -118,7 +131,34 @@
         replyBox.focus();
     }
 
-    window.replyToPost = window.replyToPost || function (handle) {
+    // Point the composer at a specific nested reply (Reddit-style).
+    window.replyToNode = function (id, handle) {
+        if (replyParentInput) replyParentInput.value = id;
+        if (replyTargetHandle) replyTargetHandle.textContent = handle;
+        if (replyTargetChip) {
+            replyTargetChip.classList.remove('hidden');
+            replyTargetChip.classList.add('flex');
+        }
+        if (replyBox && handle && !replyBox.value.includes(handle)) {
+            replyBox.value = (handle + ' ' + replyBox.value).trimEnd() + ' ';
+        }
+        scrollToReplyBox();
+    };
+
+    window.clearReplyTarget = function () {
+        if (replyParentInput && rootPostId) replyParentInput.value = rootPostId;
+        if (replyTargetChip) {
+            replyTargetChip.classList.add('hidden');
+            replyTargetChip.classList.remove('flex');
+        }
+    };
+
+    window.replyToPost = window.replyToPost || function (handle, id) {
+        // The shared action bar passes the post id; answer that node.
+        if (id) {
+            window.replyToNode(id, handle);
+            return;
+        }
         if (!replyBox || replyBox.value.includes(handle)) {
             scrollToReplyBox();
             return;

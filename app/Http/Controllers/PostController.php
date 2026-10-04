@@ -99,10 +99,26 @@ class PostController extends Controller
         }
         $post->loadCount($counts);
 
+        $with = ['author', 'referencedPost.author'];
+        $replyCounts = ['quotes', 'replies'];
+        if (Schema::hasTable('post_likes')) {
+            $replyCounts[] = 'likedByUsers';
+        }
+
         $replies = $post->replies()
-            ->with(['author', 'referencedPost.author'])
-            ->withCount('quotes')
+            ->with($with)
+            ->withCount($replyCounts)
+            ->latest()
             ->paginate(20);
+
+        // Nested levels for the Reddit-style tree (bounded: 3 full levels,
+        // then id-only stubs so deeper chains render a "continue" link).
+        // MySQL 5.7 hosts can't do recursive CTEs, hence fixed depth.
+        $replies->getCollection()->load([
+            'replies' => fn ($query) => $query->with($with)->withCount($replyCounts)->latest(),
+            'replies.replies' => fn ($query) => $query->with($with)->withCount($replyCounts)->latest(),
+            'replies.replies.replies:id,parent_id',
+        ]);
 
         // Ancestor chain, oldest first (depth-guarded against corrupt data).
         $ancestors = collect();

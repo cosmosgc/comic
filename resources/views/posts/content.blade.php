@@ -38,9 +38,11 @@
                 <span class="truncate font-bold text-zinc-500">{{ $authorName }}</span>
             @endif
             <span class="text-zinc-600">·</span>
-            <span class="shrink-0 text-zinc-500" title="{{ $post->created_at }}">
+            <a href="{{ route('posts.show', $post) }}"
+               class="shrink-0 text-zinc-500 transition hover:text-zinc-300 hover:underline"
+               title="{{ $post->created_at }}">
                 {{ $post->created_at?->diffForHumans() }}
-            </span>
+            </a>
         </div>
 
         {{-- Text --}}
@@ -144,9 +146,9 @@
                 </span>
             @endauth
 
-            {{-- Reply: prefills the composer --}}
+            {{-- Reply: prefills the composer (id lets thread pages target the node) --}}
             <button type="button"
-                    onclick="replyToPost('{{ addslashes($handle) }}')"
+                    onclick="replyToPost('{{ addslashes($handle) }}', {{ $post->id }})"
                     title="Reply"
                     class="group flex items-center gap-1 text-xs transition hover:text-sky-500">
                 <span class="rounded-full p-2 transition group-hover:bg-sky-500/10">
