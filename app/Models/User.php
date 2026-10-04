@@ -4,9 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'links',
         'admin_level',
     ];
+
     protected $casts = [
         'links' => 'array', // Ensure the links field is cast to an array
     ];
@@ -39,7 +41,6 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-
 
     /**
      * Get the attributes that should be cast.
@@ -57,5 +58,10 @@ class User extends Authenticatable
     public function comics(): HasMany
     {
         return $this->hasMany(Comic::class);
+    }
+
+    public function likedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'post_likes')->withTimestamps();
     }
 }
