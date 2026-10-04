@@ -2,31 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile.
      */
-    public function show()
+    public function show(Request $request)
     {
         $user = Auth::user(); // Authenticated user
-        $comics = $user->comics()->latest()->paginate(10); // Fetch and paginate comics
+        $tab = $request->input('tab') === 'likes' ? 'likes' : 'comics';
 
+        // Load only the active tab (pagination keeps ?tab via withQueryString).
+        $comics = $tab === 'comics' ? $user->comics()->latest()->paginate(10)->withQueryString() : null;
 
-        return view('profile.show', compact('user', 'comics'));
+        // Owners always see their own likes (newest liked first).
+        $likedPosts = $tab === 'likes' ? $this->likedPostsFor($user) : null;
+        $likedPostIds = $likedPosts ? $likedPosts->pluck('id')->all() : [];
+        $likesTab = Schema::hasTable('post_likes');
+
+        return view('profile.show', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'likesTab'));
     }
 
     public function publicShowById($id)
     {
         try {
             $user = User::findOrFail($id); // Attempt to fetch user by ID
-            $comics = $user->comics()->paginate(10); // Fetch user's comics
-            return view('profile.public', compact('user', 'comics')); // Return the public view with user and comics data
+            $comics = $user->comics()->paginate(10)->withQueryString(); // Fetch user's comics
+
+            return $this->publicProfile($user, $comics);
         } catch (\Exception $e) {
             return redirect('/'); // Redirect to the root if user not found
         }
@@ -36,11 +46,62 @@ class ProfileController extends Controller
     {
         try {
             $user = User::where('name', $username)->firstOrFail(); // Attempt to fetch user by username
-            $comics = $user->comics()->paginate(10); // Fetch user's comics
-            return view('profile.public', compact('user', 'comics')); // Return the public view with user and comics data
+            $comics = $user->comics()->paginate(10)->withQueryString(); // Fetch user's comics
+
+            return $this->publicProfile($user, $comics);
         } catch (\Exception $e) {
             return redirect('/'); // Redirect to the root if user not found
         }
+    }
+
+    /**
+     * Shared public profile rendering. Liked posts show only when the
+     * owner made them public; the viewer always sees filled hearts for
+     * their own likes.
+     */
+    protected function publicProfile(User $user, $comics)
+    {
+        $tab = request()->input('tab') === 'likes' ? 'likes' : 'comics';
+        $showLikes = (bool) $user->show_liked_posts;
+        $likesTab = $showLikes && Schema::hasTable('post_likes');
+        $likedPosts = ($tab === 'likes' && $likesTab)
+            ? $this->likedPostsFor($user)
+            : null;
+
+        $likedPostIds = [];
+        if (Auth::check() && Schema::hasTable('post_likes')) {
+            $likedPostIds = DB::table('post_likes')
+                ->where('user_id', Auth::id())
+                ->pluck('post_id')
+                ->all();
+        }
+
+        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab'));
+    }
+
+    /**
+     * Newest-liked-first posts with everything the post card needs.
+     * Null when the likes table doesn't exist yet (host without migration).
+     * Counts degrade gracefully on partially-migrated databases.
+     */
+    protected function likedPostsFor(User $user)
+    {
+        if (! Schema::hasTable('post_likes')) {
+            return null;
+        }
+
+        $counts = ['quotes'];
+        if (Schema::hasColumn('posts', 'parent_id')) {
+            $counts[] = 'replies';
+        }
+        $counts[] = 'likedByUsers';
+
+        return $user->likedPosts()
+            ->with(['author', 'referencedPost.author'])
+            ->withCount($counts)
+            ->orderByPivot('created_at', 'desc')
+            ->paginate(10, ['*'], 'likes_page')
+            ->withQueryString();
     }
 
     /**
@@ -49,6 +110,7 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
+
         return view('profile.edit', compact('user'));
     }
 
@@ -62,12 +124,13 @@ class ProfileController extends Controller
         // Validate the request data
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'avatar_image' => 'nullable|image|max:2048', // Limit to 2MB
             'bio' => 'nullable|string',
             'links' => 'nullable|array',
-            'links.*' => 'url', // Each link should be a valid URL
+            'links.*' => 'url', // Each link should be valid URL
+            'show_liked_posts' => 'nullable|boolean',
         ]);
 
         // Update user data
@@ -77,22 +140,22 @@ class ProfileController extends Controller
         // Handle avatar image upload
         if ($request->hasFile('avatar_image')) {
             $directory = public_path('storage/avatars');
-        
+
             // Ensure the directory exists
-            if (!file_exists($directory)) {
+            if (! file_exists($directory)) {
                 mkdir($directory, 0777, true);
             }
-        
+
             $avatar = $request->file('avatar_image');
-            $filename = time() . '_' . $avatar->getClientOriginalName(); // Generate a unique filename
+            $filename = time().'_'.$avatar->getClientOriginalName(); // Generate a unique filename
             $avatar->move($directory, $filename); // Move the file to the directory
-        
-            $user->avatar_image_path = 'storage/avatars/' . $filename; // Store the relative path
+
+            $user->avatar_image_path = 'storage/avatars/'.$filename; // Store the relative path
         }
-        
 
         $user->bio = $request->input('bio');
         $user->links = $request->input('links') ?: []; // Store links as an array
+        $user->show_liked_posts = $request->boolean('show_liked_posts');
 
         // Update password if provided
         if ($request->filled('password')) {
@@ -103,5 +166,4 @@ class ProfileController extends Controller
 
         return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
     }
-
 }

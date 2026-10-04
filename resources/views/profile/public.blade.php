@@ -63,29 +63,60 @@
         </div>
     </div>
 
-    <!-- Comics -->
-    <section>
-        <h3 class="mb-4 text-xl font-semibold">
-            Comics by {{ $user->name }}
-        </h3>
+    @php
+        $likesAvailable = !empty($showLikes) && $likedPosts !== null;
+        $activeTab = request()->input('tab') === 'likes' && $likesAvailable ? 'likes' : 'comics';
+    @endphp
+    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? $likesAvailable])
 
-        @if($comics->count())
-            <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                @foreach($comics as $comic)
-                    <x-comic-card :comic="$comic" />
-                @endforeach
-            </div>
+    @if ($activeTab === 'likes')
+        {{-- Liked posts are private unless the owner opted in --}}
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">
+                Posts liked by {{ $user->name }}
+            </h3>
 
-            <!-- Pagination -->
-            <div class="mt-8 flex justify-center">
-                {{ $comics->links() }}
-            </div>
-        @else
-            <p class="text-zinc-500">
-                This user has not uploaded any comics yet.
-            </p>
-        @endif
-    </section>
+            @if($likedPosts->count())
+                <div class="mx-auto max-w-xl border-x border-zinc-800">
+                    @foreach($likedPosts as $post)
+                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
+                    @endforeach
+                </div>
+
+                <div class="mx-auto mt-4 flex max-w-xl justify-center">
+                    {{ $likedPosts->links() }}
+                </div>
+            @else
+                <p class="text-zinc-500">
+                    No liked posts yet.
+                </p>
+            @endif
+        </section>
+    @else
+        <!-- Comics -->
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">
+                Comics by {{ $user->name }}
+            </h3>
+
+            @if($comics->count())
+                <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    @foreach($comics as $comic)
+                        <x-comic-card :comic="$comic" />
+                    @endforeach
+                </div>
+
+                <!-- Pagination -->
+                <div class="mt-8 flex justify-center">
+                    {{ $comics->links() }}
+                </div>
+            @else
+                <p class="text-zinc-500">
+                    This user has not uploaded any comics yet.
+                </p>
+            @endif
+        </section>
+    @endif
 
 </div>
 @endsection

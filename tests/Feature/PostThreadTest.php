@@ -95,7 +95,17 @@ class PostThreadTest extends TestCase
 
         $response = $this->get('/posts');
 
-        $response->assertOk();
+        $response->assertStatus(200);
         $response->assertSee(route('posts.show', $post), false);
+    }
+
+    public function test_whole_card_links_to_thread(): void
+    {
+        $post = Post::factory()->create();
+
+        $response = $this->get('/posts');
+
+        $response->assertStatus(200);
+        $response->assertSee('data-thread-url="'.route('posts.show', $post).'"', false);
     }
 }

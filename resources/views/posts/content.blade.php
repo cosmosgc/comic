@@ -209,3 +209,25 @@
         </div>
     </div>
 </div>
+
+@once
+    <script>
+        // Whole-card navigation: clicking a post opens its thread, except
+        // on interactive elements (buttons, links, inputs), text selections,
+        // modifier-clicks (kept as new-tab), and the already-open thread.
+        document.addEventListener('click', function (event) {
+            const card = event.target.closest('[data-thread-url]');
+            if (!card) return;
+            if (event.target.closest('a, button, input, textarea, select, form, label')) return;
+            const selection = window.getSelection();
+            if (selection && selection.toString().length > 0) return;
+            const url = card.getAttribute('data-thread-url');
+            if (!url || url === window.location.href) return;
+            if (event.ctrlKey || event.metaKey || event.button === 1) {
+                window.open(url, '_blank', 'noopener');
+                return;
+            }
+            window.location.href = url;
+        });
+    </script>
+@endonce

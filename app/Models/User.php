@@ -26,10 +26,12 @@ class User extends Authenticatable
         'bio',
         'links',
         'admin_level',
+        'show_liked_posts',
     ];
 
     protected $casts = [
         'links' => 'array', // Ensure the links field is cast to an array
+        'show_liked_posts' => 'boolean',
     ];
 
     /**

@@ -116,6 +116,24 @@
             </button>
         </div>
 
+        <!-- Liked posts visibility -->
+        <div class="flex items-start gap-3">
+            <input type="checkbox"
+                   id="show_liked_posts"
+                   name="show_liked_posts"
+                   value="1"
+                   @checked(old('show_liked_posts', $user->show_liked_posts))
+                   class="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/40">
+            <div>
+                <label for="show_liked_posts" class="block text-sm font-medium text-zinc-300">
+                    Show posts I've liked on my public profile
+                </label>
+                <p class="mt-0.5 text-xs text-zinc-500">
+                    Off by default. Only you can see your liked posts unless this is checked.
+                </p>
+            </div>
+        </div>
+
         <!-- Password -->
         <div>
             <label for="password" class="mb-1 block text-sm font-medium text-zinc-300">

@@ -59,64 +59,89 @@
         </div>
     </div>
 
-    <!-- Comics section -->
-    <div>
-        <h3 class="mb-4 text-xl font-semibold">Suas Comics</h3>
+    @php
+        $likesAvailable = $likedPosts !== null;
+        $activeTab = request()->input('tab') === 'likes' && $likesAvailable ? 'likes' : 'comics';
+    @endphp
+    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? true])
 
-        @if($comics->count())
-            <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    @if ($activeTab === 'likes')
+        <!-- Liked posts (always visible to the owner) -->
+        <div>
+            @if ($likedPosts->count())
+                <div class="mx-auto max-w-xl border-x border-zinc-800">
+                    @foreach ($likedPosts as $post)
+                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
+                    @endforeach
+                </div>
 
-                @foreach($comics as $comic)
-                    <div
-                        class="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow hover:border-indigo-500 transition">
+                <div class="mx-auto mt-4 flex max-w-xl justify-center">
+                    {{ $likedPosts->links() }}
+                </div>
+            @else
+                <p class="text-zinc-500">You have not liked any posts yet.</p>
+            @endif
+        </div>
+    @else
+        <!-- Comics section -->
+        <div>
+            <h3 class="mb-4 text-xl font-semibold">Suas Comics</h3>
 
-                        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}">
-                            <img
-                                src="{{ asset('storage/' . $comic->image_path) }}"
-                                alt="{{ $comic->title }}"
-                                class="mb-3 aspect-[3/4] w-full rounded-lg object-cover"
-                            />
-                        </a>
+            @if($comics->count())
+                <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
 
-                        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}">
-                            <h2 class="mb-1 text-lg font-semibold hover:text-indigo-400">
-                                {{ $comic->title }}
-                            </h2>
-                        </a>
+                    @foreach($comics as $comic)
+                        <div
+                            class="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow hover:border-indigo-500 transition">
 
-                        <p class="text-sm text-zinc-400">By {{ $comic->author }}</p>
+                            <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}">
+                                <img
+                                    src="{{ asset('storage/' . $comic->image_path) }}"
+                                    alt="{{ $comic->title }}"
+                                    class="mb-3 aspect-[3/4] w-full rounded-lg object-cover"
+                                />
+                            </a>
 
-                        <p class="mt-2 text-sm text-zinc-500">
-                            {{ Str::limit($comic->description, 100) }}
-                        </p>
+                            <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}">
+                                <h2 class="mb-1 text-lg font-semibold hover:text-indigo-400">
+                                    {{ $comic->title }}
+                                </h2>
+                            </a>
 
-                        <!-- Tags -->
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            @foreach ($comic->tags as $tag)
-                                <span
-                                    class="rounded-full bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-300">
-                                    {{ $tag->name }}
-                                </span>
-                            @endforeach
+                            <p class="text-sm text-zinc-400">By {{ $comic->author }}</p>
+
+                            <p class="mt-2 text-sm text-zinc-500">
+                                {{ Str::limit($comic->description, 100) }}
+                            </p>
+
+                            <!-- Tags -->
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach ($comic->tags as $tag)
+                                    <span
+                                        class="rounded-full bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-300">
+                                        {{ $tag->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+
+                            <a href="{{ route('comics.edit', ['comic' => $comic->id]) }}"
+                               class="mt-4 inline-flex justify-center rounded-lg border border-yellow-600 px-3 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-600/10">
+                                Edit Comic
+                            </a>
                         </div>
+                    @endforeach
 
-                        <a href="{{ route('comics.edit', ['comic' => $comic->id]) }}"
-                           class="mt-4 inline-flex justify-center rounded-lg border border-yellow-600 px-3 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-600/10">
-                            Edit Comic
-                        </a>
-                    </div>
-                @endforeach
+                </div>
 
-            </div>
-
-            <!-- Pagination -->
-            <div class="mt-6">
-                {{ $comics->links() }}
-            </div>
-        @else
-            <p class="text-zinc-500">You have not uploaded any comics yet.</p>
-        @endif
-    </div>
+                <!-- Pagination -->
+                <div class="mt-6">
+                    {{ $comics->links() }}
+                </div>
+            @else
+                <p class="text-zinc-500">You have not uploaded any comics yet.</p>
+            @endif
+        </div>
+    @endif
 
 </div>
 @endsection
