@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Site works on PHP 8.2/8.3 again (Pdo\\Mysql compat)",
+    "date": "2026-10-02",
+    "category": "Fixed",
+    "tags": ["hosting", "php", "database", "config"],
+    "summary": "Fixed the fatal Class Pdo\\Mysql not found that took the whole site down on hosts running PHP below 8.4.",
+    "body": "The stock Laravel 12 database config references Pdo\\Mysql::ATTR_SSL_CA, a constant that only exists on PHP 8.4+. Hosts on 8.2/8.3 crashed on every request with Class Pdo\\Mysql not found — a total outage that looked like a broken deployment but needed no vendor changes at all.\n\nconfig/database.php now resolves the SSL option key per PHP version (Pdo\\Mysql on 8.4+, PDO::MYSQL_ATTR_SSL_CA below, raw value as last resort), with the wrong branches never evaluating."
+}

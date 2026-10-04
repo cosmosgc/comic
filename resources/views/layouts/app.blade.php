@@ -55,6 +55,7 @@
 
                 <a href="{{ route('posts.index') }}" class="nav-link">Social</a>
                 <a href="{{ route('comics.index') }}" class="nav-link">Comics</a>
+                <a href="{{ route('changelog.index') }}" class="nav-link">What's new</a>
 
                 @auth
                     <a href="{{ route('comics.create') }}" class="nav-link">Upload</a>
@@ -113,6 +114,7 @@
         <div x-show="open" class="md:hidden py-4 space-y-3">
             <a href="{{ route('posts.index') }}" class="mobile-link">Social</a>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
+            <a href="{{ route('changelog.index') }}" class="mobile-link">What's new</a>
             @auth
                 <a href="{{ route('comics.create') }}" class="mobile-link">Upload</a>
                 <a href="{{ route('profile.show') }}" class="mobile-link">Profile</a>

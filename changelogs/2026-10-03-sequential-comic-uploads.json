@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Sequential comic uploads survive tiny server limits",
+    "date": "2026-10-03",
+    "category": "Fixed",
+    "tags": ["upload", "comics", "nginx", "413"],
+    "summary": "Uploading a comic no longer fails with HTTP 413: pages are sent one small request at a time with in-browser optimization.",
+    "body": "Uploading a 6.5 MB comic failed with 413 Request Entity Too Large because the whole comic went up in a single POST against nginx's 1 MB default — a limit that rejects the request before Laravel ever runs.\n\nThe upload page now sends pages sequentially (metadata + first page creates the comic, the rest append one by one), shows overall progress, and recompresses oversized images in the browser so each request stays around 900 KB. Partial failures are reported per page and the finished comic page opens so missing pages can be added there.\n\nServer side also raised: nginx client_max_body_size, PHP limits via public/.user.ini, and per-file validation with friendly errors."
+}

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "FTP deploys never touch user uploads",
+    "date": "2026-10-01",
+    "category": "Added",
+    "tags": ["deploy", "ftp", "uploads", "safety"],
+    "summary": "The FTP sync now excludes the whole public/storage subtree, skips symlinks, and enforces the exclusion even if config is edited.",
+    "body": "All user content — comic pages and covers, avatars, post media — lives under public/storage/, where local and remote legitimately differ. An early version of the deploy excludes only matched the literal path, so same-named local files could have overwritten host uploads.\n\nThe whole subtree is now excluded, symlinked directories are never traversed, and a hardcoded safety list in the deployer survives even a wiped config. Verified against the real project tree: 21 user files, 0 uploadable."
+}

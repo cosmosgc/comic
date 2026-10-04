@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Upload page shows sizes, totals, and per-image status",
+    "date": "2026-10-02",
+    "category": "Added",
+    "tags": ["upload", "ui", "comics"],
+    "summary": "The comic upload form now lists every selected image with size, dimensions, and status, plus live totals against the server limits.",
+    "body": "Before sending, uploaders had no idea how big their selection was — oversized batches died with a cryptic error after a long wait.\n\nThe form now shows a live panel: file count, total size, each image's dimensions, and a per-file status (ok, will be optimized, not an image). Individual files can be removed from the batch, and the submit button disables itself with the reason while anything is over a limit."
+}

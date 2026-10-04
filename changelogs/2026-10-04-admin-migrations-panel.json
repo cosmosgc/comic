@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Admin Migrations panel",
+    "date": "2026-10-04",
+    "category": "Added",
+    "tags": ["admin", "migrations", "database"],
+    "summary": "Compare migration files against the live database and run pending migrations from the admin panel — no console needed.",
+    "body": "Shared hosting usually means no SSH, so running php artisan migrate on the server was impossible.\n\nThe new System > Migrations page lists every migration file, which ones ran (with batch numbers), and compares expected tables and columns against what the database actually has. Missing tables, extra tables, and missing columns are flagged, and an admin can run pending migrations with one click.\n\nThis is also the page that diagnosed the production tracking drift (3 applied-but-unrecorded migrations) and the Laravel 11 vs 12 schema-shape difference."
+}

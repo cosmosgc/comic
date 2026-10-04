@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "FTP Deploy panel and deploy:host command",
+    "date": "2026-10-03",
+    "category": "Added",
+    "tags": ["admin", "deploy", "ftp", "hosting"],
+    "summary": "Push code to the hosting provider over FTPS from the admin panel or artisan, with verification, dry-run, cancel, and progress.",
+    "body": "Deploying used to mean manual FTP uploads. The new System > Deploy page (and the matching php artisan deploy:host command) syncs the project incrementally over FTPS.\n\nSafety first: before a single byte uploads, the tool verifies the remote directory really is this Laravel project (artisan, composer.json name match, web-root check) and refuses to run otherwise. .env, user uploads, and caches are never uploaded, and nothing is ever deleted remotely.\n\nBig syncs run as background workers with live progress (files sent, remaining, rate, ETA), can be cancelled mid-flight, skip vendor/ unless requested, and support quick mode (changed files only) alongside full verification walks."
+}

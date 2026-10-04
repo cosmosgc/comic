@@ -19,6 +19,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ChangelogController;
 
 Route::get('/', [ComicController::class, 'index'])->name('comics.index');
 
@@ -227,4 +228,9 @@ Route::middleware(['auth'])->group(function () {
 });
 Route::get('/profile/id/{id}', [ProfileController::class, 'publicShowById'])->name('profile.public.show.id');
 Route::get('/profile/{username}', [ProfileController::class, 'publicShowByUsername'])->name('profile.public.show.username');
+
+//////////////////////////////////////////////////////////////
+// What's new: file-per-PR changelog (changelogs/*.json).
+Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
+Route::get('/changelog/{entry}', [ChangelogController::class, 'show'])->name('changelog.show');
 

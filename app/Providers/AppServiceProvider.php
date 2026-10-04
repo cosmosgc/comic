@@ -17,6 +17,10 @@ class AppServiceProvider extends ServiceProvider
                 base_path()
             );
         });
+
+        $this->app->singleton(\App\Services\ChangelogReader::class, function () {
+            return \App\Services\ChangelogReader::fromDefaultPath();
+        });
     }
 
     /**
