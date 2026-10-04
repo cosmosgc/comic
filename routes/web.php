@@ -206,6 +206,7 @@ Route::post('/collections/{collection}/sort/update', [CollectionController::clas
 // the non-nullable author_id column).
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('auth');
+Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 //////////////////////////////////////////////////////////////
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
