@@ -82,6 +82,13 @@ class PostController extends Controller
      */
     public function show(Request $request, Post $post)
     {
+        // Count once per viewer (session), like Comic::$view_count per view.
+        $viewed = $request->session()->get('viewed_posts', []);
+        if (! in_array($post->id, $viewed)) {
+            $post->increment('view_count');
+            $request->session()->push('viewed_posts', $post->id);
+        }
+
         $post->load(['author', 'referencedPost.author', 'parent.author']);
 
         // Counts live here (not only in the feed) so this page works
