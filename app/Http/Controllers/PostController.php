@@ -10,7 +10,7 @@ class PostController extends Controller
     public function index(Request $request)
     {
         $posts = Post::with(['author', 'referencedPost.author'])
-            ->withCount('quotes')
+            ->withCount(['quotes', 'likedByUsers'])
             ->latest()
             ->paginate(20);
 
@@ -18,7 +18,12 @@ class PostController extends Controller
             return response()->json(['data' => $posts]);
         }
 
-        return view('posts.index', compact('posts'));
+        // Single query so the heart button knows the viewer's likes (no N+1).
+        $likedPostIds = $request->user()
+            ? $request->user()->likedPosts()->pluck('posts.id')->all()
+            : [];
+
+        return view('posts.index', compact('posts', 'likedPostIds'));
     }
 
     public function store(Request $request)
@@ -30,7 +35,7 @@ class PostController extends Controller
         ]);
 
         // Certifica que pelo menos um dos campos (texto ou mídia) está preenchido
-        if (!$request->text && !$request->hasFile('media') && !$request->referenced_post_id) {
+        if (! $request->text && ! $request->hasFile('media') && ! $request->referenced_post_id) {
             return redirect()->back()->withErrors(['error' => 'O post precisa ter texto ou mídia.']);
         }
 
@@ -44,15 +49,15 @@ class PostController extends Controller
             $directory = public_path('storage/posts_media');
 
             // Ensure the directory exists
-            if (!file_exists($directory)) {
+            if (! file_exists($directory)) {
                 mkdir($directory, 0777, true);
             }
 
             $mediaPaths = [];
             foreach ($request->file('media') as $media) {
-                $filename = time() . '_' . $media->getClientOriginalName(); // Generate a unique filename
+                $filename = time().'_'.$media->getClientOriginalName(); // Generate a unique filename
                 $media->move($directory, $filename); // Move file to the directory
-                $mediaPaths[] = 'storage/posts_media/' . $filename; // Store the relative path
+                $mediaPaths[] = 'storage/posts_media/'.$filename; // Store the relative path
             }
 
             // NOTE: assign the array, not a JSON string — the
@@ -60,10 +65,7 @@ class PostController extends Controller
             $post->media = $mediaPaths;
             $post->save();
         }
-            
 
         return redirect()->route('posts.index');
     }
-
-    
 }

@@ -89,6 +89,61 @@
 
         {{-- Action bar --}}
         <div class="mt-2 flex max-w-md items-center justify-between text-zinc-500">
+            @php
+                $isLiked = in_array($post->id, $likedPostIds ?? []);
+                $likeCount = $post->liked_by_users_count ?? 0;
+            @endphp
+            {{-- Like: toggles without reload --}}
+            @once
+                <script>
+                    window.togglePostLike = async function (url, btn) {
+                        let res;
+                        try {
+                            res = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                },
+                            });
+                        } catch (e) {
+                            return;
+                        }
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const liked = !!data.liked;
+                        btn.dataset.liked = liked ? '1' : '0';
+                        btn.classList.toggle('text-rose-500', liked);
+                        btn.classList.toggle('hover:text-rose-500', !liked);
+                        btn.querySelector('.like-heart').setAttribute('fill', liked ? 'currentColor' : 'none');
+                        btn.querySelector('.like-count').textContent = data.count > 0 ? data.count : '';
+                    };
+                </script>
+            @endonce
+            @auth
+                <button type="button"
+                        onclick="togglePostLike('{{ route('posts.like', $post) }}', this)"
+                        title="Like"
+                        data-liked="{{ $isLiked ? '1' : '0' }}"
+                        class="group flex items-center gap-1 text-xs transition {{ $isLiked ? 'text-rose-500' : 'hover:text-rose-500' }}">
+                    <span class="rounded-full p-2 transition group-hover:bg-rose-500/10">
+                        <svg class="h-[18px] w-[18px] like-heart" fill="{{ $isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </span>
+                    <span class="like-count">{{ $likeCount > 0 ? $likeCount : '' }}</span>
+                </button>
+            @else
+                <span class="flex items-center gap-1 text-xs" title="{{ $likeCount }} likes">
+                    <span class="rounded-full p-2">
+                        <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </span>
+                    <span>{{ $likeCount > 0 ? $likeCount : '' }}</span>
+                </span>
+            @endauth
+
             {{-- Reply: prefills the composer --}}
             <button type="button"
                     onclick="replyToPost('{{ addslashes($handle) }}')"

@@ -30,7 +30,7 @@
     {{-- Timeline --}}
     <div>
         @forelse ($posts as $post)
-            @include('posts.post', ['post' => $post])
+            @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
         @empty
             <div class="p-8 text-center text-zinc-500">
                 No posts yet. Be the first to post!
