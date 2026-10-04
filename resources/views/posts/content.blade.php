@@ -155,6 +155,14 @@
                     </svg>
                 </span>
             </button>
+            {{-- Reply count opens the thread --}}
+            <a href="{{ route('posts.show', $post) }}"
+               title="Open thread"
+               class="text-xs transition hover:text-sky-500">
+                @if (($post->replies_count ?? 0) > 0)
+                    <span>{{ $post->replies_count }}</span>
+                @endif
+            </a>
 
             {{-- Repost (quote): prefills the composer with a quote --}}
             <button type="button"
@@ -171,10 +179,10 @@
                 @endif
             </button>
 
-            {{-- Share: copies the post text --}}
+            {{-- Share: copies the post permalink --}}
             <button type="button"
-                    onclick="sharePost(this, '{{ addslashes(Str::limit($post->text ?? 'photo', 120)) }}')"
-                    title="Copy text"
+                    onclick="sharePost(this, '{{ route('posts.show', $post) }}')"
+                    title="Copy link"
                     class="group flex items-center gap-1 text-xs transition hover:text-indigo-500">
                 <span class="rounded-full p-2 transition group-hover:bg-indigo-500/10">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
