@@ -81,6 +81,26 @@
             </div>
         @endif
 
+        @if ($supportsOwnership)
+            <!-- Visibility -->
+            <div class="flex items-start gap-3">
+                <input type="checkbox"
+                       id="is_public"
+                       name="is_public"
+                       value="1"
+                       @checked(old('is_public', $collection->is_public))
+                       class="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/40">
+                <div>
+                    <label for="is_public" class="block text-sm font-medium text-zinc-300">
+                        Public collection
+                    </label>
+                    <p class="mt-0.5 text-xs text-zinc-500">
+                        Unchecked = only you can see it.
+                    </p>
+                </div>
+            </div>
+        @endif
+
         <!-- Current order (drag to reorder) -->
         <div>
             <h2 class="mb-1 text-sm font-medium text-zinc-300">Manage Comic Order</h2>

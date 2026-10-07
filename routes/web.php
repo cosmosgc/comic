@@ -260,6 +260,7 @@ Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit
 Route::put('/collections/{collection}', [CollectionController::class, 'update'])->middleware('auth')->name('collections.update');
 Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->middleware('auth')->name('collections.destroy');
 Route::post('/collections/{collection}/sort/update', [CollectionController::class, 'updateSortOrder'])
+    ->middleware('auth')
     ->name('collections.sort.update');
 // Quick-add + favorites (auth; ownership verified in the controller).
 Route::post('/collections/favorite/{comic}', [CollectionController::class, 'toggleFavorite'])->middleware('auth')->name('collections.favorite');

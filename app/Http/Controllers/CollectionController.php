@@ -222,7 +222,9 @@ class CollectionController extends Controller
 
         $attributes = $request->only('name', 'description');
         if ($this->ownsColumns()) {
-            $attributes['is_public'] = $request->boolean('is_public', true);
+            // Unchecked checkbox submits nothing, which means private.
+            // (Create defaults to public instead — see store().)
+            $attributes['is_public'] = $request->boolean('is_public');
         }
         $collection->update($attributes);
 
@@ -311,10 +313,22 @@ class CollectionController extends Controller
 
     public function updateSortOrder(Request $request, Collection $collection)
     {
+        $this->authorizeCollectionWrite($collection);
+
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:comics,id',
+        ]);
         $order = $request->input('order'); // Get the new order from the request
+
+        // Only reorder comics actually in this collection.
+        $memberIds = $collection->comics()->pluck('comics.id')->all();
 
         // Loop through the order and update each comic's position
         foreach ($order as $index => $comicId) {
+            if (! in_array((int) $comicId, $memberIds, true)) {
+                continue;
+            }
             // Assuming you have a many-to-many relationship defined in the Collection model
             $collection->comics()->updateExistingPivot($comicId, ['order' => $index]);
         }

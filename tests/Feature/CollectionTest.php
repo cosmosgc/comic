@@ -306,6 +306,72 @@ class CollectionTest extends TestCase
         $this->get("/collections/{$collection->id}")->assertOk();
     }
 
+    public function test_sort_order_requires_owner(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Sorted', 'user_id' => $owner->id, 'is_public' => true,
+        ]);
+        $first = Comic::factory()->create();
+        $second = Comic::factory()->create();
+        $collection->comics()->attach([$first->id => ['order' => 1], $second->id => ['order' => 2]]);
+
+        $this->postJson("/collections/{$collection->id}/sort/update", [
+            'order' => [$first->id, $second->id],
+        ])->assertUnauthorized();
+
+        $this->actingAs($stranger)->postJson("/collections/{$collection->id}/sort/update", [
+            'order' => [$first->id, $second->id],
+        ])->assertForbidden();
+
+        $this->actingAs($owner)->postJson("/collections/{$collection->id}/sort/update", [
+            'order' => [$second->id, $first->id],
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $ordered = $collection->fresh()->orderedComics()->pluck('comics.id')->all();
+        $this->assertSame([$second->id, $first->id], $ordered);
+    }
+
+    public function test_sort_order_rejects_unknown_comics(): void
+    {
+        $owner = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Sorted', 'user_id' => $owner->id, 'is_public' => true,
+        ]);
+        $member = Comic::factory()->create();
+        $outsider = Comic::factory()->create();
+        $collection->comics()->attach($member->id, ['order' => 1]);
+
+        // Unknown ids fail validation; non-members are skipped, never attached.
+        $this->actingAs($owner)->postJson("/collections/{$collection->id}/sort/update", [
+            'order' => [$member->id, 999999],
+        ])->assertUnprocessable();
+
+        $this->actingAs($owner)->postJson("/collections/{$collection->id}/sort/update", [
+            'order' => [$outsider->id, $member->id],
+        ])->assertOk();
+
+        $this->assertSame(
+            [$member->id],
+            $collection->fresh()->comics()->pluck('comics.id')->all()
+        );
+    }
+
+    public function test_owner_can_toggle_visibility(): void
+    {
+        $user = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Flip', 'user_id' => $user->id, 'is_public' => true,
+        ]);
+
+        $this->actingAs($user)->put("/collections/{$collection->id}", [
+            'name' => 'Flip',
+        ])->assertRedirect(route('collections.edit', $collection));
+
+        $this->assertFalse((bool) $collection->fresh()->is_public);
+    }
+
     public function test_owner_can_delete_collection(): void
     {
         $user = User::factory()->create();
