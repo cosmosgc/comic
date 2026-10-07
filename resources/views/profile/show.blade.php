@@ -94,6 +94,12 @@
                     @foreach ($collections as $collection)
                         <a href="{{ route('collections.show', $collection) }}"
                            class="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow transition hover:border-indigo-500">
+                            @php($cover = $collection->coverComic())
+                            @if ($cover && $cover->image_path)
+                                <img src="{{ asset('storage/' . $cover->image_path) }}"
+                                     alt="{{ $cover->title }} cover"
+                                     class="mb-3 aspect-[3/4] w-full rounded-lg object-cover">
+                            @endif
                             <h2 class="mb-1 text-lg font-semibold">
                                 {{ $collection->name }}
                                 @if ($collection->is_favorites)

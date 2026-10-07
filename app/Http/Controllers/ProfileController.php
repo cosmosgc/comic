@@ -95,7 +95,27 @@ class ProfileController extends Controller
                 ->all();
         }
 
-        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections'));
+        // Comic-card hearts/counts for the viewer (guarded like everywhere).
+        // The collections pivot predates all migrations, always countable.
+        $comicCounts = ['collections'];
+        if (Schema::hasTable('comments')) {
+            $comicCounts[] = 'comments';
+        }
+        if (Schema::hasTable('comic_user_likes')) {
+            $comicCounts[] = 'likedByUsers';
+        }
+        if ($comicCounts !== [] && $comics->count() > 0) {
+            $comics->getCollection()->loadCount($comicCounts);
+        }
+        $likedComicIds = [];
+        if (Auth::check() && Schema::hasTable('comic_user_likes')) {
+            $likedComicIds = DB::table('comic_user_likes')
+                ->where('user_id', Auth::id())
+                ->pluck('comic_id')
+                ->all();
+        }
+
+        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections', 'likedComicIds'));
     }
 
     /**

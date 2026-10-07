@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Collection;
 use App\Models\Comic;
 use App\Models\Comment;
 use App\Models\User;
@@ -152,6 +153,53 @@ class ComicEngagementTest extends TestCase
 
         $this->postJson("/comics/{$comic->id}/like")->assertUnauthorized();
         $this->assertDatabaseCount('comic_user_likes', 0);
+    }
+
+    public function test_index_exposes_viewer_likes_to_cards(): void
+    {
+        $user = User::factory()->create();
+        $comic = $this->makeComic();
+        $comic->likedByUsers()->attach($user->id);
+
+        $response = $this->actingAs($user)->get('/comics');
+
+        $response->assertOk();
+        $response->assertViewHas('likedComicIds', fn ($ids) => in_array($comic->id, $ids));
+    }
+
+    public function test_index_sort_liked_orders_by_likes(): void
+    {
+        $unliked = $this->makeComic();
+        $unliked->update(['title' => 'Zero Like Comic', 'slug' => 'zero-like-'.uniqid()]);
+        $mid = $this->makeComic();
+        $mid->update(['title' => 'One Like Comic', 'slug' => 'one-like-'.uniqid()]);
+        $top = $this->makeComic();
+        $top->update(['title' => 'Two Like Comic', 'slug' => 'two-like-'.uniqid()]);
+        $voters = User::factory()->count(2)->create();
+        $mid->likedByUsers()->attach($voters[0]->id);
+        $top->likedByUsers()->attach([$voters[0]->id, $voters[1]->id]);
+
+        $response = $this->get('/comics?sort=liked');
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Two Like Comic', 'One Like Comic', 'Zero Like Comic']);
+    }
+
+    public function test_index_invalid_sort_falls_back_to_latest(): void
+    {
+        $this->makeComic();
+
+        $this->get('/comics?sort=bogus')->assertOk();
+    }
+
+    public function test_cards_show_collection_counts(): void
+    {
+        $user = User::factory()->create();
+        $comic = $this->makeComic($user);
+        Collection::create(['name' => 'Holder', 'user_id' => $user->id, 'is_public' => true])
+            ->comics()->attach($comic->id);
+
+        $this->get('/comics')->assertOk()->assertSee('In 1 collection');
     }
 
     public function test_user_can_like_and_unlike_comic(): void

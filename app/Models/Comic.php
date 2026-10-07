@@ -67,9 +67,11 @@ class Comic extends Model
 
     public function collections()
     {
+        // NOTE: no default order here on purpose (see Collection::comics):
+        // orderBy('pivot_order') leaks into exists()/first()/count()
+        // subqueries where the alias isn't selected (MySQL 1054).
         return $this->belongsToMany(Collection::class)
-            ->withPivot('order') // Include the 'order' column in the pivot table
-            ->orderBy('pivot_order'); // Order comics by the 'order' field in the pivot table
+            ->withPivot('order'); // Include the 'order' column in the pivot table
     }
 
     public function comments()

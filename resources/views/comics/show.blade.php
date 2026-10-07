@@ -596,6 +596,8 @@ document.addEventListener('keyup', (e) => {
     const AUTH_ID = {{ auth()->check() ? auth()->id() : 'null' }};
     const CAN_MODERATE = {{ (auth()->check() && (int) auth()->user()->admin_level >= 1) ? 'true' : 'false' }};
     const URLS = {
+        // App base URL (respects subpath installs like /comic/public).
+        assetBase: '{{ url('/') }}',
         comments: '{{ route('comments.index', $comic) }}',
         commentBase: '{{ url('/comments') }}',
         like: '{{ route('comics.like', $comic) }}',
@@ -665,17 +667,20 @@ document.addEventListener('keyup', (e) => {
         const mine = AUTH_ID !== null && comment.user_id === AUTH_ID;
         const canEdit = mine || CAN_MODERATE;
         const name = esc(comment.user ? comment.user.name : 'Deleted user');
-        const avatar = comment.user && comment.user.avatar_image_path
-            ? '/' + comment.user.avatar_image_path.replace(/^\/+/, '')
-            : '/default-avatar.png';
+        const avatar = URLS.assetBase + '/' + (comment.user && comment.user.avatar_image_path
+            ? comment.user.avatar_image_path.replace(/^\/+/, '')
+            : 'default-avatar.png');
         const div = document.createElement('div');
         div.className = 'comment-item';
         div.dataset.commentId = comment.id;
         div.innerHTML =
-            '<div class="meta"><img src="' + esc(avatar) + '" alt="" style="width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:6px;">' +
-            '<strong>' + name + '</strong> · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
+            '<div style="display:flex;gap:10px;">' +
+            '<img src="' + esc(avatar) + '" alt="" style="width:44px;height:44px;border-radius:50%;flex-shrink:0;object-fit:cover;">' +
+            '<div style="flex:1;min-width:0;">' +
+            '<div class="meta"><strong>' + name + '</strong> · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
             '<div class="comment-body"></div>' +
-            (canEdit ? '<div class="actions"><button type="button" data-act="edit">Edit</button><button type="button" data-act="delete">Delete</button></div>' : '');
+            (canEdit ? '<div class="actions"><button type="button" data-act="edit">Edit</button><button type="button" data-act="delete">Delete</button></div>' : '') +
+            '</div></div>';
         div.querySelector('.comment-body').textContent = comment.body;
         if (canEdit) {
             div.querySelector('[data-act="edit"]').addEventListener('click', () => startEdit(div, comment));

@@ -77,6 +77,7 @@
         $cardLiked = in_array($comic->id, $likedComicIds ?? []);
         $cardLikeCount = $comic->liked_by_users_count ?? 0;
         $cardCommentCount = $comic->comments_count ?? 0;
+        $cardCollectionCount = $comic->collections_count ?? 0;
     @endphp
     <div class="mt-3 flex items-center justify-center gap-4 text-sm text-zinc-400">
         @auth
@@ -106,6 +107,12 @@
             </svg>
             <span>{{ $cardCommentCount > 0 ? $cardCommentCount : '' }}</span>
         </a>
+        <span class="inline-flex items-center gap-1" title="In {{ $cardCollectionCount }} collection(s)">
+            <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            </svg>
+            <span>{{ $cardCollectionCount > 0 ? $cardCollectionCount : '' }}</span>
+        </span>
     </div>
 
     <!-- Share -->

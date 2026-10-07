@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Collection;
 use App\Models\Comic;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CollectionController extends Controller
@@ -38,7 +39,7 @@ class CollectionController extends Controller
 
     public function index()
     {
-        $query = Collection::with('comics');
+        $query = Collection::with(['comics' => fn ($query) => $query->orderBy('collection_comic.order')]);
         if ($this->ownsColumns()) {
             // Public collections plus the viewer's own (private included).
             $query->where(function ($query) {
@@ -52,12 +53,56 @@ class CollectionController extends Controller
         return view('collections.index', ['collections' => $query->latest()->get()]);
     }
 
-    public function show(Collection $collection)
+    public function show(Request $request, Collection $collection)
     {
         $this->authorizeCollection($collection);
-        $collection->load('comics'); // Load related comics for the specific collection
 
-        return view('collections.show', compact('collection'));
+        $counts = [];
+        if (Schema::hasTable('comments')) {
+            $counts[] = 'comments';
+        }
+        if (Schema::hasTable('comic_user_likes')) {
+            $counts[] = 'likedByUsers';
+        }
+
+        $query = $collection->orderedComics()->withCount($counts);
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $query->where(function ($query) use ($search) {
+                $query->where('title', 'like', "%{$search}%")
+                    ->orWhere('author', 'like', "%{$search}%");
+            });
+        }
+        $comics = $query->paginate(12)->withQueryString();
+
+        $likedComicIds = [];
+        if (auth()->check() && Schema::hasTable('comic_user_likes')) {
+            $likedComicIds = DB::table('comic_user_likes')
+                ->where('user_id', auth()->id())
+                ->pluck('comic_id')
+                ->all();
+        }
+
+        $canEdit = $this->canWrite($collection);
+        $searchTerm = $request->input('q', '');
+
+        return view('collections.show', compact('collection', 'comics', 'likedComicIds', 'canEdit', 'searchTerm'));
+    }
+
+    /**
+     * Whether the viewer may see edit/delete controls (no abort).
+     */
+    protected function canWrite(Collection $collection): bool
+    {
+        if (! $this->ownsColumns() || $collection->user_id === null) {
+            return auth()->check();
+        }
+        $user = auth()->user();
+        if ($user === null) {
+            return false;
+        }
+
+        return $collection->isOwnedBy($user) || (int) $user->admin_level >= 1;
     }
 
     /**
@@ -115,7 +160,7 @@ class CollectionController extends Controller
         }
 
         // Get the results
-        $collections = $query->with('comics')->get(); // Include comics if needed
+        $collections = $query->with(['comics' => fn ($query) => $query->orderBy('collection_comic.order')])->get(); // Include comics if needed
 
         // Return the collections as a JSON response
         return response()->json($collections);
@@ -158,10 +203,11 @@ class CollectionController extends Controller
     public function edit(Collection $collection)
     {
         $this->authorizeCollectionWrite($collection);
-        $comics = Comic::all(); // Fetch all comics for selection
-        $selectedComics = $collection->comics; // Comics already in the collection
+        $comics = Comic::orderBy('title')->get(['id', 'title', 'image_path']); // Fetch all comics for selection
+        $selectedComics = $collection->orderedComics()->get(); // Comics already in the collection
+        $supportsOwnership = $this->ownsColumns();
 
-        return view('collections.edit', compact('collection', 'comics', 'selectedComics'));
+        return view('collections.edit', compact('collection', 'comics', 'selectedComics', 'supportsOwnership'));
     }
 
     public function update(Request $request, Collection $collection)
@@ -180,8 +226,11 @@ class CollectionController extends Controller
         }
         $collection->update($attributes);
 
-        // Sync comics with new selections
-        $collection->comics()->sync($request->comics);
+        // Sync comics only when the picker submitted (an absent key means
+        // "untouched" — syncing null would wipe the whole collection).
+        if ($request->has('comics')) {
+            $collection->comics()->sync($request->input('comics', []));
+        }
 
         return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.');
     }

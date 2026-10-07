@@ -244,7 +244,7 @@ Route::get('/collections', [CollectionController::class, 'index'])->name('collec
 // Route to display the form for creating a new collection
 // (must be registered before /collections/{collection}, otherwise
 // "create" is captured as the {collection} parameter and 404s)
-Route::get('/collections/create', [CollectionController::class, 'create'])->name('collections.create');
+Route::get('/collections/create', [CollectionController::class, 'create'])->middleware('auth')->name('collections.create');
 
 // Viewer's own collections for the quick-add dropdown (must precede {collection}).
 Route::get('/collections/mine', [CollectionController::class, 'mine'])->middleware('auth')->name('collections.mine');
@@ -253,11 +253,11 @@ Route::get('/collections/mine', [CollectionController::class, 'mine'])->middlewa
 Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
 // Route to store the new collection
-Route::post('/collections', [CollectionController::class, 'store'])->name('collections.store');
+Route::post('/collections', [CollectionController::class, 'store'])->middleware('auth')->name('collections.store');
 // Route to display the edit form for a collection
-Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
+Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->middleware('auth')->name('collections.edit');
 // Route to update the collection
-Route::put('/collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
+Route::put('/collections/{collection}', [CollectionController::class, 'update'])->middleware('auth')->name('collections.update');
 Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->middleware('auth')->name('collections.destroy');
 Route::post('/collections/{collection}/sort/update', [CollectionController::class, 'updateSortOrder'])
     ->name('collections.sort.update');

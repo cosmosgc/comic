@@ -15,17 +15,29 @@ use Illuminate\View\View;
 
 class ComicController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // Counts degrade gracefully on hosts missing the new tables.
-        $counts = [];
+        // The collections pivot predates all migrations, always countable.
+        $counts = ['collections'];
         if (Schema::hasTable('comments')) {
             $counts[] = 'comments';
         }
         if (Schema::hasTable('comic_user_likes')) {
             $counts[] = 'likedByUsers';
         }
-        $comics = Comic::withCount($counts)->orderBy('created_at', 'desc')->paginate(10);
+
+        // ?sort=liked ranks by likes (needs the likes table, else latest).
+        $sort = $request->input('sort') === 'liked' && in_array('likedByUsers', $counts, true)
+            ? 'liked'
+            : 'latest';
+        $query = Comic::withCount($counts);
+        if ($sort === 'liked') {
+            $query->orderByDesc('liked_by_users_count')->orderByDesc('created_at');
+        } else {
+            $query->orderByDesc('created_at');
+        }
+        $comics = $query->paginate(10)->withQueryString();
         $likedComicIds = Auth::check() && Schema::hasTable('comic_user_likes')
             ? DB::table('comic_user_likes')->where('user_id', Auth::id())->pluck('comic_id')->all()
             : [];
@@ -37,13 +49,14 @@ class ComicController extends Controller
             ->pluck('id');
 
         // Now get top 5 from those 20 by view_count
-        $topComics = Comic::whereIn('id', $lastTwentyIds)
+        $topComics = Comic::withCount($counts)
+            ->whereIn('id', $lastTwentyIds)
             ->orderBy('view_count', 'desc')
             ->take(5)
             ->get();
         $tags = Tag::all();
 
-        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds'));
+        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort'));
     }
 
     public function create()
@@ -151,12 +164,23 @@ class ComicController extends Controller
             });
         }
 
-        $comics = $query->paginate(10);
+        $searchCounts = [];
+        if (Schema::hasTable('comments')) {
+            $searchCounts[] = 'comments';
+        }
+        if (Schema::hasTable('comic_user_likes')) {
+            $searchCounts[] = 'likedByUsers';
+        }
+        $comics = $query->withCount($searchCounts)->paginate(10);
+        $likedComicIds = Auth::check() && Schema::hasTable('comic_user_likes')
+            ? DB::table('comic_user_likes')->where('user_id', Auth::id())->pluck('comic_id')->all()
+            : [];
 
         return view('comics.search', [
             'comics' => $comics,
             'searchTerm' => $request->input('search'),
             'tagTerm' => $request->input('tag'),
+            'likedComicIds' => $likedComicIds,
         ]);
     }
 

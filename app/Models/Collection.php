@@ -24,9 +24,38 @@ class Collection extends Model
 
     public function comics()
     {
+        // NOTE: no default order here on purpose. An orderBy('pivot_order')
+        // on the relation leaks into exists()/first()/count() subqueries,
+        // where the pivot alias is not selected — MySQL throws 1054
+        // (SQLite silently tolerates it, so tests can't catch it).
+        // Order explicitly at display sites via orderedComics().
         return $this->belongsToMany(Comic::class)
-            ->withPivot('order') // Include the 'order' column in the pivot table
-            ->orderBy('pivot_order'); // Order comics by the 'order' field in the pivot table
+            ->withPivot('order'); // Include the 'order' column in the pivot table
+    }
+
+    /**
+     * Comics in manual sort order (for display).
+     */
+    public function orderedComics()
+    {
+        return $this->comics()->orderBy('collection_comic.order');
+    }
+
+    protected ?Comic $coverCache = null;
+
+    protected bool $coverLoaded = false;
+
+    /**
+     * First comic's cover for cards and headers (memoized per instance).
+     */
+    public function coverComic(): ?Comic
+    {
+        if (! $this->coverLoaded) {
+            $this->coverCache = $this->orderedComics()->first();
+            $this->coverLoaded = true;
+        }
+
+        return $this->coverCache;
     }
 
     public function user()
