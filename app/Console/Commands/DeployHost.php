@@ -6,7 +6,6 @@ use App\Services\Deploy\CurlFtpTransport;
 use App\Services\Deploy\DeployCancelled;
 use App\Services\Deploy\DeployException;
 use App\Services\Deploy\FtpDeployer;
-use App\Services\Deploy\ProjectVerifier;
 use Illuminate\Console\Command;
 
 class DeployHost extends Command
@@ -19,6 +18,7 @@ class DeployHost extends Command
         {--with-vendor : Include vendor/ (it is skipped by default; fresh hosts get it automatically)}
         {--quick : Only consider files changed since the last success (default when a success exists)}
         {--full : Full walk, ignoring the last success (default on first run)}
+        {--skip-build : Skip public/build/ compiled assets}
         {--status-file= : Write progress JSON to this file (used for background runs)}';
 
     protected $description = 'Sync this project to the hosting provider over FTPS (no console needed on the host)';
@@ -82,7 +82,7 @@ class DeployHost extends Command
 
                 return is_array($current) && ($current['cancel_requested'] ?? false) === true;
             }
-            : null;
+        : null;
         $heartbeats = 0;
         $plan = $deployer->plan(
             $transport,
@@ -99,7 +99,8 @@ class DeployHost extends Command
             },
             $shouldStop,
             $includeVendor,
-            $quick
+            $quick,
+            ! (bool) $this->option('skip-build')
         );
         $this->info(count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.');
         if ($statusFile) {
@@ -113,6 +114,7 @@ class DeployHost extends Command
                     'vendor_skipped' => $plan['vendor_skipped'] ?? 0,
                     'quick_skipped' => $plan['quick_skipped'] ?? 0,
                     'quick' => $plan['quick'] ?? false,
+                    'build_skipped' => $plan['build_skipped'] ?? 0,
                 ],
                 'message' => count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged.',
             ], true);
@@ -179,7 +181,8 @@ class DeployHost extends Command
                             'total' => $total,
                         ]);
                     }
-                }
+                },
+                ! (bool) $this->option('skip-build')
             );
         } catch (DeployCancelled $e) {
             if ($statusFile) {

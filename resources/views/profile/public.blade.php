@@ -65,9 +65,13 @@
 
     @php
         $likesAvailable = !empty($showLikes) && $likedPosts !== null;
-        $activeTab = request()->input('tab') === 'likes' && $likesAvailable ? 'likes' : 'comics';
+        $collectionsAvailable = $collections !== null;
+        $requestedTab = request()->input('tab');
+        $activeTab = ($requestedTab === 'likes' && $likesAvailable) || ($requestedTab === 'collections' && $collectionsAvailable)
+            ? $requestedTab
+            : 'comics';
     @endphp
-    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? $likesAvailable])
+    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? $likesAvailable, 'collectionsTab' => $collectionsTab ?? false])
 
     @if ($activeTab === 'likes')
         {{-- Liked posts are private unless the owner opted in --}}
@@ -89,6 +93,40 @@
             @else
                 <p class="text-zinc-500">
                     No liked posts yet.
+                </p>
+            @endif
+        </section>
+    @elseif ($activeTab === 'collections')
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">
+                Collections by {{ $user->name }}
+            </h3>
+
+            @if($collections->count())
+                <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    @foreach($collections as $collection)
+                        <a href="{{ route('collections.show', $collection) }}"
+                           class="flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow transition hover:border-indigo-500">
+                            <h2 class="mb-1 text-lg font-semibold">
+                                {{ $collection->name }}
+                                @if (! $collection->is_public)
+                                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">private</span>
+                                @endif
+                            </h2>
+                            @if ($collection->description)
+                                <p class="text-sm text-zinc-500">{{ Str::limit($collection->description, 100) }}</p>
+                            @endif
+                            <p class="mt-2 text-xs text-zinc-500">{{ $collection->comics_count }} comic(s)</p>
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="mt-6">
+                    {{ $collections->links() }}
+                </div>
+            @else
+                <p class="text-zinc-500">
+                    No collections yet.
                 </p>
             @endif
         </section>

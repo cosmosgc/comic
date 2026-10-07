@@ -43,8 +43,8 @@
         @endif
 
         @if ($changelog['body'] !== '')
-            <div class="mb-4 text-sm leading-relaxed text-zinc-300">
-                {!! nl2br(e($changelog['body'])) !!}
+            <div class="markdown-body mb-4">
+                {!! \App\Support\Markdown::toHtml($changelog['body']) !!}
             </div>
         @endif
 

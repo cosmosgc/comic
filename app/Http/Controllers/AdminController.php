@@ -1,21 +1,23 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\User;
-use App\Models\Comic;
+
 use App\Models\Analytics;
+use App\Models\Comic;
+use App\Models\User;
 use App\Models\Widget;
-
-use Illuminate\Support\Facades\Hash;
-
-
-use Illuminate\Http\Request;
-use Carbon\Carbon;
-use App\Services\MigrationInspector;
+use App\Services\ChangelogReader;
+use App\Services\ChangelogWriter;
 use App\Services\Deploy\CurlFtpTransport;
 use App\Services\Deploy\DeployException;
 use App\Services\Deploy\FtpDeployer;
+use App\Services\GithubPullRequests;
+use App\Services\MigrationInspector;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -47,6 +49,7 @@ class AdminController extends Controller
             if ($endDate) {
                 $query->whereDate('created_at', '<=', $endDate);
             }
+
             return $query;
         };
 
@@ -54,22 +57,22 @@ class AdminController extends Controller
         $dailyAnalytics = $applyDateRange(
             Analytics::selectRaw('DATE(created_at) as date, COUNT(*) as count')
         )->groupBy('date')
-        ->orderBy('date')
-        ->get();
+            ->orderBy('date')
+            ->get();
 
         // Monthly Page Views
         $monthlyAnalytics = $applyDateRange(
             Analytics::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as date, COUNT(*) as count')
         )->groupBy('date')
-        ->orderBy('date')
-        ->get();
+            ->orderBy('date')
+            ->get();
 
         // Annual Page Views
         $annualAnalytics = $applyDateRange(
             Analytics::selectRaw('YEAR(created_at) as date, COUNT(*) as count')
         )->groupBy('date')
-        ->orderBy('date')
-        ->get();
+            ->orderBy('date')
+            ->get();
 
         return view('admin.dashboard', [
             'totalUsers' => $totalUsers,
@@ -77,14 +80,12 @@ class AdminController extends Controller
             'analyticsData' => [
                 'daily' => $dailyAnalytics,
                 'monthly' => $monthlyAnalytics,
-                'annual' => $annualAnalytics
+                'annual' => $annualAnalytics,
             ],
             'startDate' => $startDate,
-            'endDate' => $endDate
+            'endDate' => $endDate,
         ]);
     }
-
-
 
     public function analytics()
     {
@@ -93,7 +94,6 @@ class AdminController extends Controller
         return view('admin.analytics', compact('analytics'));
     }
 
-    
     public function comics()
     {
         $comics = Comic::all(); // Fetch all users
@@ -101,16 +101,17 @@ class AdminController extends Controller
         return view('admin.comics', compact('comics'));
     }
 
-
     public function users()
     {
         $users = User::all(); // Fetch all users
 
         return view('admin.users', compact('users'));
     }
+
     public function editUser($id)
     {
         $user = User::findOrFail($id);
+
         return view('admin.users.edit', compact('user'));
     }
 
@@ -121,10 +122,9 @@ class AdminController extends Controller
         // Validate input
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$id,
             'password' => 'nullable|string|min:8|confirmed',
         ]);
-
 
         // Update user data
         $user->name = $request->input('name');
@@ -134,7 +134,6 @@ class AdminController extends Controller
         if ($request->filled('password')) {
             $user->password = Hash::make($request->input('password'));
         }
-
 
         $user->save();
 
@@ -156,7 +155,8 @@ class AdminController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
 
-    public function phpinfo(){
+    public function phpinfo()
+    {
         return view('admin.phpinfo');
     }
 
@@ -296,6 +296,9 @@ class AdminController extends Controller
         $dryRun = $request->boolean('dry_run');
         $force = $request->boolean('force');
         $includeVendor = $request->boolean('include_vendor');
+        // Checkbox is checked by default in the form; unchecked submits
+        // nothing, which excludes the compiled assets (PHP-only change).
+        $includeBuild = $request->boolean('include_build');
         // Quick when possible, full on first run or when forced.
         $full = $request->boolean('full');
         $quick = ! $full && ($request->boolean('quick') || $deployer->lastSuccessAt() !== null);
@@ -311,7 +314,7 @@ class AdminController extends Controller
                 ->with('error', 'A deploy is already running — follow its progress below.');
         }
 
-        $id = \Illuminate\Support\Str::random(32);
+        $id = Str::random(32);
         $statusPath = $this->deployStatusPath($id);
         if (! is_dir(dirname($statusPath))) {
             mkdir(dirname($statusPath), 0777, true);
@@ -324,6 +327,7 @@ class AdminController extends Controller
             'dry_run' => $dryRun,
             'force' => $force,
             'include_vendor' => $includeVendor,
+            'include_build' => $includeBuild,
             'quick' => $quick && ! $full,
             'full' => $full,
             'done' => 0,
@@ -334,7 +338,7 @@ class AdminController extends Controller
         ]));
 
         try {
-            $this->spawnDeployWorker($statusPath, $dryRun, $force, $includeVendor, $quick, $full);
+            $this->spawnDeployWorker($statusPath, $dryRun, $force, $includeVendor, $quick, $full, $includeBuild);
         } catch (\Throwable $e) {
             @unlink($statusPath);
 
@@ -439,7 +443,7 @@ class AdminController extends Controller
         return null;
     }
 
-    protected function spawnDeployWorker(string $statusPath, bool $dryRun, bool $force, bool $includeVendor, bool $quick, bool $full): void
+    protected function spawnDeployWorker(string $statusPath, bool $dryRun, bool $force, bool $includeVendor, bool $quick, bool $full, bool $includeBuild): void
     {
         $php = PHP_BINARY;
         if (str_ends_with(strtolower($php), 'php-cgi.exe')) {
@@ -451,6 +455,7 @@ class AdminController extends Controller
             .($force ? ' --force' : '')
             .($includeVendor ? ' --with-vendor' : '')
             .($full ? ' --full' : ($quick ? ' --quick' : ''))
+            .($includeBuild ? '' : ' --skip-build')
             .' --status-file='.escapeshellarg($statusPath);
 
         if (DIRECTORY_SEPARATOR === '\\') {
@@ -466,9 +471,167 @@ class AdminController extends Controller
             );
         }
     }
+
+    /**
+     * What's-new manager: GitHub PRs missing a changelog entry, plus the
+     * existing entries for editing. Public page lives at /changelog.
+     */
+    public function changelogs(
+        ChangelogReader $reader,
+        GithubPullRequests $github
+    ) {
+        $entries = $reader->all();
+        $used = $reader->prsUsed();
+
+        $pullRequests = [];
+        $fetchError = null;
+        try {
+            $pullRequests = $github->fetch(
+                (string) config('changelog.github_repo'),
+                config('changelog.github_token') ?: null,
+                (int) config('changelog.github_per_page', 30)
+            );
+        } catch (\Throwable $e) {
+            $fetchError = $e->getMessage();
+        }
+
+        $missing = array_values(array_filter(
+            $pullRequests,
+            fn ($pr) => ! in_array($pr['number'], $used, true)
+        ));
+
+        return view('admin.changelogs', [
+            'entries' => $entries,
+            'pullRequests' => $pullRequests,
+            'missing' => $missing,
+            'fetchError' => $fetchError,
+            'repo' => config('changelog.github_repo'),
+        ]);
+    }
+
+    /**
+     * Import a PR as a draft entry, then land on the edit form.
+     */
+    public function changelogImport(
+        Request $request,
+        ChangelogReader $reader,
+        ChangelogWriter $writer,
+        GithubPullRequests $github
+    ) {
+        $request->validate(['number' => 'required|integer|min:1']);
+        $number = (int) $request->input('number');
+
+        if (in_array($number, $reader->prsUsed(), true)) {
+            return redirect()->route('admin.changelogs')
+                ->with('error', "PR #{$number} already has a changelog entry.");
+        }
+
+        try {
+            $pullRequests = $github->fetch(
+                (string) config('changelog.github_repo'),
+                config('changelog.github_token') ?: null,
+                (int) config('changelog.github_per_page', 30)
+            );
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.changelogs')
+                ->with('error', 'Could not fetch PRs: '.$e->getMessage());
+        }
+
+        $pr = collect($pullRequests)->firstWhere('number', $number);
+        if ($pr === null) {
+            return redirect()->route('admin.changelogs')
+                ->with('error', "PR #{$number} not found in the recent list.");
+        }
+
+        $id = $writer->save([
+            'pr' => $pr['number'],
+            'title' => $pr['title'],
+            'date' => now()->format('Y-m-d'),
+            'category' => 'Added',
+            'tags' => [],
+            'summary' => '',
+            'body' => $pr['body'],
+        ]);
+
+        return redirect()->route('admin.changelogs.edit', $id)
+            ->with('success', "Imported PR #{$number} — review and save.");
+    }
+
+    public function changelogCreate()
+    {
+        return view('admin.changelog-form', [
+            'entry' => null,
+            'entryId' => null,
+            'categories' => config('changelog.categories'),
+        ]);
+    }
+
+    public function changelogEdit(string $id, ChangelogReader $reader)
+    {
+        $entry = $reader->find($id);
+        abort_if($entry === null, 404);
+
+        return view('admin.changelog-form', [
+            'entry' => $entry,
+            'entryId' => $id,
+            'categories' => config('changelog.categories'),
+        ]);
+    }
+
+    public function changelogStore(
+        Request $request,
+        ChangelogWriter $writer
+    ) {
+        [$data, $errors] = $writer->validate($request->all(), config('changelog.categories', []));
+        if ($errors !== []) {
+            return redirect()->route('admin.changelogs.create')
+                ->withErrors($errors)
+                ->withInput();
+        }
+
+        $id = $writer->save($data);
+
+        return redirect()->route('admin.changelogs.edit', $id)
+            ->with('success', 'Entry created.');
+    }
+
+    public function changelogUpdate(
+        Request $request,
+        string $id,
+        ChangelogReader $reader,
+        ChangelogWriter $writer
+    ) {
+        abort_if($reader->find($id) === null, 404);
+
+        [$data, $errors] = $writer->validate($request->all(), config('changelog.categories', []));
+        if ($errors !== []) {
+            return redirect()->route('admin.changelogs.edit', $id)
+                ->withErrors($errors)
+                ->withInput();
+        }
+
+        $writer->save($data, $id);
+
+        return redirect()->route('admin.changelogs.edit', $id)
+            ->with('success', 'Entry saved.');
+    }
+
+    public function changelogDestroy(
+        string $id,
+        ChangelogReader $reader,
+        ChangelogWriter $writer
+    ) {
+        abort_if($reader->find($id) === null, 404);
+        $writer->delete($id);
+
+        return redirect()->route('admin.changelogs')
+            ->with('success', 'Entry deleted.');
+    }
+
     public function widgets()
     {
         $widgets = Widget::orderBy('position_index')->get();
+
         return view('admin.widgets', compact('widgets'));
     }
 
@@ -489,6 +652,7 @@ class AdminController extends Controller
     public function editWidget($id)
     {
         $widget = Widget::findOrFail($id);
+
         return view('admin.widget-edit', compact('widget'));
     }
 
@@ -511,7 +675,7 @@ class AdminController extends Controller
     public function destroyWidget($id)
     {
         Widget::destroy($id);
+
         return redirect()->route('admin.widgets')->with('success', 'Widget deleted!');
     }
-
 }

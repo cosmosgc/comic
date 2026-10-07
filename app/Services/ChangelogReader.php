@@ -49,6 +49,20 @@ class ChangelogReader
     }
 
     /**
+     * PR numbers that already have a changelog entry.
+     *
+     * @return list<int>
+     */
+    public function prsUsed(): array
+    {
+        return $this->all()
+            ->map(fn ($entry) => $entry['pr'])
+            ->filter(fn ($pr) => $pr !== null)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Case-insensitive match across title, summary, body, category, and tags.
      *
      * @param  Collection<int, array>  $entries

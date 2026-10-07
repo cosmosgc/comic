@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use App\Models\Tag;
 
 class Comic extends Model
 {
@@ -45,33 +44,47 @@ class Comic extends Model
 
         return $slug;
     }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function pages()
     {
         return $this->hasMany(Page::class);
     }
+
     public function pageCount()
     {
         return $this->pages()->count();
     }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
     }
+
     public function collections()
     {
         return $this->belongsToMany(Collection::class)
-                    ->withPivot('order') // Include the 'order' column in the pivot table
-                    ->orderBy('pivot_order'); // Order collections by the 'order' field in the pivot table
+            ->withPivot('order') // Include the 'order' column in the pivot table
+            ->orderBy('pivot_order'); // Order comics by the 'order' field in the pivot table
     }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->latest();
+    }
+
+    public function likedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'comic_user_likes')->withTimestamps();
+    }
+
     public function setCoverFromPage(Page $page)
     {
         $this->image_path = $page->image_path;
         $this->save();
     }
-
-
 }

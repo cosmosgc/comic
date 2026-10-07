@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Collection;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class RegisterController extends Controller
 {
@@ -22,11 +24,17 @@ class RegisterController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+        // Built-in private Favorites collection (no-op on hosts whose
+        // collections table predates ownership columns).
+        if (Schema::hasColumn('collections', 'user_id')) {
+            Collection::favoritesFor($user);
+        }
 
         return redirect()->route('login');
     }

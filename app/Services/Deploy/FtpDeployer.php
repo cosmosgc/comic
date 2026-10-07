@@ -83,14 +83,14 @@ class FtpDeployer
     /**
      * Build the upload plan without transferring anything.
      *
-     * @param callable(int $dirsListed): void|null $onProgress heartbeat per listed dir.
-     * @param callable(): bool|null $shouldStop cancel hook (checked per dir).
-     * @param bool $includeVendor false to skip vendor/ (it rarely changes).
-     * @param bool $quick only consider files changed since the last success.
-     *
-     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int, vendor_skipped: int, vendor_forced: bool, quick: bool, since: int|null}
+     * @param  callable(int $dirsListed): void|null  $onProgress  heartbeat per listed dir.
+     * @param  callable(): bool|null  $shouldStop  cancel hook (checked per dir).
+     * @param  bool  $includeVendor  false to skip vendor/ (it rarely changes).
+     * @param  bool  $quick  only consider files changed since the last success.
+     * @param  bool  $includeBuild  false to skip public/build/ (compiled assets).
+     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int, vendor_skipped: int, vendor_forced: bool, quick: bool, quick_skipped: int, since: int|null, build_skipped: int}
      */
-    public function plan(FtpTransport $ftp, bool $force = false, ?callable $onProgress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false): array
+    public function plan(FtpTransport $ftp, bool $force = false, ?callable $onProgress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, bool $includeBuild = true): array
     {
         // Quick mode narrows candidates to files changed since the last
         // successful sync. Without a baseline it degrades to a full walk.
@@ -103,17 +103,26 @@ class FtpDeployer
         $vendorFiles = [];
         $excluded = 0;
         $quickSkipped = 0;
+        $buildSkipped = 0;
         foreach ($this->localFiles() as $relative => $absolute) {
             if ($this->isExcluded($relative)) {
                 $excluded++;
+
                 continue;
             }
             if (! $includeVendor && $this->isVendorPath($relative)) {
                 $vendorFiles[$relative] = $absolute;
+
+                continue;
+            }
+            if (! $includeBuild && $this->isBuildPath($relative)) {
+                $buildSkipped++;
+
                 continue;
             }
             if ($quickActive && filemtime($absolute) !== false && filemtime($absolute) <= $since) {
                 $quickSkipped++;
+
                 continue;
             }
             $included[$relative] = $absolute;
@@ -152,6 +161,7 @@ class FtpDeployer
             'vendor_forced' => $vendorForced,
             'quick' => $quickActive,
             'quick_skipped' => $quickSkipped,
+            'build_skipped' => $buildSkipped,
             'since' => $since,
         ];
     }
@@ -159,18 +169,18 @@ class FtpDeployer
     /**
      * Verify, then upload. Aborts before any transfer when verification fails.
      *
-     * @param callable(string): void|null $log
-     * @param array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int}|null $plan
-     *   Precomputed plan (avoids walking the remote tree twice).
-     * @param callable(int $done, int $total): void|null $progress called per uploaded file.
-     * @param callable(): bool|null $shouldStop cancel hook (checked per file).
-     * @param bool $includeVendor false to skip vendor/ (fresh hosts still get it).
-     * @param bool $quick only consider files changed since the last success.
-     * @param callable(string $remote, int $doneSoFar, int $total): void|null $onFile called before each upload.
-     *
+     * @param  callable(string): void|null  $log
+     * @param  array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int}|null  $plan
+     *                                                                                                                         Precomputed plan (avoids walking the remote tree twice).
+     * @param  callable(int $done, int $total): void|null  $progress  called per uploaded file.
+     * @param  callable(): bool|null  $shouldStop  cancel hook (checked per file).
+     * @param  bool  $includeVendor  false to skip vendor/ (fresh hosts still get it).
+     * @param  bool  $quick  only consider files changed since the last success.
+     * @param  callable(string $remote, int $doneSoFar, int $total): void|null  $onFile  called before each upload.
+     * @param  bool  $includeBuild  false to skip public/build/ (compiled assets).
      * @return array{ok: bool, message: string, uploaded: int, skipped: int, log: list<string>}
      */
-    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null, ?array $plan = null, ?callable $progress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, ?callable $onFile = null): array
+    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null, ?array $plan = null, ?callable $progress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, ?callable $onFile = null, bool $includeBuild = true): array
     {
         $lines = [];
         $emit = function (string $line) use (&$lines, $log) {
@@ -199,7 +209,7 @@ class FtpDeployer
         }
         $emit('Verification passed: remote directory is this Laravel project.');
 
-        $plan ??= $this->plan($ftp, $force, null, $shouldStop, $includeVendor, $quick);
+        $plan ??= $this->plan($ftp, $force, null, $shouldStop, $includeVendor, $quick, $includeBuild);
         if ($plan['quick'] ?? false) {
             $since = isset($plan['since']) && $plan['since']
                 ? date('Y-m-d H:i', $plan['since'])
@@ -214,6 +224,7 @@ class FtpDeployer
         $emit(
             count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.'
             .(($plan['vendor_skipped'] ?? 0) > 0 ? ' '.($plan['vendor_skipped'] ?? 0).' vendor skipped.' : '')
+            .(($plan['build_skipped'] ?? 0) > 0 ? ' '.($plan['build_skipped'] ?? 0).' build skipped.' : '')
         );
 
         if ($dryRun) {
@@ -283,9 +294,9 @@ class FtpDeployer
      * walk would crawl the whole account home when FTP_ROOT is `/` and
      * outlast the web request timeout.
      *
-     * @param list<string> $relatives included local paths (forward slashes)
-     * @param callable(int $dirsListed): void|null $onProgress
-     * @param callable(): bool|null $shouldStop
+     * @param  list<string>  $relatives  included local paths (forward slashes)
+     * @param  callable(int $dirsListed): void|null  $onProgress
+     * @param  callable(): bool|null  $shouldStop
      * @return array<string, array{name: string, type: string, size: int, mtime: int|null}>
      */
     protected function remoteIndex(FtpTransport $ftp, array $relatives, ?callable $onProgress = null, ?callable $shouldStop = null): array
@@ -332,6 +343,11 @@ class FtpDeployer
     protected function isVendorPath(string $relative): bool
     {
         return $relative === 'vendor' || str_starts_with($relative, 'vendor/');
+    }
+
+    protected function isBuildPath(string $relative): bool
+    {
+        return $relative === 'public/build' || str_starts_with($relative, 'public/build/');
     }
 
     /**
@@ -413,12 +429,14 @@ class FtpDeployer
                 if ($relative === rtrim($pattern, '/') || str_starts_with($relative, $pattern)) {
                     return true;
                 }
+
                 continue;
             }
             if (str_contains($pattern, '*')) {
                 if (fnmatch($pattern, $relative)) {
                     return true;
                 }
+
                 continue;
             }
             if ($relative === $pattern) {

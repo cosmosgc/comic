@@ -17,7 +17,9 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         $user = Auth::user(); // Authenticated user
-        $tab = $request->input('tab') === 'likes' ? 'likes' : 'comics';
+        $tab = in_array($request->input('tab'), ['likes', 'collections'], true)
+            ? $request->input('tab')
+            : 'comics';
 
         // Load only the active tab (pagination keeps ?tab via withQueryString).
         $comics = $tab === 'comics' ? $user->comics()->latest()->paginate(10)->withQueryString() : null;
@@ -27,7 +29,12 @@ class ProfileController extends Controller
         $likedPostIds = $likedPosts ? $likedPosts->pluck('id')->all() : [];
         $likesTab = Schema::hasTable('post_likes');
 
-        return view('profile.show', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'likesTab'));
+        $collectionsTab = Schema::hasColumn('collections', 'user_id');
+        $collections = ($tab === 'collections' && $collectionsTab)
+            ? $user->collections()->withCount('comics')->latest()->paginate(10, ['*'], 'collections_page')->withQueryString()
+            : null;
+
+        return view('profile.show', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'likesTab', 'collectionsTab', 'collections'));
     }
 
     public function publicShowById($id)
@@ -61,12 +68,24 @@ class ProfileController extends Controller
      */
     protected function publicProfile(User $user, $comics)
     {
-        $tab = request()->input('tab') === 'likes' ? 'likes' : 'comics';
+        $tab = in_array(request()->input('tab'), ['likes', 'collections'], true)
+            ? request()->input('tab')
+            : 'comics';
         $showLikes = (bool) $user->show_liked_posts;
         $likesTab = $showLikes && Schema::hasTable('post_likes');
         $likedPosts = ($tab === 'likes' && $likesTab)
             ? $this->likedPostsFor($user)
             : null;
+
+        $collectionsTab = Schema::hasColumn('collections', 'user_id');
+        $collections = null;
+        if ($tab === 'collections' && $collectionsTab) {
+            $query = $user->collections()->withCount('comics')->latest();
+            if (Auth::id() !== $user->id) {
+                $query->where('is_public', true);
+            }
+            $collections = $query->paginate(10, ['*'], 'collections_page')->withQueryString();
+        }
 
         $likedPostIds = [];
         if (Auth::check() && Schema::hasTable('post_likes')) {
@@ -76,7 +95,7 @@ class ProfileController extends Controller
                 ->all();
         }
 
-        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab'));
+        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections'));
     }
 
     /**

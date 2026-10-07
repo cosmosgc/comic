@@ -72,6 +72,42 @@
         </p>
     @endif
 
+    <!-- Engagement: likes + comments (counts degrade to 0 without migrations) -->
+    @php
+        $cardLiked = in_array($comic->id, $likedComicIds ?? []);
+        $cardLikeCount = $comic->liked_by_users_count ?? 0;
+        $cardCommentCount = $comic->comments_count ?? 0;
+    @endphp
+    <div class="mt-3 flex items-center justify-center gap-4 text-sm text-zinc-400">
+        @auth
+            <button type="button"
+                    data-comic-like="{{ $comic->id }}"
+                    data-like-url="{{ route('comics.like', $comic) }}"
+                    data-csrf="{{ csrf_token() }}"
+                    data-liked="{{ $cardLiked ? '1' : '0' }}"
+                    title="Like"
+                    class="inline-flex items-center gap-1 transition {{ $cardLiked ? 'text-rose-500' : 'hover:text-rose-500' }}">
+                <svg class="h-[18px] w-[18px]" fill="{{ $cardLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span data-like-count>{{ $cardLikeCount > 0 ? $cardLikeCount : '' }}</span>
+            </button>
+        @else
+            <span class="inline-flex items-center gap-1" title="{{ $cardLikeCount }} likes">
+                <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span>{{ $cardLikeCount > 0 ? $cardLikeCount : '' }}</span>
+            </span>
+        @endauth
+        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}" title="Comments" class="inline-flex items-center gap-1 transition hover:text-sky-400">
+            <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8m-8 0a8 8 0 108-8m-8 8V4m0 8l-4-4m4 4l4-4"/>
+            </svg>
+            <span>{{ $cardCommentCount > 0 ? $cardCommentCount : '' }}</span>
+        </a>
+    </div>
+
     <!-- Share -->
     <div class="mt-4 flex justify-center">
         <button
@@ -80,11 +116,37 @@
             class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white
                    transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
 
-            📋 Telegram
+            ?? Telegram
         </button>
     </div>
 
 </div>
+@once
+<script>
+document.addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-comic-like]');
+    if (!btn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    let res;
+    try {
+        res = await fetch(btn.dataset.likeUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': btn.dataset.csrf, 'Accept': 'application/json' },
+        });
+    } catch (e) {
+        return;
+    }
+    if (!res.ok) return;
+    const data = await res.json();
+    const liked = !!data.liked;
+    btn.dataset.liked = liked ? '1' : '0';
+    btn.classList.toggle('text-rose-500', liked);
+    btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
+    btn.querySelector('[data-like-count]').textContent = data.count > 0 ? data.count : '';
+});
+</script>
+@endonce
 <script>
 function copyToClipboard(button) {
     const link = button.getAttribute('data-link');

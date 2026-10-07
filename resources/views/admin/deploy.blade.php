@@ -126,6 +126,11 @@
                     <input type="checkbox" class="form-check-input" name="full" id="full" value="1">
                     <label class="form-check-label" for="full">Full verification walk (overrides quick)</label>
                 </div>
+                <div class="form-check mb-2">
+                    <input type="checkbox" class="form-check-input" name="include_build" id="include_build" value="1" checked>
+                    <label class="form-check-label" for="include_build">Include compiled assets (public/build/)</label>
+                    <small class="form-text text-muted d-block">Uncheck for PHP-only changes — skips the Vite build output.</small>
+                </div>
                 <div class="form-check mb-3">
                     <input type="checkbox" class="form-check-input" name="confirm" id="confirm" value="1" required>
                     <label class="form-check-label" for="confirm">I understand this uploads code to the live host</label>
@@ -303,6 +308,7 @@
                     if (s.include_vendor) modes.push('with vendor');
                     if (s.quick) modes.push('quick');
                     if (s.full) modes.push('full');
+                    if (s.include_build === false) modes.push('no build');
                     modesEl.textContent = modes.join(' • ');
 
                     currentEl.innerHTML = s.current ? '<code>' + s.current.replace(/</g, '&lt;') + '</code>' : '<code>—</code>';
@@ -313,6 +319,7 @@
                     if (c.excluded) parts.push(c.excluded + ' excluded');
                     if (c.vendor_skipped) parts.push(c.vendor_skipped + ' vendor skipped');
                     if (c.quick_skipped) parts.push(c.quick_skipped + ' older than last success');
+                    if (c.build_skipped) parts.push(c.build_skipped + ' build skipped');
                     if (c.quick) parts.push('quick mode');
                     countsEl.textContent = parts.join(' • ');
 
