@@ -18,7 +18,7 @@
                     <div class="mb-1 text-muted">
                         Views: {{ $comic->view_count }}
                     </div>
-                    <x-comic-card :comic="$comic" :minified="false" />
+                    <x-comic-card :comic="$comic" :minified="false" :liked-comic-ids="$likedComicIds ?? []" />
                 </li>
             @endforeach
 

@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Services\Deploy\CurlFtpTransport;
+use App\Services\Deploy\DeployCancelled;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\Deploy\ProjectVerifier;
 use Tests\Support\FakeFtpTransport;
@@ -11,11 +13,20 @@ class DeploySafetyTest extends TestCase
 {
     protected string $tmp = '';
 
+    /** @var list<string> */
+    protected array $tmpDirs = [];
+
     protected function tearDown(): void
     {
         if ($this->tmp !== '' && is_dir($this->tmp)) {
             $this->deleteDir($this->tmp);
         }
+        foreach ($this->tmpDirs as $dir) {
+            if (is_dir($dir)) {
+                $this->deleteDir($dir);
+            }
+        }
+        $this->tmpDirs = [];
         parent::tearDown();
     }
 
@@ -209,7 +220,7 @@ class DeploySafetyTest extends TestCase
         try {
             $this->deployer()->plan($ftp, false, null, fn () => true);
             $this->fail('Expected DeployCancelled.');
-        } catch (\App\Services\Deploy\DeployCancelled $e) {
+        } catch (DeployCancelled $e) {
             $this->assertSame([], $ftp->writes);
             $this->assertSame([], $ftp->listed, 'No remote traffic after instant cancel.');
         }
@@ -240,7 +251,7 @@ class DeploySafetyTest extends TestCase
                 }
             );
             $this->fail('Expected DeployCancelled.');
-        } catch (\App\Services\Deploy\DeployCancelled $e) {
+        } catch (DeployCancelled $e) {
             // Earlier files stay uploaded — re-running resumes incrementally.
             $this->assertCount(2, $ftp->writes);
         }
@@ -287,7 +298,7 @@ class DeploySafetyTest extends TestCase
         if (! function_exists('curl_init')) {
             $this->markTestSkipped('ext-curl missing.');
         }
-        $transport = new \App\Services\Deploy\CurlFtpTransport([
+        $transport = new CurlFtpTransport([
             'host' => 'example.invalid',
             'username' => 'u',
             'password' => 'p',
@@ -365,7 +376,7 @@ class DeploySafetyTest extends TestCase
         $seen = [];
         $result = $this->deployer()->sync(
             $ftp, false, false, null, $plan, null, null, true, false,
-            function (string $remote, int $doneSoFar, int $total) use (&$seen, $plan) {
+            function (string $remote, int $doneSoFar, int $total) use (&$seen) {
                 $seen[] = [$remote, $doneSoFar, $total];
             }
         );
@@ -397,6 +408,32 @@ class DeploySafetyTest extends TestCase
         foreach ($constants as $constant) {
             $this->assertTrue(defined($constant), "Undefined curl constant referenced: {$constant}");
         }
+    }
+
+    public function test_build_assets_skipped_unless_requested(): void
+    {
+        $root = sys_get_temp_dir().'/deploy-build-test-'.uniqid();
+        mkdir($root.'/public/build/assets', 0777, true);
+        mkdir($root.'/app', 0777, true);
+        file_put_contents($root.'/public/build/assets/app.css', 'css');
+        file_put_contents($root.'/app/Code.php', '<?php');
+        file_put_contents($root.'/composer.json', json_encode(['name' => 'laravel/laravel']));
+        $this->tmpDirs[] = $root;
+
+        $config = config('deploy');
+        $config['root'] = '/';
+        $ftp = $this->seedValidRemote();
+
+        $deployer = new FtpDeployer(new ProjectVerifier, $root, $config);
+        $without = $deployer->plan($ftp, false, null, null, true, false, false);
+
+        $this->assertGreaterThan(0, $without['build_skipped']);
+        foreach ($without['uploads'] as $item) {
+            $this->assertStringNotContainsString('public/build', $item['remote']);
+        }
+
+        $with = $deployer->plan($ftp, false, null, null, true, false, true);
+        $this->assertSame(0, $with['build_skipped']);
     }
 
     public function test_dry_run_uploads_nothing(): void
@@ -545,6 +582,7 @@ class DeploySafetyTest extends TestCase
             if (in_array(ltrim($path, '/'), $missing, true)) {
                 // Still create the parent dir so the failure is "missing", not "unlistable".
                 $ftp->mkdir(dirname($path) === '/' || dirname($path) === '.' ? '/' : dirname($path));
+
                 continue;
             }
             $ftp->seedFile($path, $content);

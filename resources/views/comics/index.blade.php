@@ -34,7 +34,7 @@
                         👁 {{ $comic->view_count }}
                     </span>
 
-                    <x-comic-card :comic="$comic" :minified="true" />
+                    <x-comic-card :comic="$comic" :minified="true" :liked-comic-ids="$likedComicIds ?? []" />
                 </li>
             @endforeach
         </ul>
@@ -42,13 +42,28 @@
 
     <!-- All comics -->
     <section>
-        <h1 class="mb-6 text-2xl font-bold">
-            Comics
-        </h1>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-2xl font-bold">
+                Comics
+            </h1>
+
+            <div class="flex items-center gap-1 text-sm font-semibold">
+                <a href="{{ route('comics.index') }}"
+                   class="rounded-full px-3 py-1.5 transition
+                          {{ ($sort ?? 'latest') !== 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                    Latest
+                </a>
+                <a href="{{ route('comics.index', ['sort' => 'liked']) }}"
+                   class="rounded-full px-3 py-1.5 transition
+                          {{ ($sort ?? 'latest') === 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                    Most liked
+                </a>
+            </div>
+        </div>
 
         <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             @foreach ($comics as $comic)
-                <x-comic-card :comic="$comic" />
+                <x-comic-card :comic="$comic" :liked-comic-ids="$likedComicIds ?? []" />
             @endforeach
         </div>
 
@@ -157,4 +172,3 @@
     });
 </script>
 @endsection
-@push('scripts')

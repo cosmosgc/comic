@@ -7,27 +7,6 @@
 > counted via `Post::quotes()` + `withCount`, shown in the feed).
 > Everything below needs a new table/column.
 
-## 1. Post likes
-
-- [ ] Migration: `create_post_likes_table`
-  - `user_id` (FK → `users`, cascade), `post_id` (FK → `posts`, cascade)
-  - unique composite (`user_id`, `post_id`), timestamps
-- [ ] Relations: `Post::likedByUsers()` (belongsToMany), `User::likedPosts()` (belongsToMany)
-- [ ] Add `withCount('likedByUsers')` to the feed query; wire the heart button
-      in `posts/content.blade.php` (currently reply / repost / copy-text only)
-- [ ] `POST /posts/{post}/like` toggle endpoint (auth, idempotent, returns JSON)
-- [ ] Optional: "Liked" tab on profiles
-
-## 2. Replies (threads)
-
-- [ ] Migration: `add_parent_id_to_posts_table`
-  - `parent_id` (nullable FK → `posts`, cascade) — distinct from `referenced_post_id` (quotes)
-- [ ] `Post::replies()` (hasMany) + `Post::parent()` (belongsTo), `withCount('replies')`
-- [ ] Show reply counts in the feed action bar; clicking opens the thread
-- [ ] `GET /posts/{post}` single-post view with parent chain + reply list
-      (the copy-text share button can then copy the permalink instead)
-- [ ] Reply composer pre-fills `parent_id` (same hidden-field pattern as quotes)
-
 ## 3. Follows + "Following" feed
 
 - [ ] Migration: `create_follows_table`
@@ -65,12 +44,6 @@
       + `hashtag_post` pivot
 - [ ] `GET /hashtag/{tag}` timeline; "Trending" sidebar (count last 24h/7d)
 
-## 8. Post view counts
-
-- [ ] Migration: `add_view_count_to_posts_table` (unsigned big int, default 0)
-- [ ] Increment once per viewer (like `Comic::view_count`); show eye icon + count
-      in the action bar (currently omitted — no data)
-
 ## 9. Moderation / safety
 
 - [ ] Migration: `create_reports_table`
@@ -84,8 +57,9 @@
 
 ## Suggested order
 
-1. Likes (§1) — smallest, completes the action bar
-2. Replies + single-post view (§2) — unlocks threads + real share links
-3. Handles (§4) → mentions/notifications (§5)
-4. Follows + Following tab (§3)
-5. Bookmarks (§6), hashtags (§7), view counts (§8), moderation (§9)
+> Done and removed: likes (§1), replies + single-post view (§2),
+> post view counts (§8). Section numbers below are kept stable.
+
+1. Handles (§4) → mentions/notifications (§5)
+2. Follows + Following tab (§3)
+3. Bookmarks (§6), hashtags (§7), moderation (§9)

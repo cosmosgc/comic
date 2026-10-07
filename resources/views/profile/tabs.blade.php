@@ -1,9 +1,10 @@
-{{-- Profile tabs: Comics | Liked posts | Collections (soon).
-     Expects $activeTab ('comics'|'likes') and $likesTab (bool). --}}
+{{-- Profile tabs: Comics | Liked posts | Collections.
+     Expects $activeTab ('comics'|'likes'|'collections'), $likesTab (bool),
+     and $collectionsTab (bool). --}}
 <div class="mb-6 flex items-center gap-1 border-b border-zinc-800">
     <a href="{{ request()->url() }}"
        class="px-4 py-2 text-sm font-semibold transition
-              {{ $activeTab !== 'likes'
+              {{ $activeTab === 'comics'
                   ? 'border-b-2 border-indigo-500 text-zinc-100'
                   : 'text-zinc-500 hover:text-zinc-200' }}">
         Comics
@@ -17,8 +18,18 @@
             Liked posts
         </a>
     @endif
-    <span class="cursor-not-allowed px-4 py-2 text-sm text-zinc-600" title="Coming soon">
-        Collections
-        <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">soon</span>
-    </span>
+    @if ($collectionsTab ?? false)
+        <a href="{{ request()->url() }}?tab=collections"
+           class="px-4 py-2 text-sm font-semibold transition
+                  {{ $activeTab === 'collections'
+                      ? 'border-b-2 border-indigo-500 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-200' }}">
+            Collections
+        </a>
+    @else
+        <span class="cursor-not-allowed px-4 py-2 text-sm text-zinc-600" title="Coming soon">
+            Collections
+            <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">soon</span>
+        </span>
+    @endif
 </div>

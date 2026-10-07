@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\CommentController;
 
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -155,6 +156,55 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return app(AdminController::class)->cancelDeploy($id);
     })->name('admin.deploy.cancel');
 
+    Route::get('/changelogs', function (App\Services\ChangelogReader $reader, App\Services\GithubPullRequests $github) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogs($reader, $github);
+    })->name('admin.changelogs');
+
+    Route::post('/changelogs/import', function (Request $request, App\Services\ChangelogReader $reader, App\Services\ChangelogWriter $writer, App\Services\GithubPullRequests $github) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogImport($request, $reader, $writer, $github);
+    })->name('admin.changelogs.import');
+
+    Route::get('/changelogs/create', function () {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogCreate();
+    })->name('admin.changelogs.create');
+
+    Route::post('/changelogs', function (Request $request, App\Services\ChangelogWriter $writer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogStore($request, $writer);
+    })->name('admin.changelogs.store');
+
+    Route::get('/changelogs/{id}/edit', function (string $id, App\Services\ChangelogReader $reader) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogEdit($id, $reader);
+    })->name('admin.changelogs.edit')->where('id', '[A-Za-z0-9\-]+');
+
+    Route::put('/changelogs/{id}', function (Request $request, string $id, App\Services\ChangelogReader $reader, App\Services\ChangelogWriter $writer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogUpdate($request, $id, $reader, $writer);
+    })->name('admin.changelogs.update')->where('id', '[A-Za-z0-9\-]+');
+
+    Route::delete('/changelogs/{id}', function (string $id, App\Services\ChangelogReader $reader, App\Services\ChangelogWriter $writer) {
+        if (Auth::user()->admin_level < 1) {
+            return redirect('/');
+        }
+        return app(AdminController::class)->changelogDestroy($id, $reader, $writer);
+    })->name('admin.changelogs.destroy')->where('id', '[A-Za-z0-9\-]+');
+
 });
 
 
@@ -180,6 +230,13 @@ Route::post('/comics/{comic}/add-pages', [PageController::class, 'addPage'])->na
 Route::post('/comics/{comic}/pages', [PageController::class, 'store'])->name('pages.store');
 Route::post('/comics/{comic}/set-cover', [ComicController::class, 'setCover'])
     ->name('comics.setCover');
+
+// Comic engagement: likes + comments (modal-driven, JSON for AJAX).
+Route::post('/comics/{comic}/like', [LikeController::class, 'toggleComic'])->name('comics.like')->middleware('auth');
+Route::get('/comics/{comic}/comments', [CommentController::class, 'index'])->name('comments.index');
+Route::post('/comics/{comic}/comments', [CommentController::class, 'store'])->middleware('auth')->name('comments.store');
+Route::put('/comments/{comment}', [CommentController::class, 'update'])->middleware('auth')->name('comments.update');
+Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->middleware('auth')->name('comments.destroy');
 //////////////////////////////////////////////////////////////
 // Route to display all collections
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
@@ -187,19 +244,28 @@ Route::get('/collections', [CollectionController::class, 'index'])->name('collec
 // Route to display the form for creating a new collection
 // (must be registered before /collections/{collection}, otherwise
 // "create" is captured as the {collection} parameter and 404s)
-Route::get('/collections/create', [CollectionController::class, 'create'])->name('collections.create');
+Route::get('/collections/create', [CollectionController::class, 'create'])->middleware('auth')->name('collections.create');
+
+// Viewer's own collections for the quick-add dropdown (must precede {collection}).
+Route::get('/collections/mine', [CollectionController::class, 'mine'])->middleware('auth')->name('collections.mine');
 
 // Route to display a specific collection by ID
 Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 
 // Route to store the new collection
-Route::post('/collections', [CollectionController::class, 'store'])->name('collections.store');
+Route::post('/collections', [CollectionController::class, 'store'])->middleware('auth')->name('collections.store');
 // Route to display the edit form for a collection
-Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->name('collections.edit');
+Route::get('/collections/{collection}/edit', [CollectionController::class, 'edit'])->middleware('auth')->name('collections.edit');
 // Route to update the collection
-Route::put('/collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
+Route::put('/collections/{collection}', [CollectionController::class, 'update'])->middleware('auth')->name('collections.update');
+Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->middleware('auth')->name('collections.destroy');
 Route::post('/collections/{collection}/sort/update', [CollectionController::class, 'updateSortOrder'])
+    ->middleware('auth')
     ->name('collections.sort.update');
+// Quick-add + favorites (auth; ownership verified in the controller).
+Route::post('/collections/favorite/{comic}', [CollectionController::class, 'toggleFavorite'])->middleware('auth')->name('collections.favorite');
+Route::post('/collections/{collection}/comics/{comic}', [CollectionController::class, 'addComic'])->middleware('auth')->name('collections.addComic');
+Route::delete('/collections/{collection}/comics/{comic}', [CollectionController::class, 'removeComic'])->middleware('auth')->name('collections.removeComic');
 
 //////////////////////////////////////////////////////////////
 // Only index + store exist on PostController, so register just those:

@@ -98,6 +98,11 @@
                                 <i class="fas fa-upload"></i> Deploy
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.changelogs') }}">
+                                <i class="fas fa-newspaper"></i> Changelog
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </nav>

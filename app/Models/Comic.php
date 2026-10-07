@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use App\Models\Tag;
 
 class Comic extends Model
 {
@@ -45,33 +44,49 @@ class Comic extends Model
 
         return $slug;
     }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function pages()
     {
         return $this->hasMany(Page::class);
     }
+
     public function pageCount()
     {
         return $this->pages()->count();
     }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
     }
+
     public function collections()
     {
+        // NOTE: no default order here on purpose (see Collection::comics):
+        // orderBy('pivot_order') leaks into exists()/first()/count()
+        // subqueries where the alias isn't selected (MySQL 1054).
         return $this->belongsToMany(Collection::class)
-                    ->withPivot('order') // Include the 'order' column in the pivot table
-                    ->orderBy('pivot_order'); // Order collections by the 'order' field in the pivot table
+            ->withPivot('order'); // Include the 'order' column in the pivot table
     }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->latest();
+    }
+
+    public function likedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'comic_user_likes')->withTimestamps();
+    }
+
     public function setCoverFromPage(Page $page)
     {
         $this->image_path = $page->image_path;
         $this->save();
     }
-
-
 }
