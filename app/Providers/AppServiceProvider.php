@@ -6,6 +6,8 @@ use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\Deploy\ProjectVerifier;
+use App\View\Composers\SidebarComposer;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +38,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer(
+            ['components.left-panel', 'components.right-panel'],
+            SidebarComposer::class
+        );
     }
 }

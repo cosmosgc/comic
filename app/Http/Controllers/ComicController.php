@@ -6,6 +6,7 @@ use App\Models\Comic;
 use App\Models\Page;
 use App\Models\Tag;
 use App\Models\Widget;
+use App\View\Composers\SidebarComposer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -54,9 +55,13 @@ class ComicController extends Controller
             ->orderBy('view_count', 'desc')
             ->take(5)
             ->get();
-        $tags = Tag::all();
+        // Sidebar: popular tags are like-driven, limited, with a
+        // randomized threshold (see SidebarComposer).
+        $tags = SidebarComposer::popularTags();
+        $latestComics = SidebarComposer::latestUploads();
+        $recommendedComics = SidebarComposer::recommended();
 
-        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort'));
+        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'latestComics', 'recommendedComics'));
     }
 
     public function create()
