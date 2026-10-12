@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#09090b">
     <title>{{ $comic->title }} - Comic Reader</title>
     <meta property="og:title" content="{{$comic->title}}" />
     <meta property="og:description" content="{{$comic->author}}" />
@@ -55,10 +58,57 @@
             padding: 20px;
         }
         .comic-container img {
-            max-width: 100%;
+            width: 100%;
+            max-width: 820px;
             height: auto;
             margin-bottom: 20px;
             border-radius: 8px;
+        }
+
+        /* ---------- Mobile ---------- */
+        @media (max-width: 640px) {
+            .comic-header {
+                padding: 16px 12px;
+            }
+            .comic-header h1 {
+                font-size: 1.35em;
+            }
+            .comic-container {
+                padding: 12px 8px;
+            }
+            .comic-container img {
+                margin-bottom: 12px;
+                border-radius: 6px;
+            }
+            .back-button,
+            .back-to-top-button,
+            .progress-indicator {
+                top: 8px;
+                font-size: 0.75em;
+                padding: 6px 9px;
+            }
+            .back-to-top-button {
+                left: 84px;
+            }
+            .comments-fab {
+                bottom: 16px;
+                right: 16px;
+                padding: 12px 18px;
+            }
+            .engage-btn {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+            /* Bottom-sheet comments on phones */
+            .modal-backdrop {
+                padding: 0;
+                align-items: flex-end;
+            }
+            .modal-panel {
+                border-radius: 16px 16px 0 0;
+                max-height: 92vh;
+                padding: 16px;
+            }
         }
         .progress-indicator {
         position: fixed;

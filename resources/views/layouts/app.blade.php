@@ -24,10 +24,14 @@
 
 </head>
 
-<body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+<body>
+
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+    Skip to content
+</a>
 
 <!-- NAVBAR -->
-<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
+<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur" aria-label="Main navigation">
     <div class="mx-auto max-w-7xl px-4">
         <div class="flex h-16 items-center justify-between">
 
@@ -37,18 +41,26 @@
             </a>
 
             <!-- Desktop Nav -->
-            <div class="hidden md:flex items-center gap-6">
+            <div class="hidden items-center gap-6 md:flex">
 
                 <!-- Search -->
                 <div class="relative w-72">
+                    <label for="comic-search" class="sr-only">Search comics</label>
                     <input
                         id="comic-search"
                         type="text"
+                        role="combobox"
+                        aria-expanded="false"
+                        aria-controls="comic-search-results"
+                        aria-autocomplete="list"
+                        data-search-page="{{ route('comics.search') }}"
                         placeholder="Search comics..."
                         class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         autocomplete="off"
                     >
                     <ul id="comic-search-results"
+                        role="listbox"
+                        aria-label="Comic search results"
                         class="absolute mt-2 hidden w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
                     </ul>
                 </div>
@@ -67,11 +79,14 @@
                     <div x-data="{ userOpen: false }" class="relative">
                         <button
                             @click="userOpen = !userOpen"
-                            class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                            :aria-expanded="userOpen.toString()"
+                            aria-haspopup="menu"
+                            class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
+                            aria-label="Account menu">
 
-                            {{ Auth::user()->name }}
+                            <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
 
-                            <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                 <path fill-rule="evenodd"
                                     d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/>
                             </svg>
@@ -82,21 +97,22 @@
                             x-transition
                             @click.outside="userOpen = false"
                             x-cloak
-                            class="absolute right-0 mt-2 w-48 rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+                            role="menu"
+                            class="absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
 
-                            <a href="{{ route('profile.show') }}" class="dropdown-link">
+                            <a href="{{ route('profile.show') }}" role="menuitem" class="dropdown-link">
                                 Profile
                             </a>
 
                             @if (Auth::user()->admin_level >= 1)
-                                <a href="{{ route('admin.dashboard') }}" class="dropdown-link">
+                                <a href="{{ route('admin.dashboard') }}" role="menuitem" class="dropdown-link">
                                     Admin
                                 </a>
                             @endif
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button class="dropdown-link w-full text-left">
+                                <button type="submit" role="menuitem" class="dropdown-link">
                                     Logout
                                 </button>
                             </form>
@@ -110,9 +126,9 @@
             </div>
 
             <!-- Mobile Menu Button -->
-            <button @click="open = !open" class="md:hidden">
+            <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Toggle menu" class="rounded-lg p-2 hover:bg-zinc-800 md:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24">
+                     viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
@@ -120,7 +136,18 @@
         </div>
 
         <!-- Mobile Menu -->
-        <div x-show="open" class="md:hidden py-4 space-y-3">
+        <div x-show="open" id="mobile-menu" x-cloak class="space-y-1 py-4 md:hidden">
+            <div class="relative px-1 pb-2">
+                <label for="comic-search-mobile" class="sr-only">Search comics</label>
+                <input
+                    id="comic-search-mobile"
+                    type="text"
+                    placeholder="Search comics..."
+                    data-search-page="{{ route('comics.search') }}"
+                    class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    autocomplete="off"
+                >
+            </div>
             <a href="{{ route('posts.index') }}" class="mobile-link">Social</a>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
             <a href="{{ route('changelog.index') }}" class="mobile-link">What's new</a>
@@ -132,7 +159,7 @@
                 <a href="{{ route('profile.show') }}" class="mobile-link">Profile</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button class="mobile-link w-full text-left">Logout</button>
+                    <button type="submit" class="mobile-link w-full text-left">Logout</button>
                 </form>
             @else
                 <a href="{{ route('login') }}" class="mobile-link">Login</a>
@@ -144,30 +171,39 @@
 
 <!-- PAGE LAYOUT -->
 <div class="mx-auto">
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-12">
 
         @if(isset($showPanels) && $showPanels)
-            <aside class="md:col-span-2">
+            <aside class="md:col-span-2" aria-label="Sidebar left">
                 @include('components.left-panel')
             </aside>
         @endif
 
-        <main class="{{ isset($showPanels) && $showPanels ? 'md:col-span-8' : 'md:col-span-12' }}">
+        <main id="main-content" class="{{ isset($showPanels) && $showPanels ? 'md:col-span-8' : 'md:col-span-12' }}">
             @yield('content')
         </main>
 
         @if(isset($showPanels) && $showPanels)
-            <aside class="md:col-span-2">
+            <aside class="md:col-span-2" aria-label="Sidebar right">
                 @include('components.right-panel')
             </aside>
         @endif
 
     </div>
 </div>
+
+<footer class="mt-12 border-t border-zinc-800">
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
+        <span>{{ config('app.site_title') }}</span>
+        <nav class="flex items-center gap-5" aria-label="Footer">
+            <a href="{{ route('comics.index') }}" class="transition hover:text-zinc-200">Comics</a>
+            <a href="{{ route('posts.index') }}" class="transition hover:text-zinc-200">Social</a>
+            <a href="{{ route('changelog.index') }}" class="transition hover:text-zinc-200">What's new</a>
+        </nav>
+    </div>
+</footer>
+
 <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Get the necessary data for analytics
@@ -240,48 +276,130 @@
 
     <script>
     const BASE_URL = "{{ url('') }}";
-     const SEARCH_URL = "{{ route('comics.search') }}";
+     const SEARCH_URL = "{{ route('api.comics') }}";
     document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('comic-search');
+        const desktopInput = document.getElementById('comic-search');
+        const mobileInput = document.getElementById('comic-search-mobile');
         const resultsBox = document.getElementById('comic-search-results');
         let timeout = null;
+        let activeIdx = -1;
 
-        searchInput.addEventListener('input', function () {
+        function setExpanded(open) {
+            if (desktopInput) desktopInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        function hideResults() {
+            resultsBox.style.display = 'none';
+            resultsBox.innerHTML = '';
+            activeIdx = -1;
+            setExpanded(false);
+        }
+
+        function highlight() {
+            resultsBox.querySelectorAll('li').forEach(function (li, i) {
+                li.classList.toggle('is-active', i === activeIdx);
+                li.setAttribute('aria-selected', i === activeIdx ? 'true' : 'false');
+            });
+        }
+
+        function goTo(url) {
+            window.location.href = url;
+        }
+
+        function renderResults(data) {
+            resultsBox.innerHTML = '';
+            activeIdx = -1;
+            if (data.length === 0) {
+                const li = document.createElement('li');
+                li.setAttribute('role', 'option');
+                li.setAttribute('aria-selected', 'false');
+                li.className = 'cursor-default px-3 py-2 text-sm text-zinc-500';
+                li.textContent = 'No comics found';
+                resultsBox.appendChild(li);
+            } else {
+                data.forEach(function (comic) {
+                    const li = document.createElement('li');
+                    li.setAttribute('role', 'option');
+                    li.setAttribute('aria-selected', 'false');
+                    li.dataset.url = BASE_URL + '/comics/' + comic.slug;
+                    const title = document.createElement('span');
+                    title.className = 'font-medium text-zinc-100';
+                    title.textContent = comic.title;
+                    const author = document.createElement('span');
+                    author.className = 'text-zinc-400';
+                    author.textContent = ' · ' + comic.author;
+                    li.appendChild(title);
+                    li.appendChild(author);
+                    li.addEventListener('mousedown', function (e) {
+                        e.preventDefault();
+                        goTo(li.dataset.url);
+                    });
+                    resultsBox.appendChild(li);
+                });
+            }
+            resultsBox.style.display = 'block';
+            setExpanded(true);
+        }
+
+        function search(query) {
             clearTimeout(timeout);
-            const query = this.value.trim();
             if (query.length < 2) {
-                resultsBox.style.display = 'none';
+                hideResults();
                 return;
             }
+            timeout = setTimeout(function () {
+                fetch(SEARCH_URL + '?search=' + encodeURIComponent(query) + '&limit=5', {
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (response) { return response.json(); })
+                    .then(renderResults)
+                    .catch(hideResults);
+            }, 250);
+        }
 
-            // Add a small debounce to avoid hammering the server
-            timeout = setTimeout(() => {
-                fetch(`{{ route('api.comics') }}?search=${encodeURIComponent(query)}&limit=5`)
-                    .then(response => response.json())
-                    .then(data => {
-                        resultsBox.innerHTML = '';
-                        if (data.length === 0) {
-                            resultsBox.style.display = 'none';
-                            return;
+        function bindInput(input) {
+            if (!input) return;
+            input.addEventListener('input', function () {
+                // Mobile field has no dropdown: only track the query for Enter.
+                if (input.dataset.searchPage !== undefined && input.id === 'comic-search-mobile') return;
+                search(this.value.trim());
+            });
+            input.addEventListener('keydown', function (e) {
+                const items = resultsBox.querySelectorAll('li[data-url]');
+                if (e.key === 'ArrowDown' && items.length) {
+                    e.preventDefault();
+                    activeIdx = (activeIdx + 1) % items.length;
+                    highlight();
+                } else if (e.key === 'ArrowUp' && items.length) {
+                    e.preventDefault();
+                    activeIdx = (activeIdx - 1 + items.length) % items.length;
+                    highlight();
+                } else if (e.key === 'Enter') {
+                    if (activeIdx >= 0 && items[activeIdx]) {
+                        e.preventDefault();
+                        goTo(items[activeIdx].dataset.url);
+                    } else {
+                        // No suggestion picked (or mobile field): full search page.
+                        const q = this.value.trim();
+                        const page = this.dataset.searchPage;
+                        if (q.length >= 2 && page) {
+                            e.preventDefault();
+                            goTo(page + '?search=' + encodeURIComponent(q));
                         }
-                        data.forEach(comic => {
-                            const li = document.createElement('li');
-                            li.classList.add('list-group-item', 'list-group-item-action');
-                            li.textContent = `${comic.title} (${comic.author})`;
-                            li.addEventListener('click', () => {
-                                window.location.href = `${BASE_URL}/comics/${comic.slug}`;
-                            });
-                            resultsBox.appendChild(li);
-                        });
-                        resultsBox.style.display = 'block';
-                    });
-            }, 300); // 300ms debounce
-        });
+                    }
+                } else if (e.key === 'Escape') {
+                    hideResults();
+                }
+            });
+        }
+
+        bindInput(desktopInput);
+        bindInput(mobileInput);
 
         // Close the dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-                resultsBox.style.display = 'none';
+        document.addEventListener('click', function (e) {
+            if (!resultsBox.contains(e.target) && e.target !== desktopInput) {
+                hideResults();
             }
         });
     });

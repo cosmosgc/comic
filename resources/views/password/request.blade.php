@@ -3,29 +3,32 @@
 @section('title', 'Reset Password')
 
 @section('content')
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card p-4" style="width: 100%; max-width: 400px;">
-        <h3 class="text-center mb-4">Reset Password</h3>
+<div class="flex min-h-[80vh] items-center justify-center px-4 py-10">
+    <div class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
+        <h1 class="mb-6 text-center text-2xl font-bold tracking-tight">Reset Password</h1>
 
         @if (session('status'))
-            <div class="alert alert-success" role="alert">
+            <div class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200" role="alert">
                 {{ session('status') }}
             </div>
         @endif
 
-        <form method="POST" action="{{ route('password.email') }}">
+        <form method="POST" action="{{ route('password.email') }}" class="space-y-4">
             @csrf
 
-            <!-- Email Address Field -->
-            <div class="form-group mb-3">
-                <label for="email" class="form-label">Email Address</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" value="{{ old('email') }}" required>
+            <div>
+                <label for="email" class="mb-1 block text-sm font-medium text-zinc-300">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" value="{{ old('email') }}" required
+                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                @error('email')
+                    <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
-            <!-- Submit Button -->
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-block">Send Password Reset Link</button>
-            </div>
+            <button type="submit"
+                class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+                Send Password Reset Link
+            </button>
         </form>
     </div>
 </div>

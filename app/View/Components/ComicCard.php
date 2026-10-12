@@ -15,6 +15,7 @@ class ComicCard extends Component
     public function __construct(
         public Comic $comic,
         public bool $minified = false,
+        public array $likedComicIds = [],
     ) {}
 
     /**

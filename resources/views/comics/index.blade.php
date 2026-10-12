@@ -21,15 +21,15 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
 
-    <!-- Top comics (desktop only) -->
-    <section class="mb-10 hidden md:block">
+    <!-- Top comics: swipeable rail on phones, grid on desktop -->
+    <section class="mb-10">
         <h2 class="mb-4 text-xl font-semibold">
             Top comics da semana
         </h2>
 
-        <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <ul class="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:pb-0 lg:grid-cols-4">
             @foreach ($topComics as $comic)
-                <li class="relative">
+                <li class="relative w-40 shrink-0 snap-start sm:w-48 md:w-auto">
                     <span class="absolute right-2 top-2 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white">
                         👁 {{ $comic->view_count }}
                     </span>
@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
             @foreach ($comics as $comic)
                 <x-comic-card :comic="$comic" :liked-comic-ids="$likedComicIds ?? []" />
             @endforeach
@@ -74,101 +74,4 @@
     </section>
 
 </div>
-@endsection
-
-
-@section('styles')
-<style>
-
-    span.relative.z-0.inline-flex.rtl\:flex-row-reverse.shadow-sm.rounded-md {
-        display: flex;
-        flex-wrap: nowrap;
-    }
-
-    .comic-card {
-        background: linear-gradient(to right, #4caf50 0%, #f0f0f0 0%);
-        background-size: 0% 100%;
-        transition: background-size 0.4s ease-in-out, background-position 0.6s ease-in-out, background-image 0.6s ease-in-out;
-        border-radius: 5px;
-        padding: 10px;
-        margin-bottom: 20px;
-        position: relative;
-        /* Add a shadow and hover effect */
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-    }
-
-    .comic-card img {
-        max-width: 100%;
-        border-radius: 5px;
-    }
-
-    .comic-card:hover {
-        /* Slightly elevate the card on hover for a better interactive feel */
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-        transition: transform 0.5s ease, box-shadow 0.5s ease;
-    }
-    .progress-background {
-        width: 100%;
-        height: 100px;
-        background-color: #4caf50;
-        /* border-radius: 0 0 0.75rem 0.75rem; */
-    }
-</style>
-@endsection
-
-@section('scripts')
-<script>
-    // Function to get the value of a cookie by its name
-    function getCookie(name) {
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(';');
-        for (var i = 0; i < ca.length; i++) {
-            var c = ca[i];
-            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-        }
-        return null;
-    }
-
-    // Function to update comic card background progress based on cookies
-    // Function to update comic card background progress based on cookies
-    function updateComicProgress() {
-        // Get all comic cards
-        var comicCards = document.querySelectorAll('.comic-card');
-
-        comicCards.forEach(function(card) {
-            var comicId = card.getAttribute('data-comic-id');
-            var pageCount = card.getAttribute('data-comic-pagecount');
-            var currentPage = getCookie('comic_' + comicId + '_page') || 0;
-            currentPage = parseInt(currentPage); // Convert to integer
-            if (currentPage != 0) {
-                currentPage++;
-            }
-            pageCount = parseInt(pageCount); // Ensure pageCount is an integer
-            
-            var progress = (pageCount > 0) ? (currentPage / pageCount) * 100 : 0;
-            //console.log(pageCount, currentPage);
-
-            // Get the progress background div and set the width
-            var progressBackground = card.querySelector('.progress-background');
-            progressBackground.style.height = `${progress}%`;
-
-            // Optionally change the color of the background based on progress
-            if (progress < 30) {
-                progressBackground.style.backgroundColor = '#ff6e6160'; // Red
-            } else if (progress < 70) {
-                progressBackground.style.backgroundColor = '#ff3b9360'; // Pink
-            } else {
-                progressBackground.style.backgroundColor = '#2a153160'; // Dark purple
-            }
-        });
-    }
-
-    // Call the function after DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        updateComicProgress();
-    });
-</script>
 @endsection
