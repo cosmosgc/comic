@@ -201,7 +201,7 @@ class CollectionController extends Controller
             return response()->json($collection->fresh(), 201);
         }
 
-        return redirect()->route('collections.create')->with('success', 'Collection created successfully.');
+        return redirect()->route('collections.create')->with('success', 'Coleção criada com sucesso.');
     }
 
     public function edit(Collection $collection)
@@ -242,7 +242,7 @@ class CollectionController extends Controller
             $collection->comics()->sync($validatedSync['comics'] ?? []);
         }
 
-        return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.');
+        return redirect()->route('collections.edit', $collection)->with('success', 'Coleção atualizada com sucesso.');
     }
 
     public function destroy(Collection $collection)
@@ -254,7 +254,7 @@ class CollectionController extends Controller
             return response()->json(['deleted' => true]);
         }
 
-        return redirect()->route('collections.index')->with('success', 'Collection deleted.');
+        return redirect()->route('collections.index')->with('success', 'Coleção excluída.');
     }
 
     /**
@@ -276,7 +276,7 @@ class CollectionController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Added to collection.');
+        return redirect()->back()->with('success', 'Adicionado à coleção.');
     }
 
     /**
@@ -294,7 +294,7 @@ class CollectionController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Removed from collection.');
+        return redirect()->back()->with('success', 'Removido da coleção.');
     }
 
     /**

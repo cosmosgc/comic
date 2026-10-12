@@ -1,14 +1,14 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Referral Analytics')
+@section('title', 'Origens de acesso')
 
-@section('page-title', 'Referral Tree')
+@section('page-title', 'Árvore de origens')
 
 @section('content')
     <div class="admin-card">
         <div class="admin-card-header">
-            <span>Referral Source vs URL Tree</span>
-            <span class="admin-muted text-xs font-normal">scroll to zoom · drag to pan</span>
+            <span>Origem vs URL</span>
+            <span class="admin-muted text-xs font-normal">role para zoom · arraste para mover</span>
         </div>
         <div id="tree" class="h-[600px] w-full overflow-hidden"></div>
     </div>

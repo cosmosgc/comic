@@ -79,7 +79,7 @@ class PostThreadTest extends TestCase
         $response->assertSee('Level 1 post');
         $response->assertSee('Level 2 post');
         $this->assertSame($deepestVisible->id, $collapsed->parent_id);
-        $response->assertSee('Continue this thread');
+        $response->assertSee('Continuar thread');
         $response->assertSee(route('posts.show', $collapsed), false);
         $response->assertDontSee('Level 4 post');
 

@@ -313,37 +313,37 @@
 </head>
 <body>
     
-<a href="{{ url()->previous() }}" class="back-button">← Back</a>
-<button onclick="topFunction()" id="backToTopButton" class="back-to-top-button">↑ Top</button>
-<div class="progress-indicator" id="progress">Page 1 of {{ $comic->pages->count() }}</div>
-<button type="button" id="commentsFab" class="comments-fab" title="Read and write comments">Comments</button>
+<a href="{{ url()->previous() }}" class="back-button">← Voltar</a>
+<button onclick="topFunction()" id="backToTopButton" class="back-to-top-button">↑ Topo</button>
+<div class="progress-indicator" id="progress">Página 1 de {{ $comic->pages->count() }}</div>
+<button type="button" id="commentsFab" class="comments-fab" title="Ler e escrever comentários">Comentários</button>
 
-<div id="infoModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Comic info and comments">
+<div id="infoModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Informações e comentários do comic">
     <div class="modal-panel">
         <div style="display:flex;justify-content:space-between;align-items:center;">
             <h2 style="margin:0;">{{ $comic->title }}</h2>
-            <button type="button" id="infoModalClose" class="engage-btn" title="Close">✕</button>
+            <button type="button" id="infoModalClose" class="engage-btn" title="Fechar">✕</button>
         </div>
         <p class="comic-meta">By {{ $comic->author ?? 'Unknown Author' }} · Views: {{ $comic->view_count }}</p>
         @if ($comic->description)
             <p>{{ $comic->description }}</p>
         @endif
 
-        <h3>Comments (<span id="modalCommentCount">{{ $comic->comments_count ?? 0 }}</span>)</h3>
+        <h3>Comentários (<span id="modalCommentCount">{{ $comic->comments_count ?? 0 }}</span>)</h3>
         <div id="commentsList"></div>
         <div style="display:flex;gap:8px;justify-content:center;margin:10px 0;">
-            <button type="button" id="commentsPrev" class="engage-btn">← Newer</button>
+            <button type="button" id="commentsPrev" class="engage-btn">← Mais novos</button>
             <span id="commentsPage" style="align-self:center;font-size:0.85em;"></span>
-            <button type="button" id="commentsNext" class="engage-btn">Older →</button>
+            <button type="button" id="commentsNext" class="engage-btn">Mais antigos →</button>
         </div>
 
         @auth
-            <textarea id="commentBox" rows="3" maxlength="2000" placeholder="Write a comment... (Enter to send, Shift+Enter for a new line)"></textarea>
+            <textarea id="commentBox" rows="3" maxlength="2000" placeholder="Escreva um comentário... (Enter envia, Shift+Enter pula linha)"></textarea>
             <div style="text-align:right;margin-top:8px;">
-                <button type="button" id="commentSubmit" class="engage-btn">Post comment</button>
+                <button type="button" id="commentSubmit" class="engage-btn">Comentar</button>
             </div>
         @else
-            <p><a href="{{ route('login') }}" style="color:#fff;">Log in</a> to join the discussion.</p>
+            <p><a href="{{ route('login') }}" style="color:#fff;">Entre</a> para participar da discussão.</p>
         @endauth
     </div>
 </div>
@@ -370,7 +370,7 @@
         @endif
         
         <p>{{ $comic->description }}</p>
-        <p>Views: {{ $comic->view_count }}</p>
+        <p>Visualizações: {{ $comic->view_count }}</p>
     </div>
     @if($comic->tags->count())
         <div class="tags">
@@ -392,22 +392,22 @@
 
     <div class="engage-row">
         @auth
-            <button type="button" id="likeBtn" class="engage-btn {{ ($liked ?? false) ? 'active' : '' }}" title="Like this comic">
+            <button type="button" id="likeBtn" class="engage-btn {{ ($liked ?? false) ? 'active' : '' }}" title="Curtir este comic">
                 <span id="likeHeart">{{ ($liked ?? false) ? '♥' : '♡' }}</span>
                 <span id="likeCount">{{ $comic->liked_by_users_count ?? 0 }}</span>
             </button>
         @else
-            <a class="engage-btn" href="{{ route('login') }}" title="Log in to like">♡ <span>{{ $comic->liked_by_users_count ?? 0 }}</span></a>
+            <a class="engage-btn" href="{{ route('login') }}" title="Entre para curtir">♡ <span>{{ $comic->liked_by_users_count ?? 0 }}</span></a>
         @endauth
         @auth
-            <button type="button" id="favBtn" class="engage-btn" title="Toggle Favorites">★ Favorite</button>
+            <button type="button" id="favBtn" class="engage-btn" title="Favoritar">★ Favorito</button>
             <div class="dropdown">
-                <button type="button" id="collectionsBtn" class="engage-btn" title="Add to a collection">＋ Collections</button>
+                <button type="button" id="collectionsBtn" class="engage-btn" title="Adicionar a uma coleção">＋ Coleções</button>
                 <div id="collectionsPanel" class="dropdown-panel hidden"></div>
             </div>
         @endauth
-        <button type="button" id="commentsBtn" class="engage-btn" title="Read and write comments">
-            Comments (<span id="headerCommentCount">{{ $comic->comments_count ?? 0 }}</span>)
+        <button type="button" id="commentsBtn" class="engage-btn" title="Ler e escrever comentários">
+            Comentários (<span id="headerCommentCount">{{ $comic->comments_count ?? 0 }}</span>)
         </button>
     </div>
 </div>
@@ -479,7 +479,7 @@
 
     function updateProgress(currentPage) {
             setCookie("comic_" + comicId + "_page", currentPage, 30);
-            progress.textContent = `Page ${currentPage} of ${totalPages}`;
+            progress.textContent = `Página ${currentPage} de ${totalPages}`;
         }
 
         function scrollToPage(pageNumber) {
@@ -716,7 +716,7 @@ document.addEventListener('keyup', (e) => {
     function commentNode(comment) {
         const mine = AUTH_ID !== null && comment.user_id === AUTH_ID;
         const canEdit = mine || CAN_MODERATE;
-        const name = esc(comment.user ? comment.user.name : 'Deleted user');
+        const name = esc(comment.user ? comment.user.name : 'Usuário removido');
         const avatar = URLS.assetBase + '/' + (comment.user && comment.user.avatar_image_path
             ? comment.user.avatar_image_path.replace(/^\/+/, '')
             : 'default-avatar.png');
@@ -729,7 +729,7 @@ document.addEventListener('keyup', (e) => {
             '<div style="flex:1;min-width:0;">' +
             '<div class="meta"><strong>' + name + '</strong> · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
             '<div class="comment-body"></div>' +
-            (canEdit ? '<div class="actions"><button type="button" data-act="edit">Edit</button><button type="button" data-act="delete">Delete</button></div>' : '') +
+            (canEdit ? '<div class="actions"><button type="button" data-act="edit">Editar</button><button type="button" data-act="delete">Excluir</button></div>' : '') +
             '</div></div>';
         div.querySelector('.comment-body').textContent = comment.body;
         if (canEdit) {
@@ -745,23 +745,23 @@ document.addEventListener('keyup', (e) => {
     }
 
     async function loadComments(page) {
-        listEl.innerHTML = '<p style="color:#999;">Loading…</p>';
+        listEl.innerHTML = '<p style="color:#999;">Carregando…</p>';
         try {
             const data = await api(URLS.comments + '?page=' + page, 'GET');
             commentPage = data.current_page;
             commentLastPage = data.last_page;
             setCounts(data.total);
-            pageEl.textContent = 'Page ' + data.current_page + ' of ' + data.last_page;
+            pageEl.textContent = 'Página ' + data.current_page + ' de ' + data.last_page;
             document.getElementById('commentsPrev').disabled = data.current_page <= 1;
             document.getElementById('commentsNext').disabled = data.current_page >= data.last_page;
             listEl.innerHTML = '';
             if (data.data.length === 0) {
-                listEl.innerHTML = '<p style="color:#999;">No comments yet. Be the first!</p>';
+                listEl.innerHTML = '<p style="color:#999;">Sem comentários ainda. Seja o primeiro!</p>';
                 return;
             }
             data.data.forEach((comment) => listEl.appendChild(commentNode(comment)));
         } catch (e) {
-            listEl.innerHTML = '<p style="color:#f87171;">Could not load comments: ' + esc(e.message) + '</p>';
+            listEl.innerHTML = '<p style="color:#f87171;">Não foi possível carregar os comentários: ' + esc(e.message) + '</p>';
         }
     }
     document.getElementById('commentsPrev').addEventListener('click', () => {
@@ -783,7 +783,7 @@ document.addEventListener('keyup', (e) => {
             box.value = '';
             loadComments(1);
         } catch (e) {
-            alert('Could not post comment: ' + e.message);
+            alert('Não foi possível comentar: ' + e.message);
         } finally {
             submitBtn.disabled = false;
         }
@@ -810,11 +810,11 @@ document.addEventListener('keyup', (e) => {
         const save = document.createElement('button');
         save.type = 'button';
         save.className = 'engage-btn';
-        save.textContent = 'Save';
+        save.textContent = 'Salvar';
         const cancel = document.createElement('button');
         cancel.type = 'button';
         cancel.className = 'engage-btn';
-        cancel.textContent = 'Cancel';
+        cancel.textContent = 'Cancelar';
         bodyEl.append(area, save, cancel);
         cancel.addEventListener('click', () => { bodyEl.textContent = original; });
         save.addEventListener('click', async () => {
@@ -829,7 +829,7 @@ document.addEventListener('keyup', (e) => {
     }
 
     async function removeComment(div, comment) {
-        if (!confirm('Delete this comment?')) return;
+        if (!confirm('Excluir este comentário?')) return;
         try {
             await api(URLS.commentBase + '/' + comment.id, 'DELETE');
             div.remove();

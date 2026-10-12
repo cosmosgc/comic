@@ -81,7 +81,7 @@ class PageController extends Controller
         ]);
 
         // NOTE: route is `comics.showById` — there is no `comics.show` route.
-        return redirect()->route('comics.showById', $comic->id)->with('success', 'Page uploaded successfully.');
+        return redirect()->route('comics.showById', $comic->id)->with('success', 'Página enviada com sucesso.');
     }
 
     public function addPage(Request $request, $comicId)
@@ -129,7 +129,7 @@ class PageController extends Controller
             'page_number' => $pageNumber,
         ]);
 
-        return redirect()->route('comics.edit', $comic->id)->with('success', 'Page uploaded successfully.');
+        return redirect()->route('comics.edit', $comic->id)->with('success', 'Página enviada com sucesso.');
     }
 
     public function getPagesByComicId($id)

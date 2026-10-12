@@ -7,7 +7,7 @@
     'value' => '',
     'inputId' => null,
     'suggestUrl' => null,
-    'placeholder' => 'Type a tag and press Enter…',
+    'placeholder' => 'Digite uma tag e pressione Enter…',
 ])
 @php($inputId ??= $name)
 @php($suggestUrl ??= route('api.tags'))
@@ -24,7 +24,7 @@
                aria-label="Tags">
     </div>
     <ul class="tag-suggest absolute z-20 mt-1 hidden max-h-56 w-full overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"></ul>
-    <p class="mt-1 text-xs text-zinc-500">Enter, comma or Tab adds a tag · Backspace removes the last one</p>
+    <p class="mt-1 text-xs text-zinc-500">Enter, vírgula ou Tab adiciona · Backspace remove a última</p>
 </div>
 
 <script>
@@ -54,7 +54,7 @@
             x.type = 'button';
             x.className = 'ml-0.5 rounded-full px-1 leading-none text-indigo-300 hover:bg-indigo-500/30 hover:text-white';
             x.textContent = '×';
-            x.setAttribute('aria-label', 'Remove tag ' + name);
+            x.setAttribute('aria-label', 'Remover tag ' + name);
             x.addEventListener('click', function () {
                 tags = tags.filter(function (t) { return t !== name; });
                 sync();

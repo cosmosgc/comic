@@ -7,7 +7,7 @@
 
     <a href="{{ route('changelog.index') }}"
        class="mb-4 inline-block text-sm font-semibold text-indigo-400 transition hover:text-indigo-300">
-        ← All updates
+        ← Todas as novidades
     </a>
 
     @php
@@ -61,7 +61,7 @@
     </article>
 
     @if ($related->isNotEmpty())
-        <h2 class="mb-3 mt-8 text-lg font-bold">Related updates</h2>
+        <h2 class="mb-3 mt-8 text-lg font-bold">Novidades relacionadas</h2>
         <div class="space-y-3">
             @foreach ($related as $item)
                 <a href="{{ route('changelog.show', $item['id']) }}"

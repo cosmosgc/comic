@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Your Profile')
+@section('title', 'Seu perfil')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
@@ -42,7 +42,7 @@
                     {{ $likedPosts->links() }}
                 </div>
             @else
-                <p class="text-zinc-500">You have not liked any posts yet.</p>
+                <p class="text-zinc-500">Você ainda não curtiu nenhum post.</p>
             @endif
         </div>
     @elseif ($activeTab === 'collections')
@@ -65,13 +65,13 @@
                                     <span title="Favorites">★</span>
                                 @endif
                                 @if (! $collection->is_public)
-                                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">private</span>
+                                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">privada</span>
                                 @endif
                             </h2>
                             @if ($collection->description)
                                 <p class="text-sm text-zinc-500">{{ Str::limit($collection->description, 100) }}</p>
                             @endif
-                            <p class="mt-2 text-xs text-zinc-500">{{ $collection->comics_count }} comic(s)</p>
+                            <p class="mt-2 text-xs text-zinc-500">{{ $collection->comics_count }} comics</p>
                         </a>
                     @endforeach
                 </div>
@@ -80,13 +80,13 @@
                     {{ $collections->links() }}
                 </div>
             @else
-                <p class="text-zinc-500">You have no collections yet.</p>
+                <p class="text-zinc-500">Você não tem coleções ainda.</p>
             @endif
         </div>
     @else
         <!-- Comics section -->
         <div>
-            <h3 class="mb-4 text-xl font-semibold">Suas Comics</h3>
+            <h3 class="mb-4 text-xl font-semibold">Seus comics</h3>
 
             @if($comics->count())
                 <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -127,7 +127,7 @@
 
                             <a href="{{ route('comics.edit', ['comic' => $comic->id]) }}"
                                class="mt-4 inline-flex justify-center rounded-lg border border-yellow-600 px-3 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-600/10">
-                                Edit Comic
+                                Editar comic
                             </a>
                         </div>
                     @endforeach
@@ -139,7 +139,7 @@
                     {{ $comics->links() }}
                 </div>
             @else
-                <p class="text-zinc-500">You have not uploaded any comics yet.</p>
+                <p class="text-zinc-500">Você ainda não publicou nenhum comic.</p>
             @endif
         </div>
     @endif

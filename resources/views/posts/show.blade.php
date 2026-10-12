@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Post thread')
+@section('title', 'Post')
 
 @section('content')
 <div class="mx-auto max-w-xl border-x border-zinc-800 min-h-screen">
@@ -43,14 +43,14 @@
 
                 <div class="flex gap-3">
                     <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : asset('default-avatar.png') }}"
-                         alt="Your avatar"
+                         alt="Seu avatar"
                          class="h-10 w-10 shrink-0 rounded-full border border-zinc-800 object-cover">
 
                     <div class="min-w-0 flex-1">
                         {{-- Reply target chip (shown when answering a nested reply) --}}
                         <div id="replyTargetChip" class="mb-1 hidden items-center gap-2 text-sm">
                             <span class="text-zinc-400">
-                                Replying to <span id="replyTargetHandle" class="font-semibold text-zinc-200"></span>
+                                Respondendo a <span id="replyTargetHandle" class="font-semibold text-zinc-200"></span>
                             </span>
                             <button type="button" onclick="clearReplyTarget()"
                                     class="rounded-full px-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200">✕</button>
@@ -61,7 +61,7 @@
                             id="replyText"
                             rows="2"
                             maxlength="280"
-                            placeholder="Post your reply"
+                            placeholder="Escreva sua resposta"
                             class="w-full resize-none overflow-hidden bg-transparent pt-2 text-xl text-zinc-100
                                    placeholder-zinc-500 focus:outline-none"></textarea>
 
@@ -79,7 +79,7 @@
                             <button type="submit"
                                     class="rounded-full bg-indigo-600 px-5 py-1.5 text-sm font-bold text-white
                                            transition hover:bg-indigo-500 disabled:opacity-50">
-                                Reply
+                                Responder
                             </button>
                         </div>
                     </div>
@@ -91,7 +91,7 @@
     {{-- Replies --}}
     <div class="border-b border-zinc-800 px-4 py-3">
         <h3 class="font-bold">
-            Replies
+            Respostas
             @if (($post->replies_count ?? 0) > 0)
                 <span class="text-zinc-500">({{ $post->replies_count }})</span>
             @endif
@@ -102,7 +102,7 @@
             @include('posts.thread-node', ['node' => $reply, 'depth' => 1, 'likedPostIds' => $likedPostIds ?? []])
         @empty
             <div class="p-8 text-center text-zinc-500">
-                No replies yet. Be the first!
+                Sem respostas ainda. Seja o primeiro!
             </div>
         @endforelse
     </div>

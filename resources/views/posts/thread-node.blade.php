@@ -12,7 +12,7 @@
         <div class="px-4 py-2">
             <a href="{{ route('posts.show', $node->replies->first()) }}"
                class="text-sm font-semibold text-sky-500 transition hover:text-sky-400">
-                Continue this thread →
+                Continuar thread →
             </a>
         </div>
     @endif

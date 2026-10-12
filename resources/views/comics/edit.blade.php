@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Comic')
+@section('title', 'Editar comic')
 
 @section('content')
 <div class="mx-auto max-w-5xl px-4 py-6">
 
     <h1 class="mb-6 text-2xl font-bold">
-        Edit Comic: {{ $comic->title }}
+        Editar comic: {{ $comic->title }}
     </h1>
 
     @if (session('success'))
@@ -26,7 +26,7 @@
         <!-- Title -->
         <div>
             <label class="mb-1 block text-sm font-medium text-zinc-300">
-                Title
+                Título
             </label>
             <input type="text"
                    name="title"
@@ -38,7 +38,7 @@
         <!-- Description -->
         <div>
             <label class="mb-1 block text-sm font-medium text-zinc-300">
-                Description
+                Descrição
             </label>
             <textarea name="description"
                       rows="4"
@@ -54,6 +54,7 @@
             @include('components.tag-editor', [
                 'name' => 'tags',
                 'value' => old('tags', $comic->tags->pluck('name')->implode(', ')),
+                'placeholder' => 'Digite para buscar ou criar tags…',
             ])
             @error('tags')
                 <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
@@ -63,14 +64,14 @@
         <button type="submit"
                 class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
                        hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-            Save Changes
+            Salvar alterações
         </button>
     </form>
 
     <!-- Reorder pages -->
     <div class="mb-10">
         <h2 class="mb-4 text-xl font-semibold">
-            Reorder Pages
+            Reordenar páginas
         </h2>
 
         <ul id="sortable"
@@ -83,16 +84,16 @@
                     <!-- Cover badge -->
                     @if($comic->image_path === $page->image_path)
                         <span class="absolute left-2 top-2 rounded-full bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">
-                            Cover
+                            Capa
                         </span>
                     @endif
 
                     <img src="{{ asset('storage/' . $page->image_path) }}"
-                        alt="Page {{ $page->page_number }}"
+                        alt="Página {{ $page->page_number }}"
                         class="mb-2 w-full rounded-lg object-cover">
 
                     <span class="mb-2 text-sm text-zinc-300">
-                        Page {{ $page->page_number }}
+                        Página {{ $page->page_number }}
                     </span>
 
                     <div class="flex gap-2">
@@ -100,14 +101,14 @@
                                 data-page-id="{{ $page->id }}"
                                 class="set-cover rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white
                                     hover:bg-indigo-500">
-                            Set as Cover
+                            Definir capa
                         </button>
 
                         <button type="button"
                                 data-id="{{ $page->id }}"
                                 class="delete-page rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white
                                     hover:bg-red-500">
-                            Delete
+                            Excluir
                         </button>
                     </div>
                 </li>
@@ -120,7 +121,7 @@
     <!-- Add new page -->
     <div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
         <h2 class="mb-4 text-xl font-semibold">
-            Add New Page
+            Adicionar nova página
         </h2>
 
         <form action="{{ route('pages.addPage', $comic->id) }}"
@@ -131,7 +132,7 @@
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-zinc-300">
-                    Upload Page Image
+                    Enviar imagem da página
                 </label>
                 <input type="file"
                        id="image"
@@ -144,14 +145,14 @@
                               file:text-sm file:font-medium file:text-white
                               hover:file:bg-indigo-500">
                 <p class="mt-1 text-xs text-zinc-500">
-                    Accepted formats: JPG, JPEG, PNG. Maximum size: 10MB.
+                    Formatos aceitos: JPG, JPEG, PNG. Tamanho máximo: 10MB.
                 </p>
             </div>
 
             <button type="submit"
                     class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white
                            hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
-                Upload Page
+                Enviar página
             </button>
         </form>
     </div>

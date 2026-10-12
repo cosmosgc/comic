@@ -1,7 +1,7 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Migrations')
-@section('page-title', 'Migrations')
+@section('title', 'Migrações')
+@section('page-title', 'Migrações')
 
 @section('content')
     @if (session('success'))
@@ -13,7 +13,7 @@
     @if (session('migrate_output'))
         <div class="admin-card mb-6">
             <div class="admin-card-header">
-                <span>Last migrate output</span>
+                <span>Última saída do migrate</span>
             </div>
             <div class="admin-card-body">
                 <pre class="admin-log">{{ session('migrate_output') }}</pre>
@@ -24,27 +24,27 @@
     {{-- Status overview --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="admin-stat">
-            <div class="admin-stat-label">Connection</div>
+            <div class="admin-stat-label">Conexão</div>
             <div class="mt-1 text-xl font-bold">{{ $report['connection'] }} <span class="text-sm font-medium text-zinc-500">({{ $report['driver'] }})</span></div>
             <div class="admin-stat-sub">{{ $report['database'] }}</div>
         </div>
         <div class="admin-stat">
-            <div class="admin-stat-label">Migration files</div>
+            <div class="admin-stat-label">Arquivos de migração</div>
             <div class="admin-stat-value">{{ count($report['files']) }}</div>
-            <div class="admin-stat-sub">{{ count($report['ran']) }} ran · {{ count($report['pending']) }} pending</div>
+            <div class="admin-stat-sub">{{ count($report['ran']) }} aplicadas · {{ count($report['pending']) }} pendentes</div>
         </div>
         <div class="admin-stat">
-            <div class="admin-stat-label">Tables</div>
+            <div class="admin-stat-label">Tabelas</div>
             <div class="admin-stat-value">{{ count($report['actualTables']) }}</div>
-            <div class="admin-stat-sub">{{ count($report['expectedTables']) }} expected · {{ count($report['missingTables']) }} missing · {{ count($report['extraTables']) }} extra</div>
+            <div class="admin-stat-sub">{{ count($report['expectedTables']) }} esperadas · {{ count($report['missingTables']) }} faltando · {{ count($report['extraTables']) }} extras</div>
         </div>
         <div class="admin-stat">
-            <div class="admin-stat-label">Health</div>
+            <div class="admin-stat-label">Saúde</div>
             <div class="mt-2">
                 @if ($report['healthy'])
-                    <span class="admin-badge admin-badge-success">Up to date</span>
+                    <span class="admin-badge admin-badge-success">Em dia</span>
                 @else
-                    <span class="admin-badge admin-badge-danger">Needs attention</span>
+                    <span class="admin-badge admin-badge-danger">Precisa de atenção</span>
                 @endif
             </div>
         </div>
@@ -53,20 +53,20 @@
     {{-- Problems callout --}}
     @if (!$report['healthy'])
         <div class="admin-alert admin-alert-warning mt-6">
-            <strong>Something is off:</strong>
+            <strong>Algo está errado:</strong>
             <ul>
                 @foreach ($report['pending'] as $name)
-                    <li>Pending migration: <code class="admin-code">{{ $name }}</code></li>
+                    <li>Migração pendente: <code class="admin-code">{{ $name }}</code></li>
                 @endforeach
                 @foreach ($report['missingTables'] as $table)
-                    <li>Missing table: <code class="admin-code">{{ $table }}</code> (expected by a migration, not in DB)</li>
+                    <li>Tabela faltando: <code class="admin-code">{{ $table }}</code> (esperada por uma migração, não está no banco)</li>
                 @endforeach
                 @foreach ($report['ranWithoutFile'] as $name)
-                    <li>Ran but file missing: <code class="admin-code">{{ $name }}</code> (DB says ran, no file on disk — was it deleted?)</li>
+                    <li>Aplicada mas sem arquivo: <code class="admin-code">{{ $name }}</code> (o banco diz que rodou, mas não há arquivo — foi apagado?)</li>
                 @endforeach
                 @foreach ($report['tables'] as $table => $info)
                     @if (!empty($info['missingColumns']))
-                        <li>Table <code class="admin-code">{{ $table }}</code> missing columns: <code class="admin-code">{{ implode(', ', $info['missingColumns']) }}</code></li>
+                        <li>Tabela <code class="admin-code">{{ $table }}</code> sem as colunas: <code class="admin-code">{{ implode(', ', $info['missingColumns']) }}</code></li>
                     @endif
                 @endforeach
             </ul>
@@ -76,18 +76,18 @@
     {{-- Run migrations (no console needed) --}}
     <div class="admin-card mt-6">
         <div class="admin-card-header">
-            <span>Run migrations</span>
+            <span>Rodar migrações</span>
         </div>
         <div class="admin-card-body">
             @if (count($report['pending']) > 0)
-                <p class="admin-muted mb-3">Runs <code class="admin-code">php artisan migrate --force</code> on the server via this panel. No SSH needed.</p>
-                <form method="POST" action="{{ route('admin.migrations.run') }}" onsubmit="return confirm('Run {{ count($report['pending']) }} pending migration(s)?')">
+                <p class="admin-muted mb-3">Roda <code class="admin-code">php artisan migrate --force</code> no servidor por este painel. Sem SSH.</p>
+                <form method="POST" action="{{ route('admin.migrations.run') }}" onsubmit="return confirm('Rodar {{ count($report['pending']) }} migração(ões) pendente(s)?')">
                     @csrf
                     <input type="hidden" name="action" value="migrate">
-                    <button type="submit" class="admin-btn admin-btn-primary">Run {{ count($report['pending']) }} pending migration(s)</button>
+                    <button type="submit" class="admin-btn admin-btn-primary">Rodar {{ count($report['pending']) }} migração(ões) pendente(s)</button>
                 </form>
             @else
-                <p class="admin-muted mb-0">Database is up to date — nothing to run.</p>
+                <p class="admin-muted mb-0">Banco em dia — nada para rodar.</p>
             @endif
         </div>
     </div>
@@ -95,18 +95,18 @@
     {{-- Pending migrations --}}
     <div class="admin-card mt-6">
         <div class="admin-card-header">
-            <span>Pending migrations ({{ count($report['pending']) }})</span>
+            <span>Migrações pendentes ({{ count($report['pending']) }})</span>
         </div>
         @if (count($report['pending']) === 0)
-            <p class="admin-muted px-5 py-4">None — all files have run.</p>
+            <p class="admin-muted px-5 py-4">Nenhuma — todos os arquivos já rodaram.</p>
         @else
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>Migration</th>
-                            <th>Creates</th>
-                            <th>Alters</th>
+                            <th>Migração</th>
+                            <th>Cria</th>
+                            <th>Altera</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -128,17 +128,17 @@
     {{-- Tables: expected vs actual --}}
     <div class="admin-card mt-6">
         <div class="admin-card-header">
-            <span>Tables: migrations vs database</span>
+            <span>Tabelas: migrações vs banco</span>
         </div>
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Table</th>
+                        <th>Tabela</th>
                         <th>Status</th>
-                        <th>Rows</th>
-                        <th>Columns (DB)</th>
-                        <th>Missing columns</th>
+                        <th>Linhas</th>
+                        <th>Colunas (banco)</th>
+                        <th>Colunas faltando</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -147,9 +147,9 @@
                             <td><code>{{ $table }}</code></td>
                             <td>
                                 @if (!$info['exists'])
-                                    <span class="admin-badge admin-badge-danger">Missing in DB</span>
+                                    <span class="admin-badge admin-badge-danger">Falta no banco</span>
                                 @elseif (!$info['expected'])
-                                    <span class="admin-badge admin-badge-warning">Extra (no migration)</span>
+                                    <span class="admin-badge admin-badge-warning">Extra (sem migração)</span>
                                 @else
                                     <span class="admin-badge admin-badge-success">OK</span>
                                 @endif
@@ -176,15 +176,15 @@
             <div class="admin-card mt-4">
                 <div class="admin-card-header">
                     <span><code>{{ $table }}</code>
-                    <span class="admin-muted">({{ count($info['columns']) }} columns{{ $info['rows'] !== null ? ', '.$info['rows'].' rows' : '' }})</span></span>
+                    <span class="admin-muted">({{ count($info['columns']) }} colunas{{ $info['rows'] !== null ? ', '.$info['rows'].' linhas' : '' }})</span></span>
                 </div>
                 <div class="admin-table-wrap">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Column</th>
-                                <th>Type</th>
-                                <th>Nullable</th>
+                                <th>Coluna</th>
+                                <th>Tipo</th>
+                                <th>Permite nulo</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -192,7 +192,7 @@
                                 <tr @if (in_array($col['name'], $info['missingColumns'])) class="bg-red-50 dark:bg-red-500/10" @endif>
                                     <td><code>{{ $col['name'] }}</code></td>
                                     <td><code>{{ $col['type'] }}</code></td>
-                                    <td>{{ $col['nullable'] ? 'yes' : 'no' }}</td>
+                                    <td>{{ $col['nullable'] ? 'sim' : 'não' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -205,17 +205,17 @@
     {{-- All migration files --}}
     <div class="admin-card mt-6">
         <div class="admin-card-header">
-            <span>All migration files ({{ count($report['files']) }})</span>
+            <span>Todos os arquivos ({{ count($report['files']) }})</span>
         </div>
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Migration</th>
+                        <th>Migração</th>
                         <th>Status</th>
-                        <th>Batch</th>
-                        <th>Creates</th>
-                        <th>Alters</th>
+                        <th>Lote</th>
+                        <th>Cria</th>
+                        <th>Altera</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -224,9 +224,9 @@
                             <td><code>{{ $file['name'] }}</code></td>
                             <td>
                                 @if ($file['ran'])
-                                    <span class="admin-badge admin-badge-success">Ran</span>
+                                    <span class="admin-badge admin-badge-success">Aplicada</span>
                                 @else
-                                    <span class="admin-badge admin-badge-danger">Pending</span>
+                                    <span class="admin-badge admin-badge-danger">Pendente</span>
                                 @endif
                             </td>
                             <td>{{ $file['batch'] ?? '—' }}</td>
@@ -239,13 +239,13 @@
         </div>
         @if (count($report['ranWithoutFile']) > 0)
             <div class="border-t border-zinc-200 px-5 py-3 text-sm dark:border-zinc-800">
-                <strong>Ran in DB but file missing:</strong>
+                <strong>Aplicadas no banco mas sem arquivo:</strong>
                 <code class="admin-code">{{ implode(', ', $report['ranWithoutFile']) }}</code>
             </div>
         @endif
         @if (count($report['extraTables']) > 0)
             <div class="border-t border-zinc-200 px-5 py-3 text-sm dark:border-zinc-800">
-                <strong>Extra tables in DB (no creating migration found):</strong>
+                <strong>Tabelas extras no banco (sem migração):</strong>
                 <code class="admin-code">{{ implode(', ', $report['extraTables']) }}</code>
             </div>
         @endif

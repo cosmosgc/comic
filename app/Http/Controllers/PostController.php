@@ -133,7 +133,7 @@ class PostController extends Controller
 
         $post->update(['text' => $validated['text'] ?? null]);
 
-        return redirect()->route('posts.show', $post)->with('success', 'Post updated.');
+        return redirect()->route('posts.show', $post)->with('success', 'Post atualizado.');
     }
 
     /**

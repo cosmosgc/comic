@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Collection')
+@section('title', 'Editar coleção')
 
 @section('content')
 <div class="mx-auto max-w-4xl px-4 py-6">
@@ -8,7 +8,7 @@
     <div class="mb-6 flex items-center gap-4">
         <a href="{{ route('collections.show', $collection) }}"
            class="text-xl text-zinc-400 transition hover:text-zinc-100">←</a>
-        <h1 class="truncate text-2xl font-bold">Edit Collection: {{ $collection->name }}</h1>
+        <h1 class="truncate text-2xl font-bold">Editar coleção: {{ $collection->name }}</h1>
     </div>
 
     @if (session('success'))
@@ -26,7 +26,7 @@
         <!-- Name -->
         <div>
             <label for="name" class="mb-1 block text-sm font-medium text-zinc-300">
-                Collection Name
+                Nome da coleção
             </label>
             <input type="text"
                    id="name"
@@ -46,7 +46,7 @@
         <!-- Description -->
         <div>
             <label for="description" class="mb-1 block text-sm font-medium text-zinc-300">
-                Description
+                Descrição
             </label>
             <textarea id="description"
                       name="description"
@@ -72,10 +72,10 @@
                        class="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/40">
                 <div>
                     <label for="is_public" class="block text-sm font-medium text-zinc-300">
-                        Public collection
+                        Coleção pública
                     </label>
                     <p class="mt-0.5 text-xs text-zinc-500">
-                        Unchecked = only you can see it.
+                        Desmarcado = só você vê.
                     </p>
                 </div>
             </div>
@@ -92,10 +92,10 @@
                        class="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/40">
                 <div>
                     <label for="is_public" class="block text-sm font-medium text-zinc-300">
-                        Public collection
+                        Coleção pública
                     </label>
                     <p class="mt-0.5 text-xs text-zinc-500">
-                        Unchecked = only you can see it.
+                        Desmarcado = só você vê.
                     </p>
                 </div>
             </div>
@@ -103,27 +103,27 @@
 
         <!-- Current order (drag to reorder) -->
         <div>
-            <h2 class="mb-1 text-sm font-medium text-zinc-300">Manage Comic Order</h2>
-            <p class="mb-3 text-xs text-zinc-500">Drag covers to reorder — saved automatically.</p>
+            <h2 class="mb-1 text-sm font-medium text-zinc-300">Ordem dos comics</h2>
+            <p class="mb-3 text-xs text-zinc-500">Arraste as capas para reordenar — salva sozinho.</p>
             <div id="sortable" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 @forelse ($selectedComics as $comic)
                     <div class="cursor-move overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950"
-                         data-id="{{ $comic->id }}" title="Drag to reorder">
+                         data-id="{{ $comic->id }}" title="Arraste para reordenar">
                         <img src="{{ asset('storage/' . $comic->image_path) }}"
                              alt="{{ $comic->title }}"
                              class="aspect-[3/4] w-full object-cover">
                         <p class="truncate px-2 py-1.5 text-xs text-zinc-300">{{ $comic->title }}</p>
                     </div>
                 @empty
-                    <p class="text-sm text-zinc-500">No comics yet — add some below.</p>
+                    <p class="text-sm text-zinc-500">Sem comics ainda — adicione abaixo.</p>
                 @endforelse
             </div>
         </div>
 
         <!-- Add / remove comics -->
         <div>
-            <h2 class="mb-1 text-sm font-medium text-zinc-300">Comics in this collection</h2>
-            <p class="mb-3 text-xs text-zinc-500">Uncheck to remove. Saving keeps everything else untouched.</p>
+            <h2 class="mb-1 text-sm font-medium text-zinc-300">Comics nesta coleção</h2>
+            <p class="mb-3 text-xs text-zinc-500">Desmarque para remover. Salvar mantém o resto intacto.</p>
             @php($selectedIds = $selectedComics->pluck('id')->all())
             <div class="grid max-h-96 grid-cols-2 gap-3 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:grid-cols-3 md:grid-cols-4">
                 @foreach ($comics as $comic)
@@ -147,22 +147,22 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <a href="{{ route('collections.show', $collection) }}"
                class="inline-flex justify-center rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800">
-                Cancel
+                Cancelar
             </a>
             <button type="submit"
                     class="inline-flex justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
-                Update Collection
+                Atualizar coleção
             </button>
         </div>
     </form>
 
     <form method="POST" action="{{ route('collections.destroy', $collection) }}"
-          onsubmit="return confirm('Delete this collection? Its comics stay untouched.')"
+          onsubmit="return confirm('Excluir esta coleção? Os comics continuam intactos.')"
           class="mt-4 text-right">
         @csrf
         @method('DELETE')
         <button type="submit" class="text-sm text-red-400 hover:text-red-300 hover:underline">
-            Delete this collection
+            Excluir esta coleção
         </button>
     </form>
 
@@ -188,9 +188,9 @@
             })
             .then((response) => response.json())
             .then((data) => {
-                if (!data.success) alert('Error saving order!');
+                if (!data.success) alert('Erro ao salvar a ordem!');
             })
-            .catch(() => alert('Error saving order!'));
+            .catch(() => alert('Erro ao salvar a ordem!'));
         }
     });
 })();

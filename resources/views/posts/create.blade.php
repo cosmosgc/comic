@@ -14,8 +14,8 @@
         <input type="hidden" name="referenced_post_id" id="quoteInput" value="">
 
         <div class="flex gap-3">
-            <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : asset('default-avatar.png') }}"
-                 alt="Your avatar"
+                <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : asset('default-avatar.png') }}"
+                 alt="Seu avatar"
                  class="h-10 w-10 shrink-0 rounded-full border border-zinc-800 object-cover">
 
             <div class="min-w-0 flex-1">
@@ -24,14 +24,14 @@
                     id="postText"
                     rows="1"
                     maxlength="280"
-                    placeholder="What is happening?!"
+                    placeholder="O que está acontecendo?!"
                     class="w-full resize-none overflow-hidden bg-transparent pt-2 text-xl text-zinc-100
                            placeholder-zinc-500 focus:outline-none"></textarea>
 
                 {{-- Quote chip (shown when reposting) --}}
                 <div id="quoteChip" class="mt-2 hidden items-center justify-between gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm">
                     <span class="truncate text-zinc-400">
-                        Quoting <span id="quoteChipHandle" class="font-semibold text-zinc-200"></span>:
+                        Citando <span id="quoteChipHandle" class="font-semibold text-zinc-200"></span>:
                         <span id="quoteChipText"></span>
                     </span>
                     <button type="button" onclick="clearQuote()"
@@ -44,7 +44,7 @@
                 <div class="mt-2 flex items-center justify-between border-t border-zinc-800 pt-3">
                     {{-- Attach media --}}
                     <label for="mediaInput"
-                           title="Add images (max 4MB each)"
+                           title="Adicionar imagens (máx 4MB cada)"
                            class="cursor-pointer rounded-full p-2 text-indigo-500 transition hover:bg-indigo-500/10">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -58,7 +58,7 @@
                         <button type="submit"
                                 class="rounded-full bg-indigo-600 px-5 py-1.5 text-sm font-bold text-white
                                        transition hover:bg-indigo-500 disabled:opacity-50">
-                            Post
+                            Postar
                         </button>
                     </div>
                 </div>

@@ -7,18 +7,18 @@
 @section('content')
     <div class="admin-card">
         <div class="admin-card-header">
-            <span>All Comics</span>
+            <span>Todos os comics</span>
         </div>
         <div class="admin-table-wrap">
             <table id="comicsTable" class="admin-table">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Name</th>
-                        <th>Artist</th>
+                        <th>Nome</th>
+                        <th>Autor</th>
                         <th>Slug</th>
-                        <th>Created At</th>
-                        <th>Views</th>
+                        <th>Criado em</th>
+                        <th>Visualizações</th>
                     </tr>
                 </thead>
                 <tbody>

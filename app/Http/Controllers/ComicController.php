@@ -345,7 +345,7 @@ class ComicController extends Controller
         }
 
         return response()->json([
-            'message' => 'Comic uploaded successfully.',
+            'message' => 'Comic publicado com sucesso.',
             'redirect' => route('comics.showBySlug', $comic->slug),
             // Lets the upload page append remaining pages one small
             // request at a time (avoids nginx 413 on huge single POSTs).
@@ -377,7 +377,7 @@ class ComicController extends Controller
             $comic->save();
         }
 
-        return response()->json(['message' => 'Slugs updated for all comics without a slug.']);
+        return response()->json(['message' => 'Slugs atualizados para todos os comics sem slug.']);
     }
 
     public function edit($id)
@@ -429,7 +429,7 @@ class ComicController extends Controller
             $this->syncTagsFromString($comic, $validated['tags'] ?? null);
         }
 
-        return redirect()->route('comics.edit', $comic->id)->with('success', 'Comic updated successfully.');
+        return redirect()->route('comics.edit', $comic->id)->with('success', 'Comic atualizado com sucesso.');
     }
 
     public function reorderPages(Request $request, Comic $comic)

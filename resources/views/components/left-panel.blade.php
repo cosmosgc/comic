@@ -10,11 +10,11 @@
     <!-- Popular Tags -->
     <div class="px-4 pb-4">
         <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
-            Tags Populares
+            Tags populares
         </h5>
 
         @if (($tags ?? collect())->isEmpty())
-            <p class="text-sm italic text-zinc-500">No tags yet.</p>
+            <p class="text-sm italic text-zinc-500">Sem tags ainda.</p>
         @else
             <ul class="space-y-2">
                 @foreach ($tags as $tag)

@@ -39,7 +39,7 @@ class AnalyticsController extends Controller
             'os' => $validated['os'] ?? null, // Save OS
         ]);
 
-        return response()->json(['message' => 'Analytics data stored successfully.'], 201);
+        return response()->json(['message' => 'Estatísticas salvas com sucesso.'], 201);
     }
 
     public function referralAnalytics()

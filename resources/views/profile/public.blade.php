@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Public Profile of ' . $user->name)
+@section('title', 'Perfil de ' . $user->name)
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
@@ -34,7 +34,7 @@
         {{-- Liked posts are private unless the owner opted in --}}
         <section>
             <h3 class="mb-4 text-xl font-semibold">
-                Posts liked by {{ $user->name }}
+                Posts curtidos por {{ $user->name }}
             </h3>
 
             @if($likedPosts->count())
@@ -49,14 +49,14 @@
                 </div>
             @else
                 <p class="text-zinc-500">
-                    No liked posts yet.
+                    Sem posts curtidos ainda.
                 </p>
             @endif
         </section>
     @elseif ($activeTab === 'collections')
         <section>
             <h3 class="mb-4 text-xl font-semibold">
-                Collections by {{ $user->name }}
+                Coleções de {{ $user->name }}
             </h3>
 
             @if($collections->count())
@@ -73,13 +73,13 @@
                             <h2 class="mb-1 text-lg font-semibold">
                                 {{ $collection->name }}
                                 @if (! $collection->is_public)
-                                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">private</span>
+                                    <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">privada</span>
                                 @endif
                             </h2>
                             @if ($collection->description)
                                 <p class="text-sm text-zinc-500">{{ Str::limit($collection->description, 100) }}</p>
                             @endif
-                            <p class="mt-2 text-xs text-zinc-500">{{ $collection->comics_count }} comic(s)</p>
+                            <p class="mt-2 text-xs text-zinc-500">{{ $collection->comics_count }} comics</p>
                         </a>
                     @endforeach
                 </div>
@@ -89,7 +89,7 @@
                 </div>
             @else
                 <p class="text-zinc-500">
-                    No collections yet.
+                    Sem coleções ainda.
                 </p>
             @endif
         </section>
@@ -97,7 +97,7 @@
         <!-- Comics -->
         <section>
             <h3 class="mb-4 text-xl font-semibold">
-                Comics by {{ $user->name }}
+                Comics de {{ $user->name }}
             </h3>
 
             @if($comics->count())
@@ -113,7 +113,7 @@
                 </div>
             @else
                 <p class="text-zinc-500">
-                    This user has not uploaded any comics yet.
+                    Este usuário ainda não publicou comics.
                 </p>
             @endif
         </section>

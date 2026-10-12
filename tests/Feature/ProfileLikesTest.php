@@ -48,8 +48,8 @@ class ProfileLikesTest extends TestCase
         $response = $this->actingAs($user)->get('/profile');
 
         $response->assertStatus(200);
-        $response->assertSee('Liked posts'); // the tab itself
-        $response->assertSee('Collections'); // the future tab slot
+        $response->assertSee('Curtidos'); // the tab itself
+        $response->assertSee('Coleções'); // the future tab slot
         $response->assertDontSee('Hidden liked post');
     }
 
@@ -66,7 +66,7 @@ class ProfileLikesTest extends TestCase
         $response = $this->actingAs($stranger)->get("/profile/{$owner->name}?tab=likes");
 
         $response->assertStatus(200);
-        $response->assertDontSee('Posts liked by');
+        $response->assertDontSee('Posts curtidos por');
         $response->assertDontSee('Secretly liked post');
     }
 
@@ -80,7 +80,7 @@ class ProfileLikesTest extends TestCase
         $response = $this->actingAs($stranger)->get("/profile/{$owner->name}?tab=likes");
 
         $response->assertStatus(200);
-        $response->assertSee('Posts liked by');
+        $response->assertSee('Posts curtidos por');
         $response->assertSee('Publicly liked post');
     }
 

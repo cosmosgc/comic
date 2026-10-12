@@ -208,9 +208,9 @@ class CollectionTest extends TestCase
         ]);
 
         $this->actingAs($owner)->get("/collections/{$collection->id}")
-            ->assertOk()->assertSee('Edit collection');
+            ->assertOk()->assertSee('Editar coleção');
         $this->actingAs($stranger)->get("/collections/{$collection->id}")
-            ->assertOk()->assertDontSee('Edit collection');
+            ->assertOk()->assertDontSee('Editar coleção');
     }
 
     public function test_update_without_comics_key_preserves_attachments(): void

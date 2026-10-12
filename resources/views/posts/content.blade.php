@@ -1,7 +1,7 @@
 @php
     $author = $post->author;
-    $authorName = $author?->name ?? 'Deleted user';
-    $handle = $author ? '@' . Str::slug($author->name, '') : '@unknown';
+    $authorName = $author?->name ?? 'Usuário removido';
+    $handle = $author ? '@' . Str::slug($author->name, '') : '@desconhecido';
     $avatar = $author?->avatar_image_path
         ? asset($author->avatar_image_path)
         : asset('default-avatar.png');
@@ -21,7 +21,7 @@
                      class="h-10 w-10 rounded-full border border-zinc-800 object-cover hover:opacity-80">
             </a>
         @else
-            <img src="{{ $avatar }}" alt="Deleted user avatar"
+            <img src="{{ $avatar }}" alt="Avatar de usuário removido"
                  class="h-10 w-10 rounded-full border border-zinc-800 object-cover opacity-60">
         @endif
     </div>
@@ -46,7 +46,7 @@
                 {{ $post->created_at?->diffForHumans() }}
             </a>
             @if ($post->updated_at && $post->created_at && $post->updated_at->gt($post->created_at->copy()->addMinute()))
-                <span class="shrink-0 text-xs text-zinc-600" title="Edited {{ $post->updated_at }}">· edited</span>
+                <span class="shrink-0 text-xs text-zinc-600" title="Editado {{ $post->updated_at }}">· editado</span>
             @endif
         </div>
 
@@ -64,12 +64,12 @@
         @if (!empty($mediaFiles))
             <div class="mt-3 overflow-hidden rounded-2xl border border-zinc-800">
                 @if (count($mediaFiles) === 1)
-                    <img src="{{ asset($mediaFiles[0]) }}" alt="Post media"
+                    <img src="{{ asset($mediaFiles[0]) }}" alt="Mídia do post"
                          class="max-h-96 w-full object-cover">
                 @else
                     <div class="grid grid-cols-2 gap-0.5">
                         @foreach (array_slice($mediaFiles, 0, 4) as $media)
-                            <img src="{{ asset($media) }}" alt="Post media"
+                            <img src="{{ asset($media) }}" alt="Mídia do post"
                                  class="h-48 w-full object-cover">
                         @endforeach
                     </div>
@@ -84,7 +84,7 @@
                     <img src="{{ $quotedAuthor?->avatar_image_path ? asset($quotedAuthor->avatar_image_path) : asset('default-avatar.png') }}"
                          alt="avatar" class="h-5 w-5 rounded-full object-cover">
                     <span class="truncate font-bold text-zinc-200">
-                        {{ $quotedAuthor?->name ?? 'Deleted user' }}
+                        {{ $quotedAuthor?->name ?? 'Usuário removido' }}
                     </span>
                     <span class="text-zinc-500">·</span>
                     <span class="text-zinc-500">{{ $quoted->created_at?->diffForHumans() }}</span>
@@ -133,7 +133,7 @@
             @auth
                 <button type="button"
                         onclick="togglePostLike('{{ route('posts.like', $post) }}', this)"
-                        title="Like"
+                        title="Curtir"
                         data-liked="{{ $isLiked ? '1' : '0' }}"
                         class="group flex items-center gap-1 text-xs transition {{ $isLiked ? 'text-rose-500' : 'hover:text-rose-500' }}">
                     <span class="rounded-full p-2 transition group-hover:bg-rose-500/10">
@@ -157,7 +157,7 @@
             {{-- Reply: prefills the composer (id lets thread pages target the node) --}}
             <button type="button"
                     onclick="replyToPost('{{ addslashes($handle) }}', {{ $post->id }})"
-                    title="Reply"
+                    title="Responder"
                     class="group flex items-center gap-1 text-xs transition hover:text-sky-500">
                 <span class="rounded-full p-2 transition group-hover:bg-sky-500/10">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -167,7 +167,7 @@
             </button>
             {{-- Reply count opens the thread --}}
             <a href="{{ route('posts.show', $post) }}"
-               title="Open thread"
+               title="Abrir thread"
                class="text-xs transition hover:text-sky-500">
                 @if (($post->replies_count ?? 0) > 0)
                     <span>{{ $post->replies_count }}</span>
@@ -177,7 +177,7 @@
             {{-- Repost (quote): prefills the composer with a quote --}}
             <button type="button"
                     onclick="quotePost({{ $post->id }}, '{{ addslashes($handle) }}', '{{ addslashes(Str::limit($post->text ?? '', 80)) }}')"
-                    title="Repost"
+                    title="Republicar"
                     class="group flex items-center gap-1 text-xs transition hover:text-emerald-500">
                 <span class="rounded-full p-2 transition group-hover:bg-emerald-500/10">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -190,7 +190,7 @@
             </button>
 
             {{-- Views: counted once per viewer on the thread page --}}
-            <span class="flex items-center gap-1 text-xs" title="{{ $post->view_count ?? 0 }} views">
+            <span class="flex items-center gap-1 text-xs" title="{{ $post->view_count ?? 0 }} visualizações">
                 <span class="rounded-full p-2">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
@@ -205,21 +205,21 @@
             {{-- Share: copies the post permalink --}}
             <button type="button"
                     onclick="sharePost(this, '{{ route('posts.show', $post) }}')"
-                    title="Copy link"
+                    title="Copiar link"
                     class="group flex items-center gap-1 text-xs transition hover:text-indigo-500">
                 <span class="rounded-full p-2 transition group-hover:bg-indigo-500/10">
                     <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13"/>
                     </svg>
                 </span>
-                <span class="share-label hidden">Copied!</span>
+                <span class="share-label hidden">Copiado!</span>
             </button>
 
             {{-- Edit: owner or admin --}}
             @if (auth()->check() && ((int) $post->author_id === (int) auth()->id() || (int) (auth()->user()->admin_level ?? 0) >= 1))
                 <a href="{{ route('posts.edit', $post) }}"
-                   title="Edit post"
-                   aria-label="Edit post"
+                   title="Editar post"
+                   aria-label="Editar post"
                    class="group flex items-center gap-1 text-xs transition hover:text-amber-400">
                     <span class="rounded-full p-2 transition group-hover:bg-amber-500/10">
                         <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">

@@ -11,7 +11,7 @@ class ChangelogTest extends TestCase
         $response = $this->get('/changelog');
 
         $response->assertStatus(200);
-        $response->assertSee("What's new", false);
+        $response->assertSee('Novidades', false);
         $response->assertSee('Admin Migrations panel');
     }
 
@@ -30,7 +30,7 @@ class ChangelogTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Admin Migrations panel');
-        $response->assertSee('Related updates');
+        $response->assertSee('Novidades relacionadas');
     }
 
     public function test_show_unknown_entry_404s(): void

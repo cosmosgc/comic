@@ -45,7 +45,7 @@ class CommentController extends Controller
             return response()->json($comment, 201);
         }
 
-        return redirect()->back()->with('success', 'Comment posted.');
+        return redirect()->back()->with('success', 'Comentário publicado.');
     }
 
     /**
@@ -65,7 +65,7 @@ class CommentController extends Controller
             return response()->json($comment->fresh('user:id,name,avatar_image_path'));
         }
 
-        return redirect()->back()->with('success', 'Comment updated.');
+        return redirect()->back()->with('success', 'Comentário atualizado.');
     }
 
     /**
@@ -81,7 +81,7 @@ class CommentController extends Controller
             return response()->json(['deleted' => true]);
         }
 
-        return redirect()->back()->with('success', 'Comment deleted.');
+        return redirect()->back()->with('success', 'Comentário excluído.');
     }
 
     protected function authorizeComment(Request $request, Comment $comment): void

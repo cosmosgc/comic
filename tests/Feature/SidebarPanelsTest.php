@@ -94,9 +94,9 @@ class SidebarPanelsTest extends TestCase
 
         $this->get('/comics')
             ->assertOk()
-            ->assertSee('Tags Populares')
-            ->assertSee('Latest Uploads')
-            ->assertSee('Recommended')
+            ->assertSee('Tags populares')
+            ->assertSee('Enviados recentes')
+            ->assertSee('Recomendados')
             ->assertSee('Panel Comic')
             ->assertDontSee('Coming soon');
     }

@@ -15,7 +15,7 @@
                   {{ $activeTab === 'likes'
                       ? 'border-b-2 border-indigo-500 text-zinc-100'
                       : 'text-zinc-500 hover:text-zinc-200' }}">
-            Liked posts
+            Curtidos
         </a>
     @endif
     @if ($collectionsTab ?? false)
@@ -24,12 +24,12 @@
                   {{ $activeTab === 'collections'
                       ? 'border-b-2 border-indigo-500 text-zinc-100'
                       : 'text-zinc-500 hover:text-zinc-200' }}">
-            Collections
+            Coleções
         </a>
     @else
-        <span class="cursor-not-allowed px-4 py-2 text-sm text-zinc-600" title="Coming soon">
-            Collections
-            <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">soon</span>
+        <span class="cursor-not-allowed px-4 py-2 text-sm text-zinc-600" title="Em breve">
+            Coleções
+            <span class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">em breve</span>
         </span>
     @endif
 </div>

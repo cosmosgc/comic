@@ -4,7 +4,7 @@
         <a href="{{ $preview['url'] }}" target="_blank" rel="noopener nofollow"
            class="mt-3 block overflow-hidden rounded-2xl border border-zinc-800 transition hover:border-zinc-600">
             <span class="relative block">
-                <img src="{{ $preview['thumbnail'] }}" alt="YouTube preview: {{ $preview['title'] }}"
+                <img src="{{ $preview['thumbnail'] }}" alt="Prévia do YouTube: {{ $preview['title'] }}"
                      loading="lazy" class="max-h-72 w-full object-cover">
                 <span class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
                     <span class="flex h-14 w-14 items-center justify-center rounded-full bg-black/70">
@@ -23,7 +23,7 @@
         <a href="{{ $preview['link'] }}"
            class="mt-3 flex gap-3 overflow-hidden rounded-2xl border border-zinc-800 p-3 transition hover:border-indigo-500/60 hover:bg-zinc-900/40">
             @if ($preview['cover'])
-                <img src="{{ $preview['cover'] }}" alt="{{ $preview['title'] }} cover"
+                <img src="{{ $preview['cover'] }}" alt="Capa de {{ $preview['title'] }}"
                      loading="lazy" class="h-24 w-16 shrink-0 rounded-lg object-cover">
             @endif
             <span class="min-w-0">

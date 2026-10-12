@@ -1,44 +1,44 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Painel Admin')
 
-@section('page-title', 'Dashboard')
+@section('page-title', 'Painel')
 
 @section('content')
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="admin-stat">
-            <div class="admin-stat-label">Total Users</div>
+            <div class="admin-stat-label">Usuários</div>
             <div class="admin-stat-value">{{ $totalUsers }}</div>
         </div>
         <div class="admin-stat">
-            <div class="admin-stat-label">Total Comics</div>
+            <div class="admin-stat-label">Comics</div>
             <div class="admin-stat-value">{{ $totalComics }}</div>
         </div>
     </div>
 
     <div class="admin-card mt-6">
         <div class="admin-card-header">
-            <span>Analytics</span>
+            <span>Análises</span>
         </div>
         <div class="admin-card-body space-y-4">
             <form method="GET" class="flex flex-wrap items-end gap-3">
                 <div>
-                    <label for="start_date" class="admin-label">Start Date</label>
+                    <label for="start_date" class="admin-label">Data inicial</label>
                     <input type="date" name="start_date" id="start_date" class="admin-input" value="{{ request('start_date') }}">
                 </div>
                 <div>
-                    <label for="end_date" class="admin-label">End Date</label>
+                    <label for="end_date" class="admin-label">Data final</label>
                     <input type="date" name="end_date" id="end_date" class="admin-input" value="{{ request('end_date') }}">
                 </div>
-                <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Apply</button>
+                <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Aplicar</button>
             </form>
 
             <div class="max-w-xs">
-                <label for="timeScale" class="admin-label">Time Range</label>
+                <label for="timeScale" class="admin-label">Período</label>
                 <select id="timeScale" class="admin-input">
-                    <option value="daily" selected>Daily</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annually</option>
+                    <option value="daily" selected>Diário</option>
+                    <option value="monthly">Mensal</option>
+                    <option value="annual">Anual</option>
                 </select>
             </div>
 
@@ -104,7 +104,7 @@
                     labels: rawData[scale].labels,
                     datasets: [
                         {
-                            label: 'Page Views',
+                            label: 'Visualizações',
                             data: rawData[scale].pageViews,
                             fill: false,
                             borderColor: 'rgba(99, 102, 241, 1)',

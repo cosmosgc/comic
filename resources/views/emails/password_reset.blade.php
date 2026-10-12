@@ -1,14 +1,14 @@
 @component('mail::message')
-# Reset Your Password
+# Redefinir sua senha
 
-Click the button below to reset your password.
+Clique no botão abaixo para redefinir sua senha.
 
 @component('mail::button', ['url' => route('password.reset', ['token' => $token])])
-Reset Password
+Redefinir senha
 @endcomponent
 
-If you did not request a password reset, no further action is required.
+Se você não pediu isso, ignore este e-mail.
 
-Thanks,<br>
+Obrigado,<br>
 {{ config('app.name') }}
 @endcomponent

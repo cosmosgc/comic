@@ -66,7 +66,7 @@ class ChangelogAdminTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Shiny PR');
-        $response->assertSee('Import &amp; edit', false);
+        $response->assertSee('Importar e editar', false);
     }
 
     public function test_non_admin_is_redirected(): void

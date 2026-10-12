@@ -72,7 +72,7 @@
             <span data-reading-pct class="text-zinc-500"></span>
         </div>
         <div class="h-1 overflow-hidden rounded-full bg-zinc-800" role="progressbar"
-             aria-label="Reading progress for {{ $comic->title }}" aria-valuemin="0" aria-valuemax="100" data-reading-bar>
+             aria-label="Progresso de leitura de {{ $comic->title }}" aria-valuemin="0" aria-valuemax="100" data-reading-bar>
             <div data-reading-fill class="h-full rounded-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
         </div>
     </div>
@@ -91,7 +91,7 @@
                     data-like-url="{{ route('comics.like', $comic) }}"
                     data-csrf="{{ csrf_token() }}"
                     data-liked="{{ $cardLiked ? '1' : '0' }}"
-                    aria-label="{{ $cardLiked ? 'Unlike' : 'Like' }} {{ $comic->title }}"
+                    aria-label="{{ $cardLiked ? 'Descurtir' : 'Curtir' }} {{ $comic->title }}"
                     aria-pressed="{{ $cardLiked ? 'true' : 'false' }}"
                     class="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-lg transition {{ $cardLiked ? 'text-rose-500' : 'hover:text-rose-500 active:bg-zinc-800' }}">
                 <svg class="h-[18px] w-[18px]" fill="{{ $cardLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -107,13 +107,13 @@
                 <span>{{ $cardLikeCount > 0 ? $cardLikeCount : '' }}</span>
             </span>
         @endauth
-        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}" title="Comments" aria-label="Comments on {{ $comic->title }}" class="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-lg transition hover:text-sky-400 active:bg-zinc-800">
+        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}" title="Comentários" aria-label="Comentários em {{ $comic->title }}" class="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-lg transition hover:text-sky-400 active:bg-zinc-800">
             <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8m-8 0a8 8 0 108-8m-8 8V4m0 8l-4-4m4 4l4-4"/>
             </svg>
             <span>{{ $cardCommentCount > 0 ? $cardCommentCount : '' }}</span>
         </a>
-        <span class="inline-flex items-center gap-1" title="In {{ $cardCollectionCount }} collection(s)">
+        <span class="inline-flex items-center gap-1" title="Em {{ $cardCollectionCount }} coleção(ões)">
             <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
@@ -132,7 +132,7 @@
             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M21.9 4.6L2.7 12.1c-.8.3-.8 1.4.1 1.6l4.7 1.5 1.8 5.6c.3.8 1.3.9 1.8.2l2.6-3.1 4.9 3.6c.6.4 1.5.1 1.7-.6l2.6-14.6c.2-.9-.6-1.7-1 0zM8.4 13.3l9.5-6.2c.2-.1.4.2.2.3l-7.9 7.2-.3 3-1.5-4.3z"/>
             </svg>
-            <span>Share</span>
+            <span>Compartilhar</span>
         </button>
     </div>
 
@@ -166,7 +166,7 @@ function paintReadingProgress() {
         var stored = parseInt(readingProgressCookie('comic_' + card.getAttribute('data-comic-card') + '_page'), 10) || 0;
         if (stored <= 0) {
             // Never opened: the empty bar + total still communicates length.
-            label.textContent = 'Not started · ' + total + ' pages';
+            label.textContent = 'Não iniciado · ' + total + ' páginas';
             pctEl.textContent = '0%';
             fill.style.width = '0%';
             bar.setAttribute('aria-valuenow', '0');
@@ -177,7 +177,7 @@ function paintReadingProgress() {
         var pct = Math.round((done / total) * 100);
 
         var completed = stored >= total;
-        label.textContent = completed ? 'Completed · ' + total + ' pages' : 'Page ' + done + ' of ' + total;
+        label.textContent = completed ? 'Concluído · ' + total + ' páginas' : 'Página ' + done + ' de ' + total;
         pctEl.textContent = pct + '%';
         fill.style.width = pct + '%';
         if (completed) {
@@ -213,7 +213,7 @@ document.addEventListener('click', async (event) => {
     btn.querySelector('svg').setAttribute('fill', liked ? 'currentColor' : 'none');
     btn.querySelector('[data-like-count]').textContent = data.count > 0 ? data.count : '';
     const title = btn.getAttribute('aria-label') || '';
-    btn.setAttribute('aria-label', title.replace(/^(Like|Unlike)/, liked ? 'Unlike' : 'Like'));
+    btn.setAttribute('aria-label', title.replace(/^(Curtir|Descurtir)/, liked ? 'Descurtir' : 'Curtir'));
     btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
 });
 </script>
@@ -222,22 +222,22 @@ document.addEventListener('click', async (event) => {
 function copyToClipboard(button) {
     const link = button.getAttribute('data-link');
     const label = button.querySelector('span');
-    const original = label ? label.textContent : 'Share';
+    const original = label ? label.textContent : 'Compartilhar';
     const done = function () {
         if (!label) return;
-        label.textContent = 'Copied!';
+        label.textContent = 'Copiado!';
         setTimeout(function () { label.textContent = original; }, 1500);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(link).then(done).catch(function (err) {
-            console.error('Copy failed:', err);
+            console.error('Falha ao copiar:', err);
         });
     } else {
         const ta = document.createElement('textarea');
         ta.value = link;
         document.body.appendChild(ta);
         ta.select();
-        try { document.execCommand('copy'); done(); } catch (err) { console.error('Copy failed:', err); }
+        try { document.execCommand('copy'); done(); } catch (err) { console.error('Falha ao copiar:', err); }
         document.body.removeChild(ta);
     }
 }

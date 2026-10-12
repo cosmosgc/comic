@@ -1,7 +1,7 @@
 @extends('layouts.admin-layout')
 
 @section('title', 'Deploy')
-@section('page-title', 'FTP Deploy')
+@section('page-title', 'Deploy FTP')
 
 @section('content')
     @if (session('success'))
@@ -12,42 +12,42 @@
     @endif
 
     <p class="admin-muted mb-6 max-w-3xl">
-        Pushes this project's code to the hosting provider over FTPS — no console needed on the host.
-        Run this from your local copy. The update <strong>refuses to run</strong> unless the remote
-        directory verifies as this Laravel project (see checks below). <code class="admin-code">.env</code>, uploads and
-        caches are never overwritten, and nothing is ever deleted remotely.
+        Envia o código do projeto para a hospedagem via FTPS — sem console no host.
+        Rode a partir da sua cópia local. A atualização <strong>se recusa a rodar</strong> a menos que o
+        diretório remoto seja este projeto Laravel (veja as verificações abaixo). <code class="admin-code">.env</code>, uploads e
+        caches nunca são sobrescritos, e nada é apagado no remoto.
     </p>
 
     {{-- Configuration --}}
     <div class="admin-card mb-6">
         <div class="admin-card-header">
-            <span>FTP configuration (.env)</span>
+            <span>Configuração FTP (.env)</span>
         </div>
         <div class="admin-table-wrap">
             <table class="admin-table">
                 <tbody>
                     <tr>
-                        <td>PHP cURL extension</td>
+                        <td>Extensão cURL do PHP</td>
                         <td>
                             @if ($curlAvailable)
-                                <span class="admin-badge admin-badge-success">Available</span>
+                                <span class="admin-badge admin-badge-success">Disponível</span>
                             @else
-                                <span class="admin-badge admin-badge-danger">Missing — FTP deploy requires ext-curl</span>
+                                <span class="admin-badge admin-badge-danger">Faltando — deploy FTP exige ext-curl</span>
                             @endif
                         </td>
                     </tr>
-                    <tr><td>FTP_HOST</td><td><code>{{ $host ?: '— not set —' }}</code></td></tr>
-                    <tr><td>FTP_PORT</td><td><code>{{ $port }}</code> {{ $ssl ? '(FTPS)' : '(plain FTP)' }}</td></tr>
-                    <tr><td>FTP_USERNAME</td><td><code>{{ $username ?: '— not set —' }}</code></td></tr>
-                    <tr><td>FTP_PASSWORD</td><td>{{ $configured || !in_array('FTP_PASSWORD', $missing) ? '•••••••• (set)' : '— not set —' }}</td></tr>
-                    <tr><td>FTP_ROOT (project dir)</td><td><code>{{ $root }}</code></td></tr>
-                    <tr><td>FTP_PUBLIC_DIR (web root)</td><td><code>{{ $publicDir }}</code></td></tr>
+                    <tr><td>FTP_HOST</td><td><code>{{ $host ?: '— não definido —' }}</code></td></tr>
+                    <tr><td>FTP_PORT</td><td><code>{{ $port }}</code> {{ $ssl ? '(FTPS)' : '(FTP simples)' }}</td></tr>
+                    <tr><td>FTP_USERNAME</td><td><code>{{ $username ?: '— não definido —' }}</code></td></tr>
+                    <tr><td>FTP_PASSWORD</td><td>{{ $configured || !in_array('FTP_PASSWORD', $missing) ? '•••••••• (definida)' : '— não definida —' }}</td></tr>
+                    <tr><td>FTP_ROOT (pasta do projeto)</td><td><code>{{ $root }}</code></td></tr>
+                    <tr><td>FTP_PUBLIC_DIR (raiz web)</td><td><code>{{ $publicDir }}</code></td></tr>
                 </tbody>
             </table>
         </div>
         @if (!$configured)
             <div class="border-t border-zinc-200 px-5 py-3 text-sm text-red-700 dark:border-zinc-800 dark:text-red-300">
-                Missing: <code class="admin-code">{{ implode(', ', $missing) }}</code>. Set them in <code class="admin-code">.env</code> (see <code class="admin-code">.env.example</code>).
+                Faltando: <code class="admin-code">{{ implode(', ', $missing) }}</code>. Defina no <code class="admin-code">.env</code> (veja <code class="admin-code">.env.example</code>).
             </div>
         @endif
     </div>
@@ -55,13 +55,13 @@
     {{-- Verify --}}
     <div class="admin-card mb-6">
         <div class="admin-card-header">
-            <span>1. Verify remote directory</span>
+            <span>1. Verificar diretório remoto</span>
         </div>
         <div class="admin-card-body">
             <form method="POST" action="{{ route('admin.deploy.verify') }}">
                 @csrf
                 <button type="submit" class="admin-btn admin-btn-secondary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
-                    Test connection &amp; verify project
+                    Testar conexão e verificar projeto
                 </button>
             </form>
 
@@ -87,9 +87,9 @@
                 </div>
                 @if (!empty($verification['root_entries']))
                     <div class="mt-3 border-t border-zinc-200 pt-3 text-sm dark:border-zinc-800">
-                        <strong>Remote directory contents ({{ count($verification['root_entries']) }}):</strong><br>
+                        <strong>Conteúdo do diretório remoto ({{ count($verification['root_entries']) }}):</strong><br>
                         <code class="admin-code">{{ implode(', ', $verification['root_entries']) }}</code>
-                        <br><span class="admin-muted">Use this list to set FTP_ROOT / FTP_PUBLIC_DIR correctly.</span>
+                        <br><span class="admin-muted">Use esta lista para ajustar FTP_ROOT / FTP_PUBLIC_DIR.</span>
                     </div>
                 @endif
             @endif
@@ -99,65 +99,65 @@
     {{-- Run --}}
     <div class="admin-card mb-6">
         <div class="admin-card-header">
-            <span>2. Run update</span>
+            <span>2. Rodar atualização</span>
         </div>
         <div class="admin-card-body">
             <form method="POST" action="{{ route('admin.deploy.run') }}"
-                  onsubmit="return confirm('Upload changed files to the host?')" class="space-y-2.5">
+                  onsubmit="return confirm('Enviar arquivos alterados para o host?')" class="space-y-2.5">
                 @csrf
                 <label class="flex items-start gap-2.5 text-sm">
                     <input type="checkbox" class="admin-check mt-0.5" name="dry_run" id="dry_run" value="1" checked>
-                    <span>Dry run (show what would be uploaded)</span>
+                    <span>Simulação (mostra o que seria enviado)</span>
                 </label>
                 <label class="flex items-start gap-2.5 text-sm">
                     <input type="checkbox" class="admin-check mt-0.5" name="force" id="force" value="1">
-                    <span>Force re-upload of every file</span>
+                    <span>Forçar reenvio de todos os arquivos</span>
                 </label>
                 <div>
                     <label class="flex items-start gap-2.5 text-sm" for="include_vendor">
                         <input type="checkbox" class="admin-check mt-0.5" name="include_vendor" id="include_vendor" value="1">
-                        <span>Include vendor/ (~9,000 files, ~49 MB)</span>
+                        <span>Incluir vendor/ (~9.000 arquivos, ~49 MB)</span>
                     </label>
-                    <span class="admin-help ml-6">Skipped by default — vendor rarely changes. If the host has no vendor/ yet, it is included automatically.</span>
+                    <span class="admin-help ml-6">Ignorado por padrão — vendor raramente muda. Se o host ainda não tem vendor/, ele entra automaticamente.</span>
                 </div>
                 <div>
                     <label class="flex items-start gap-2.5 text-sm" for="quick">
                         <input type="checkbox" class="admin-check mt-0.5" name="quick" id="quick" value="1" checked>
-                        <span>Quick sync (only changed files)</span>
+                        <span>Sincronização rápida (só alterados)</span>
                     </label>
                     <span class="admin-help ml-6">
                         @if ($quickSince)
-                            Since last success ({{ date('Y-m-d H:i', $quickSince) }}) — finishes in about a minute.
+                            Desde o último sucesso ({{ date('d/m/Y H:i', $quickSince) }}) — termina em cerca de um minuto.
                         @else
-                            No successful run yet — the first run is always a full walk.
+                            Sem sucesso anterior — a primeira vez é sempre completa.
                         @endif
-                        Remote-side edits made outside deploys are only picked up by a full walk.
+                        Edições feitas no remoto fora dos deploys só aparecem na varredura completa.
                     </span>
                 </div>
                 <label class="flex items-start gap-2.5 text-sm">
                     <input type="checkbox" class="admin-check mt-0.5" name="full" id="full" value="1">
-                    <span>Full verification walk (overrides quick)</span>
+                    <span>Varredura completa (ignora a rápida)</span>
                 </label>
                 <div>
                     <label class="flex items-start gap-2.5 text-sm" for="include_build">
                         <input type="checkbox" class="admin-check mt-0.5" name="include_build" id="include_build" value="1" checked>
-                        <span>Include compiled assets (public/build/)</span>
+                        <span>Incluir assets compilados (public/build/)</span>
                     </label>
-                    <span class="admin-help ml-6">Uncheck for PHP-only changes — skips the Vite build output.</span>
+                    <span class="admin-help ml-6">Desmarque para mudanças só em PHP — pula o build do Vite.</span>
                 </div>
                 <label class="flex items-start gap-2.5 text-sm">
                     <input type="checkbox" class="admin-check mt-0.5" name="confirm" id="confirm" value="1" required>
-                    <span>I understand this uploads code to the live host</span>
+                    <span>Entendo que isto envia código ao host ativo</span>
                 </label>
                 <div class="pt-1">
                     <button type="submit" class="admin-btn admin-btn-primary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
-                        Run FTP update
+                        Rodar atualização FTP
                     </button>
                 </div>
             </form>
             <p class="admin-muted mt-3">
-                After the upload, open <a href="{{ route('admin.migrations') }}" class="text-indigo-600 hover:underline dark:text-indigo-400">Migrations</a> on the host
-                and run any pending migrations.
+                Após o envio, abra <a href="{{ route('admin.migrations') }}" class="text-indigo-600 hover:underline dark:text-indigo-400">Migrações</a> no host
+                e rode as migrações pendentes.
             </p>
         </div>
     </div>
@@ -166,11 +166,11 @@
     @if ($runId && $runStatus && in_array($runStatus['state'] ?? null, ['done', 'failed', 'cancelled']))
         <div class="admin-card mb-6">
             <div class="admin-card-header">
-                <span>Last run</span>
+                <span>Última execução</span>
                 @if (($runStatus['state'] ?? null) === 'done')
-                    <span class="admin-badge admin-badge-success">done</span>
+                    <span class="admin-badge admin-badge-success">concluída</span>
                 @else
-                    <span class="admin-badge admin-badge-danger">{{ $runStatus['state'] }}</span>
+                    <span class="admin-badge admin-badge-danger">{{ ['failed' => 'falhou', 'cancelled' => 'cancelada'][$runStatus['state'] ?? ''] ?? ($runStatus['state'] ?? '') }}</span>
                 @endif
             </div>
             <div class="admin-card-body space-y-2">
@@ -178,7 +178,7 @@
                     <p>{{ $runStatus['message'] }}</p>
                 @endif
                 @if (isset($runStatus['done'], $runStatus['total']) && $runStatus['total'])
-                    <p class="admin-muted">Sent {{ $runStatus['done'] }} of {{ $runStatus['total'] }} files.</p>
+                    <p class="admin-muted">Enviados {{ $runStatus['done'] }} de {{ $runStatus['total'] }} arquivos.</p>
                 @endif
                 @if (!empty($runStatus['log']))
                     <pre id="deploy-result-log" class="admin-log">{{ implode("\n", array_slice($runStatus['log'], -80)) }}</pre>
@@ -191,11 +191,11 @@
     @if ($runId && (! $runStatus || ! in_array($runStatus['state'] ?? null, ['done', 'failed', 'cancelled'])))
         <div class="admin-card mb-6">
             <div class="admin-card-header">
-                <span>Run progress <span class="admin-muted font-normal">(live — this page does not need to stay open)</span></span>
+                <span>Progresso <span class="admin-muted font-normal">(ao vivo — não precisa manter a página aberta)</span></span>
                 <form method="POST" action="{{ route('admin.deploy.cancel', ['id' => $runId]) }}"
-                      onsubmit="return confirm('Cancel this deploy run? Already-uploaded files stay in place.')">
+                      onsubmit="return confirm('Cancelar esta execução? Arquivos já enviados ficam no lugar.')">
                     @csrf
-                    <button type="submit" id="deploy-cancel" class="admin-btn admin-btn-sm border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10">Cancel run</button>
+                    <button type="submit" id="deploy-cancel" class="admin-btn admin-btn-sm border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10">Cancelar execução</button>
                 </form>
             </div>
             <div class="admin-card-body">
@@ -209,7 +209,7 @@
                 </div>
                 <div class="mb-4 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
-                        <div class="admin-muted text-xs">Sent</div>
+                        <div class="admin-muted text-xs">Enviados</div>
                         <div id="stat-sent" class="text-lg font-bold">0</div>
                     </div>
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
@@ -217,23 +217,23 @@
                         <div id="stat-total" class="text-lg font-bold">—</div>
                     </div>
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
-                        <div class="admin-muted text-xs">Remaining</div>
+                        <div class="admin-muted text-xs">Restantes</div>
                         <div id="stat-remaining" class="text-lg font-bold">—</div>
                     </div>
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
-                        <div class="admin-muted text-xs">Elapsed</div>
+                        <div class="admin-muted text-xs">Tempo</div>
                         <div id="stat-elapsed" class="text-lg font-bold">0s</div>
                     </div>
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
-                        <div class="admin-muted text-xs">Rate</div>
+                        <div class="admin-muted text-xs">Taxa</div>
                         <div id="stat-rate" class="text-lg font-bold">—</div>
                     </div>
                     <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
-                        <div class="admin-muted text-xs">ETA</div>
+                        <div class="admin-muted text-xs">Falta</div>
                         <div id="stat-eta" class="text-lg font-bold">—</div>
                     </div>
                 </div>
-                <p class="admin-muted mb-1 text-xs">Currently uploading</p>
+                <p class="admin-muted mb-1 text-xs">Enviando agora</p>
                 <p id="deploy-current" class="mb-2"><code class="admin-code">—</code></p>
                 <p id="deploy-counts" class="admin-muted mb-2 text-xs"></p>
                 <p id="deploy-message" class="admin-muted mb-2">Starting…</p>
@@ -267,13 +267,13 @@
                 }
 
                 const phaseLabels = {
-                    queued: ['queued', 'admin-badge-secondary'],
-                    listing: ['listing files', 'admin-badge-info'],
-                    uploading: ['uploading', 'admin-badge-primary'],
-                    done: ['done', 'admin-badge-success'],
-                    failed: ['failed', 'admin-badge-danger'],
-                    cancelling: ['cancelling', 'admin-badge-warning'],
-                    cancelled: ['cancelled', 'admin-badge-warning'],
+                    queued: ['na fila', 'admin-badge-secondary'],
+                    listing: ['listando arquivos', 'admin-badge-info'],
+                    uploading: ['enviando', 'admin-badge-primary'],
+                    done: ['concluída', 'admin-badge-success'],
+                    failed: ['falhou', 'admin-badge-danger'],
+                    cancelling: ['cancelando', 'admin-badge-warning'],
+                    cancelled: ['cancelada', 'admin-badge-warning'],
                 };
 
                 const timer = setInterval(async () => {
@@ -282,7 +282,7 @@
                         res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                     } catch (e) {
-                        msg.textContent = 'Lost contact with the worker — reload the page to check again.';
+                        msg.textContent = 'Perdemos contato com o worker — recarregue a página para verificar.';
                         clearInterval(timer);
                         return;
                     }
@@ -319,29 +319,29 @@
                     phaseEl.className = 'admin-badge ' + cls;
 
                     const modes = [];
-                    if (s.dry_run) modes.push('dry run');
-                    if (s.force) modes.push('force');
-                    if (s.include_vendor) modes.push('with vendor');
-                    if (s.quick) modes.push('quick');
-                    if (s.full) modes.push('full');
-                    if (s.include_build === false) modes.push('no build');
+                    if (s.dry_run) modes.push('simulação');
+                    if (s.force) modes.push('forçado');
+                    if (s.include_vendor) modes.push('com vendor');
+                    if (s.quick) modes.push('rápido');
+                    if (s.full) modes.push('completo');
+                    if (s.include_build === false) modes.push('sem build');
                     modesEl.textContent = modes.join(' • ');
 
                     currentEl.innerHTML = s.current ? '<code class="admin-code">' + s.current.replace(/</g, '&lt;') + '</code>' : '<code class="admin-code">—</code>';
 
                     const c = s.counts || {};
                     const parts = [];
-                    if (c.skipped) parts.push(c.skipped + ' unchanged');
-                    if (c.excluded) parts.push(c.excluded + ' excluded');
-                    if (c.vendor_skipped) parts.push(c.vendor_skipped + ' vendor skipped');
-                    if (c.quick_skipped) parts.push(c.quick_skipped + ' older than last success');
-                    if (c.build_skipped) parts.push(c.build_skipped + ' build skipped');
-                    if (c.quick) parts.push('quick mode');
+                    if (c.skipped) parts.push(c.skipped + ' iguais');
+                    if (c.excluded) parts.push(c.excluded + ' excluídos');
+                    if (c.vendor_skipped) parts.push(c.vendor_skipped + ' vendor pulados');
+                    if (c.quick_skipped) parts.push(c.quick_skipped + ' mais antigos que o último sucesso');
+                    if (c.build_skipped) parts.push(c.build_skipped + ' build pulado');
+                    if (c.quick) parts.push('modo rápido');
                     countsEl.textContent = parts.join(' • ');
 
                     if (s.message) msg.textContent = s.message;
-                    else if (s.state === 'running') msg.textContent = s.dry_run ? 'Dry run in progress…' : 'Uploading…';
-                    else if (s.state === 'queued') msg.textContent = 'Worker starting…';
+                    else if (s.state === 'running') msg.textContent = s.dry_run ? 'Simulação em andamento…' : 'Enviando…';
+                    else if (s.state === 'queued') msg.textContent = 'Worker iniciando…';
                     const lines = s.log || (s.log_tail ? [s.log_tail] : []);
                     if (lines.length) log.textContent = lines.slice(-80).join("\n");
                     const cancelBtn = document.getElementById('deploy-cancel');
@@ -349,7 +349,7 @@
                         clearInterval(timer);
                         bar.classList.add(s.state === 'done' ? 'is-done' : 'is-failed');
                         if (cancelBtn) cancelBtn.disabled = true;
-                        if (s.state === 'cancelled' && s.message) msg.textContent = s.message + ' Re-run to resume.';
+                        if (s.state === 'cancelled' && s.message) msg.textContent = s.message + ' Rode de novo para continuar.';
                     } else if (s.state === 'cancelling') {
                         if (cancelBtn) cancelBtn.disabled = true;
                     }

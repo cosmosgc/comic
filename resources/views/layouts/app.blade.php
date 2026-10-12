@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>@yield('title', config('app.site_title'))</title>
 
-    <meta name="description" content="Descubra os melhores comics da semana. Veja os comics mais populares e explore nossa coleção completa.">
-    <meta name="keywords" content="comics, quadrinhos, leitura online">
+    <meta name="description" content="Descubra os melhores comics da semana. Veja os mais populares e explore a coleção completa.">
+    <meta name="keywords" content="comics, leitura online">
 
     {{-- Open Graph --}}
     <meta property="og:title" content="Comics Index">
@@ -27,11 +27,11 @@
 <body>
 
 <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-indigo-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
-    Skip to content
+    Pular para o conteúdo
 </a>
 
 <!-- NAVBAR -->
-<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur" aria-label="Main navigation">
+<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur" aria-label="Navegação principal">
     <div class="mx-auto max-w-7xl px-4">
         <div class="flex h-16 items-center justify-between">
 
@@ -45,7 +45,7 @@
 
                 <!-- Search -->
                 <div class="relative w-72">
-                    <label for="comic-search" class="sr-only">Search comics</label>
+                    <label for="comic-search" class="sr-only">Buscar comics</label>
                     <input
                         id="comic-search"
                         type="text"
@@ -54,23 +54,23 @@
                         aria-controls="comic-search-results"
                         aria-autocomplete="list"
                         data-search-page="{{ route('comics.search') }}"
-                        placeholder="Search comics..."
+                        placeholder="Buscar comics..."
                         class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         autocomplete="off"
                     >
                     <ul id="comic-search-results"
                         role="listbox"
-                        aria-label="Comic search results"
+                        aria-label="Resultados da busca"
                         class="absolute mt-2 hidden w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
                     </ul>
                 </div>
 
-                <a href="{{ route('posts.index') }}" class="nav-link">Social</a>
+                <a href="{{ route('posts.index') }}" class="nav-link">Comunidade</a>
                 <a href="{{ route('comics.index') }}" class="nav-link">Comics</a>
-                <a href="{{ route('changelog.index') }}" class="nav-link">What's new</a>
+                <a href="{{ route('changelog.index') }}" class="nav-link">Novidades</a>
 
                 @auth
-                    <a href="{{ route('comics.create') }}" class="nav-link">Upload</a>
+                    <a href="{{ route('comics.create') }}" class="nav-link">Publicar</a>
                     @if (Auth::user()->admin_level >= 1)
                         <a href="{{ route('admin.dashboard') }}" class="nav-link">Admin</a>
                     @endif
@@ -82,7 +82,7 @@
                             :aria-expanded="userOpen.toString()"
                             aria-haspopup="menu"
                             class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
-                            aria-label="Account menu">
+                            aria-label="Menu da conta">
 
                             <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
 
@@ -101,7 +101,7 @@
                             class="absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
 
                             <a href="{{ route('profile.show') }}" role="menuitem" class="dropdown-link">
-                                Profile
+                                Perfil
                             </a>
 
                             @if (Auth::user()->admin_level >= 1)
@@ -113,20 +113,20 @@
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" role="menuitem" class="dropdown-link">
-                                    Logout
+                                    Sair
                                 </button>
                             </form>
                         </div>
                     </div>
 
                 @else
-                    <a href="{{ route('login') }}" class="btn-primary">Login</a>
-                    <a href="{{ route('register') }}" class="btn-outline">Register</a>
+                    <a href="{{ route('login') }}" class="btn-primary">Entrar</a>
+                    <a href="{{ route('register') }}" class="btn-outline">Cadastrar</a>
                 @endauth
             </div>
 
             <!-- Mobile Menu Button -->
-            <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Toggle menu" class="rounded-lg p-2 hover:bg-zinc-800 md:hidden">
+            <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Alternar menu" class="rounded-lg p-2 hover:bg-zinc-800 md:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"
                      viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -138,32 +138,32 @@
         <!-- Mobile Menu -->
         <div x-show="open" id="mobile-menu" x-cloak class="space-y-1 py-4 md:hidden">
             <div class="relative px-1 pb-2">
-                <label for="comic-search-mobile" class="sr-only">Search comics</label>
+                <label for="comic-search-mobile" class="sr-only">Buscar comics</label>
                 <input
                     id="comic-search-mobile"
                     type="text"
-                    placeholder="Search comics..."
+                    placeholder="Buscar comics..."
                     data-search-page="{{ route('comics.search') }}"
                     class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     autocomplete="off"
                 >
             </div>
-            <a href="{{ route('posts.index') }}" class="mobile-link">Social</a>
+            <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
-            <a href="{{ route('changelog.index') }}" class="mobile-link">What's new</a>
+            <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             @auth
-                <a href="{{ route('comics.create') }}" class="mobile-link">Upload</a>
+                <a href="{{ route('comics.create') }}" class="mobile-link">Publicar</a>
                 @if (Auth::user()->admin_level >= 1)
                     <a href="{{ route('admin.dashboard') }}" class="mobile-link">Admin</a>
                 @endif
-                <a href="{{ route('profile.show') }}" class="mobile-link">Profile</a>
+                <a href="{{ route('profile.show') }}" class="mobile-link">Perfil</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="mobile-link w-full text-left">Logout</button>
+                    <button type="submit" class="mobile-link w-full text-left">Sair</button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="mobile-link">Login</a>
-                <a href="{{ route('register') }}" class="mobile-link">Register</a>
+                <a href="{{ route('login') }}" class="mobile-link">Entrar</a>
+                <a href="{{ route('register') }}" class="mobile-link">Cadastrar</a>
             @endauth
         </div>
     </div>
@@ -195,10 +195,10 @@
 <footer class="mt-12 border-t border-zinc-800">
     <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
         <span>{{ config('app.site_title') }}</span>
-        <nav class="flex items-center gap-5" aria-label="Footer">
+        <nav class="flex items-center gap-5" aria-label="Rodapé">
             <a href="{{ route('comics.index') }}" class="transition hover:text-zinc-200">Comics</a>
-            <a href="{{ route('posts.index') }}" class="transition hover:text-zinc-200">Social</a>
-            <a href="{{ route('changelog.index') }}" class="transition hover:text-zinc-200">What's new</a>
+            <a href="{{ route('posts.index') }}" class="transition hover:text-zinc-200">Comunidade</a>
+            <a href="{{ route('changelog.index') }}" class="transition hover:text-zinc-200">Novidades</a>
         </nav>
     </div>
 </footer>
@@ -314,7 +314,7 @@
                 li.setAttribute('role', 'option');
                 li.setAttribute('aria-selected', 'false');
                 li.className = 'cursor-default px-3 py-2 text-sm text-zinc-500';
-                li.textContent = 'No comics found';
+                li.textContent = 'Nenhum comic encontrado';
                 resultsBox.appendChild(li);
             } else {
                 data.forEach(function (comic) {

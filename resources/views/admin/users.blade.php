@@ -1,24 +1,24 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Users')
+@section('title', 'Usuários')
 
-@section('page-title', 'Users')
+@section('page-title', 'Usuários')
 
 @section('content')
     <div class="admin-card">
         <div class="admin-card-header">
-            <span>All Users</span>
+            <span>Todos os usuários</span>
         </div>
         <div class="admin-table-wrap">
             <table id="usersTable" class="admin-table">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Papel</th>
+                        <th>Criado em</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,11 +30,11 @@
                             <td>{{ $user->role }}</td>
                             <td class="whitespace-nowrap">{{ $user->created_at }}</td>
                             <td class="whitespace-nowrap">
-                                <a href="{{ route('admin.users.edit', $user->id) }}" class="admin-btn admin-btn-primary admin-btn-sm">Edit</a>
-                                <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this user?')">
+                                <a href="{{ route('admin.users.edit', $user->id) }}" class="admin-btn admin-btn-primary admin-btn-sm">Editar</a>
+                                <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Excluir este usuário?')">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
+                                    <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Excluir</button>
                                 </form>
                             </td>
                         </tr>

@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Upload Comic')
+@section('title', 'Publicar comic')
 
 @section('content')
 <div class="mx-auto max-w-4xl px-4 py-6">
 
-    <h1 class="mb-6 text-2xl font-bold">Upload Comic</h1>
+    <h1 class="mb-6 text-2xl font-bold">Publicar comic</h1>
 
     <form id="comic-upload-form"
           action="{{ route('comics.store') }}"
@@ -18,7 +18,7 @@
         <!-- Title -->
         <div>
             <label for="title" class="mb-1 block text-sm font-medium text-zinc-300">
-                Comic Title
+                Título do comic
             </label>
             <input type="text"
                    id="title"
@@ -60,7 +60,7 @@
             @include('components.tag-editor', [
                 'name' => 'tags',
                 'inputId' => 'tags',
-                'placeholder' => 'Type to search or create tags…',
+                'placeholder' => 'Digite para buscar ou criar tags…',
             ])
         </div>
 
@@ -170,7 +170,7 @@
                 class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
                        transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40
                        disabled:cursor-not-allowed disabled:opacity-50">
-            Upload Comic
+            Publicar comic
         </button>
     </form>
 </div>

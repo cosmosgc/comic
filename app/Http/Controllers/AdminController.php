@@ -137,7 +137,7 @@ class AdminController extends Controller
 
         $user->save();
 
-        return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuário atualizado com sucesso.');
     }
 
     // Method to delete a user
@@ -147,12 +147,12 @@ class AdminController extends Controller
 
         // Prevent deleting the currently authenticated user
         if (auth()->id() === $user->id) {
-            return redirect()->route('admin.users.index')->with('error', 'You cannot delete yourself.');
+            return redirect()->route('admin.users.index')->with('error', 'Você não pode excluir a si mesmo.');
         }
 
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuário excluído com sucesso.');
     }
 
     /**
@@ -180,17 +180,17 @@ class AdminController extends Controller
             $output = Artisan::output() ?: '(no output)';
         } catch (\Throwable $e) {
             return redirect()->route('admin.migrations')
-                ->with('error', 'Migration failed: '.$e->getMessage());
+                ->with('error', 'Migração falhou: '.$e->getMessage());
         }
 
         if ($exitCode !== 0) {
             return redirect()->route('admin.migrations')
-                ->with('error', 'Migration exited with code '.$exitCode)
+                ->with('error', 'Migrate saiu com código '.$exitCode)
                 ->with('migrate_output', $output);
         }
 
         return redirect()->route('admin.migrations')
-            ->with('success', 'Migrations executed successfully.')
+            ->with('success', 'Migrações executadas com sucesso.')
             ->with('migrate_output', $output);
     }
 
@@ -258,7 +258,7 @@ class AdminController extends Controller
     {
         if (! $deployer->isConfigured()) {
             return redirect()->route('admin.deploy')
-                ->with('error', 'FTP is not configured. Missing: '.implode(', ', $deployer->missingConfig()));
+                ->with('error', 'FTP não configurado. Faltando: '.implode(', ', $deployer->missingConfig()));
         }
 
         try {
@@ -266,7 +266,7 @@ class AdminController extends Controller
             $verification = $deployer->verify($transport);
         } catch (DeployException $e) {
             return redirect()->route('admin.deploy')
-                ->with('error', 'Connection failed: '.$e->getMessage());
+                ->with('error', 'Conexão falhou: '.$e->getMessage());
         }
 
         return redirect()->route('admin.deploy')
@@ -300,13 +300,13 @@ class AdminController extends Controller
 
         if (! $deployer->isConfigured()) {
             return redirect()->route('admin.deploy')
-                ->with('error', 'FTP is not configured. Missing: '.implode(', ', $deployer->missingConfig()));
+                ->with('error', 'FTP não configurado. Faltando: '.implode(', ', $deployer->missingConfig()));
         }
 
         if ($running = $this->runningDeployRun()) {
             return redirect()->route('admin.deploy')
                 ->with('deploy_run_id', $running['id'])
-                ->with('error', 'A deploy is already running — follow its progress below.');
+                ->with('error', 'Já há um deploy rodando — acompanhe abaixo.');
         }
 
         $id = Str::random(32);
@@ -338,7 +338,7 @@ class AdminController extends Controller
             @unlink($statusPath);
 
             return redirect()->route('admin.deploy')
-                ->with('error', 'Could not start the deploy worker: '.$e->getMessage());
+                ->with('error', 'Não foi possível iniciar o worker: '.$e->getMessage());
         }
 
         // Persistent (not flash): reloads keep showing this run's progress.
@@ -346,7 +346,7 @@ class AdminController extends Controller
 
         return redirect()->route('admin.deploy')
             ->with('deploy_run_id', $id)
-            ->with('success', $dryRun ? 'Dry run started — progress below.' : 'Deploy started in the background — progress below.');
+            ->with('success', $dryRun ? 'Simulação iniciada — progresso abaixo.' : 'Deploy iniciado em segundo plano — progresso abaixo.');
     }
 
     /**
@@ -395,7 +395,7 @@ class AdminController extends Controller
         if (! in_array($state, ['queued', 'running', 'cancelling'], true)) {
             return redirect()->route('admin.deploy')
                 ->with('deploy_run_id', $id)
-                ->with('error', 'This run already finished — nothing to cancel.');
+                ->with('error', 'Esta execução já terminou — nada a cancelar.');
         }
 
         $updated = isset($status['updated_at']) ? strtotime($status['updated_at']) : 0;
@@ -414,7 +414,7 @@ class AdminController extends Controller
 
         return redirect()->route('admin.deploy')
             ->with('deploy_run_id', $id)
-            ->with('success', $stale ? 'Dead run cleared.' : 'Cancellation requested.');
+            ->with('success', $stale ? 'Execução morta limpa.' : 'Cancelamento solicitado.');
     }
 
     /**
@@ -518,7 +518,7 @@ class AdminController extends Controller
 
         if (in_array($number, $reader->prsUsed(), true)) {
             return redirect()->route('admin.changelogs')
-                ->with('error', "PR #{$number} already has a changelog entry.");
+                ->with('error', "PR #{$number} já tem entrada no changelog.");
         }
 
         try {
@@ -529,13 +529,13 @@ class AdminController extends Controller
             );
         } catch (\Throwable $e) {
             return redirect()->route('admin.changelogs')
-                ->with('error', 'Could not fetch PRs: '.$e->getMessage());
+                ->with('error', 'Não foi possível buscar os PRs: '.$e->getMessage());
         }
 
         $pr = collect($pullRequests)->firstWhere('number', $number);
         if ($pr === null) {
             return redirect()->route('admin.changelogs')
-                ->with('error', "PR #{$number} not found in the recent list.");
+                ->with('error', "PR #{$number} não encontrado na lista recente.");
         }
 
         $id = $writer->save([
@@ -549,7 +549,7 @@ class AdminController extends Controller
         ]);
 
         return redirect()->route('admin.changelogs.edit', $id)
-            ->with('success', "Imported PR #{$number} — review and save.");
+            ->with('success', "PR #{$number} importado — revise e salve.");
     }
 
     public function changelogCreate()
@@ -587,7 +587,7 @@ class AdminController extends Controller
         $id = $writer->save($data);
 
         return redirect()->route('admin.changelogs.edit', $id)
-            ->with('success', 'Entry created.');
+            ->with('success', 'Entrada criada.');
     }
 
     public function changelogUpdate(
@@ -608,7 +608,7 @@ class AdminController extends Controller
         $writer->save($data, $id);
 
         return redirect()->route('admin.changelogs.edit', $id)
-            ->with('success', 'Entry saved.');
+            ->with('success', 'Entrada salva.');
     }
 
     public function changelogDestroy(
@@ -620,7 +620,7 @@ class AdminController extends Controller
         $writer->delete($id);
 
         return redirect()->route('admin.changelogs')
-            ->with('success', 'Entry deleted.');
+            ->with('success', 'Entrada excluída.');
     }
 
     public function widgets()
@@ -640,7 +640,7 @@ class AdminController extends Controller
 
         Widget::create($request->only('title', 'position_index', 'content'));
 
-        return redirect()->route('admin.widgets')->with('success', 'Widget created successfully!');
+        return redirect()->route('admin.widgets')->with('success', 'Widget criado com sucesso!');
     }
 
     // Show edit form
@@ -663,7 +663,7 @@ class AdminController extends Controller
 
         $widget->update($request->only('title', 'position_index', 'content'));
 
-        return redirect()->route('admin.widgets')->with('success', 'Widget updated!');
+        return redirect()->route('admin.widgets')->with('success', 'Widget atualizado!');
     }
 
     // Delete widget
@@ -671,6 +671,6 @@ class AdminController extends Controller
     {
         Widget::destroy($id);
 
-        return redirect()->route('admin.widgets')->with('success', 'Widget deleted!');
+        return redirect()->route('admin.widgets')->with('success', 'Widget excluído!');
     }
 }

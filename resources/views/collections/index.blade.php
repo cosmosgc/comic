@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Collections Index')
+@section('title', 'Coleções')
 
 @section('content')
 <div class="mx-auto max-w-4xl px-4 py-6">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold">Collections</h1>
+        <h1 class="text-2xl font-bold">Coleções</h1>
         @auth
-            <a href="{{ route('collections.create') }}" class="btn-primary">New collection</a>
+            <a href="{{ route('collections.create') }}" class="btn-primary">Nova coleção</a>
         @endauth
     </div>
 
@@ -30,7 +30,7 @@
             @endforeach
         </ul>
     @else
-        <p class="rounded-xl border border-dashed border-zinc-800 px-4 py-10 text-center text-sm text-zinc-500">No collections yet.</p>
+        <p class="rounded-xl border border-dashed border-zinc-800 px-4 py-10 text-center text-sm text-zinc-500">Sem coleções ainda.</p>
     @endif
 </div>
 @endsection

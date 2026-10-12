@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Login')
+@section('title', 'Entrar')
 
 @section('content')
 
@@ -29,7 +29,7 @@
         class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
 
         <h1 class="mb-6 text-center text-2xl font-bold tracking-tight">
-            Login
+            Entrar
         </h1>
 
         <form method="POST" action="{{ route('login') }}" class="space-y-4">
@@ -38,7 +38,7 @@
             <!-- Email -->
             <div>
                 <label for="email" class="mb-1 block text-sm font-medium text-zinc-300">
-                    Email address
+                    E-mail
                 </label>
                 <input
                     type="email"
@@ -54,7 +54,7 @@
             <!-- Password -->
             <div>
                 <label for="password" class="mb-1 block text-sm font-medium text-zinc-300">
-                    Password
+                    Senha
                 </label>
                 <input
                     type="password"
@@ -72,19 +72,19 @@
                 type="submit"
                 class="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
                        transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
-                Login
+                Entrar
             </button>
 
             <!-- Links -->
             <div class="pt-4 text-center text-sm text-zinc-400">
                 <a href="{{ route('password.request') }}"
                    class="hover:text-white underline-offset-4 hover:underline">
-                    Forgot password?
+                    Esqueceu a senha?
                 </a>
                 <div class="mt-2">
                     <a href="{{ route('register') }}"
                        class="hover:text-white underline-offset-4 hover:underline">
-                        Don’t have an account? Sign up
+                        Sem conta? Cadastre-se
                     </a>
                 </div>
             </div>

@@ -7,7 +7,7 @@
     {{-- Banner --}}
     <div class="relative h-36 bg-gradient-to-r from-indigo-900 via-zinc-900 to-zinc-900 sm:h-48">
         @if ($bannerUrl)
-            <img src="{{ $bannerUrl }}" alt="{{ $user->name }} profile banner"
+            <img src="{{ $bannerUrl }}" alt="Banner do perfil de {{ $user->name }}"
                  class="absolute inset-0 h-full w-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/20 to-transparent"></div>
         @endif
@@ -15,13 +15,13 @@
 
     <div class="flex flex-col items-center px-6 pb-6 text-center">
         <img src="{{ $avatarUrl }}"
-             alt="{{ $user->name }} avatar"
+             alt="Avatar de {{ $user->name }}"
              class="relative z-10 -mt-12 h-24 w-24 rounded-full border-4 border-zinc-900 object-cover shadow-lg">
 
         <h2 class="mt-3 text-xl font-semibold">{{ $user->name }}</h2>
 
         <p class="mt-2 max-w-xl text-sm text-zinc-400">
-            {{ $user->bio ?? 'No bio available' }}
+            {{ $user->bio ?? 'Sem bio disponível' }}
         </p>
 
         {{-- Links --}}
@@ -40,14 +40,14 @@
                     @endforeach
                 </ul>
             @else
-                <p class="text-sm text-zinc-500">No links added.</p>
+                <p class="text-sm text-zinc-500">Nenhum link adicionado.</p>
             @endif
         </div>
 
         @if (!empty($showEdit))
             <a href="{{ route('profile.edit') }}"
                class="mt-6 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">
-                Edit profile
+                Editar perfil
             </a>
         @endif
     </div>

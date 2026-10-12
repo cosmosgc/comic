@@ -1,35 +1,35 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Analytics')
+@section('title', 'Análises')
 
-@section('page-title', 'Analytics')
+@section('page-title', 'Análises')
 
 @section('content')
     <div class="admin-card">
         <div class="admin-card-header">
-            <span>Recent Activities</span>
+            <span>Atividades recentes</span>
         </div>
         <div class="admin-table-wrap">
             <table id="analyticsTable" class="admin-table admin-table-compact">
                 <thead>
                     <tr>
-                        <th>User</th>
-                        <th>IP Address</th>
+                        <th>Usuário</th>
+                        <th>IP</th>
                         <th>URL</th>
-                        <th>Event</th>
-                        <th>Agent</th>
-                        <th>Device</th>
-                        <th>Browser</th>
-                        <th>OS</th>
+                        <th>Evento</th>
+                        <th>Agente</th>
+                        <th>Dispositivo</th>
+                        <th>Navegador</th>
+                        <th>SO</th>
                         <th>Dur. (s)</th>
-                        <th>Referral</th>
-                        <th>Timestamp</th>
+                        <th>Origem</th>
+                        <th>Data</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($analytics as $entry)
                         <tr>
-                            <td class="whitespace-nowrap">{{ optional($entry->user)->name ?? 'Guest' }}</td>
+                            <td class="whitespace-nowrap">{{ optional($entry->user)->name ?? 'Visitante' }}</td>
                             <td class="whitespace-nowrap"><code>{{ $entry->ip_address }}</code></td>
                             <td class="max-w-64 break-all" title="{{ $entry->url }}">{{ $entry->url }}</td>
                             <td><span class="admin-badge admin-badge-secondary">{{ $entry->event_type }}</span></td>

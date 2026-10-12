@@ -1,30 +1,30 @@
 @extends('layouts.app')
 
-@section('title', "What's new")
+@section('title', "Novidades")
 
 @section('content')
 <div class="mx-auto max-w-3xl px-4 py-6">
 
-    <h1 class="mb-1 text-2xl font-bold">What's new</h1>
-    <p class="mb-6 text-sm text-zinc-400">Website changes, one post per update.</p>
+    <h1 class="mb-1 text-2xl font-bold">Novidades</h1>
+    <p class="mb-6 text-sm text-zinc-400">Mudanças do site, um post por atualização.</p>
 
     {{-- Quick search --}}
     <form method="GET" action="{{ route('changelog.index') }}" class="mb-6 flex gap-2">
         <input type="text"
                name="q"
                value="{{ $query }}"
-               placeholder="Search updates…"
+               placeholder="Buscar novidades…"
                autocomplete="off"
                class="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm
                       focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
         <button type="submit"
                 class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">
-            Search
+            Buscar
         </button>
         @if ($query !== '')
             <a href="{{ route('changelog.index') }}"
                class="rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:bg-zinc-900">
-                Clear
+                Limpar
             </a>
         @endif
     </form>
@@ -70,15 +70,15 @@
                 @endif
                 <a href="{{ route('changelog.show', $entry['id']) }}"
                    class="text-sm font-semibold text-indigo-400 transition hover:text-indigo-300">
-                    Read more →
+                    Ler mais →
                 </a>
             </article>
         @empty
             <div class="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-500">
                 @if ($query !== '')
-                    No updates match "{{ $query }}".
+                    Nada para "{{ $query }}".
                 @else
-                    No updates yet.
+                    Sem novidades ainda.
                 @endif
             </div>
         @endforelse

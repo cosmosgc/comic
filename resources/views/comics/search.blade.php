@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
-    <h2 class="text-xl font-semibold">Search results for: <strong>{{ $searchTerm }}</strong></h2>
+    <h2 class="text-xl font-semibold">Resultados para: <strong>{{ $searchTerm }}</strong></h2>
     @if($tagTerm)
         <div class="mb-4 mt-2">
             <span class="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-medium text-indigo-300">
@@ -16,7 +16,7 @@
             @foreach ($comics as $comic)
                 <li>
                     <div class="mb-1 text-xs text-zinc-500">
-                        Views: {{ $comic->view_count }}
+                        Visualizações: {{ $comic->view_count }}
                     </div>
                     <x-comic-card :comic="$comic" :minified="false" :liked-comic-ids="$likedComicIds ?? []" />
                 </li>
@@ -27,7 +27,7 @@
             {{ $comics->links() }}
         </div>
     @else
-        <p class="mt-4 rounded-xl border border-dashed border-zinc-800 px-4 py-10 text-center text-sm text-zinc-500">No comics found for this search.</p>
+        <p class="mt-4 rounded-xl border border-dashed border-zinc-800 px-4 py-10 text-center text-sm text-zinc-500">Nenhum comic encontrado.</p>
     @endif
 </div>
 @endsection

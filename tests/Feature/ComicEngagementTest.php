@@ -199,7 +199,7 @@ class ComicEngagementTest extends TestCase
         Collection::create(['name' => 'Holder', 'user_id' => $user->id, 'is_public' => true])
             ->comics()->attach($comic->id);
 
-        $this->get('/comics')->assertOk()->assertSee('In 1 collection');
+        $this->get('/comics')->assertOk()->assertSee('Em 1 coleção(ões)');
     }
 
     public function test_user_can_like_and_unlike_comic(): void

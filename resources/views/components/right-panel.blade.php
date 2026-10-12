@@ -8,12 +8,12 @@
     <!-- Latest Uploads -->
     <div class="px-4 pb-4">
         <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
-            Latest Uploads
+            Enviados recentes
         </h5>
 
         @if (($latestComics ?? collect())->isEmpty())
             <ul class="space-y-2 text-sm text-zinc-400">
-                <li class="italic text-zinc-500">Nothing uploaded yet.</li>
+                <li class="italic text-zinc-500">Nada enviado ainda.</li>
             </ul>
         @else
             <ul class="space-y-3">
@@ -40,12 +40,12 @@
     <!-- Recommended -->
     <div class="px-4 pb-4">
         <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
-            Recommended
+            Recomendados
         </h5>
 
         @if (($recommendedComics ?? collect())->isEmpty())
             <ul class="space-y-2 text-sm text-zinc-400">
-                <li class="italic text-zinc-500">No recommendations yet.</li>
+                <li class="italic text-zinc-500">Sem recomendações ainda.</li>
             </ul>
         @else
             <ul class="space-y-3">
@@ -62,7 +62,7 @@
                                 <span class="block truncate text-sm font-medium text-zinc-200">{{ $recommended->title }}</span>
                                 <span class="block text-xs text-zinc-500">
                                     @if (($recommended->liked_by_users_count ?? 0) > 0)
-                                        ♥ {{ $recommended->liked_by_users_count }} likes
+                                        ♥ {{ $recommended->liked_by_users_count }} curtidas
                                     @else
                                         {{ $recommended->created_at?->diffForHumans() }}
                                     @endif

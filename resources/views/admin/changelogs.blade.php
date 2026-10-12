@@ -1,6 +1,6 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Changelog manager')
+@section('title', 'Gerenciar changelog')
 @section('page-title', 'Changelog')
 
 @section('content')
@@ -12,27 +12,27 @@
     @endif
 
     <p class="admin-muted mb-6">
-        One file per PR in <code class="admin-code">changelogs/*.json</code>, shown publicly at
+        Um arquivo por PR em <code class="admin-code">changelogs/*.json</code>, exibido em
         <a href="{{ route('changelog.index') }}" target="_blank" class="text-indigo-600 hover:underline dark:text-indigo-400">/changelog</a>.
     </p>
 
     {{-- PRs missing an entry --}}
     <div class="admin-card mb-6">
         <div class="admin-card-header">
-            <span>Pull requests without a changelog entry ({{ $repo }})</span>
+            <span>PRs sem entrada no changelog ({{ $repo }})</span>
         </div>
         @if ($fetchError)
             <p class="px-5 py-4 text-sm text-red-700 dark:text-red-300">{{ $fetchError }}</p>
         @elseif (count($missing) === 0)
-            <p class="admin-muted px-5 py-4">Everything is documented — no missing PRs in the recent list.</p>
+            <p class="admin-muted px-5 py-4">Tudo documentado — nenhum PR recente faltando.</p>
         @else
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>PR</th>
-                            <th>Title</th>
-                            <th>State</th>
+                            <th>Título</th>
+                            <th>Estado</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -44,7 +44,7 @@
                                 </td>
                                 <td>
                                     {{ $pr['title'] }}
-                                    <br><span class="admin-muted text-xs">by {{ $pr['author'] }} · {{ $pr['created_at'] }}</span>
+                                    <br><span class="admin-muted text-xs">por {{ $pr['author'] }} · {{ $pr['created_at'] }}</span>
                                 </td>
                                 <td>
                                     @if ($pr['merged'])
@@ -57,7 +57,7 @@
                                     <form method="POST" action="{{ route('admin.changelogs.import') }}" class="inline-block">
                                         @csrf
                                         <input type="hidden" name="number" value="{{ $pr['number'] }}">
-                                        <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Import &amp; edit</button>
+                                        <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Importar e editar</button>
                                     </form>
                                 </td>
                             </tr>
@@ -71,19 +71,19 @@
     {{-- Existing entries --}}
     <div class="admin-card mb-6">
         <div class="admin-card-header">
-            <span>Entries ({{ count($entries) }})</span>
-            <a href="{{ route('admin.changelogs.create') }}" class="admin-btn admin-btn-success admin-btn-sm">New entry</a>
+            <span>Entradas ({{ count($entries) }})</span>
+            <a href="{{ route('admin.changelogs.create') }}" class="admin-btn admin-btn-success admin-btn-sm">Nova entrada</a>
         </div>
         @if (count($entries) === 0)
-            <p class="admin-muted px-5 py-4">No entries yet.</p>
+            <p class="admin-muted px-5 py-4">Sem entradas ainda.</p>
         @else
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Title</th>
-                            <th>Category</th>
+                            <th>Data</th>
+                            <th>Título</th>
+                            <th>Categoria</th>
                             <th>PR</th>
                             <th></th>
                         </tr>
@@ -98,12 +98,12 @@
                                 <td><span class="admin-badge admin-badge-secondary">{{ $entry['category'] }}</span></td>
                                 <td>{{ $entry['pr'] ? '#'.$entry['pr'] : '—' }}</td>
                                 <td class="whitespace-nowrap">
-                                    <a href="{{ route('admin.changelogs.edit', $entry['id']) }}" class="admin-btn admin-btn-warning admin-btn-sm">Edit</a>
+                                    <a href="{{ route('admin.changelogs.edit', $entry['id']) }}" class="admin-btn admin-btn-warning admin-btn-sm">Editar</a>
                                     <form method="POST" action="{{ route('admin.changelogs.destroy', $entry['id']) }}"
-                                          class="inline-block" onsubmit="return confirm('Delete this entry?')">
+                                          class="inline-block" onsubmit="return confirm('Excluir esta entrada?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
+                                        <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Excluir</button>
                                     </form>
                                 </td>
                             </tr>

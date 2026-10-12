@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Comics Index')
+@section('title', 'Comics')
 
 @section('meta')
-    <meta name="description" content="Descubra os melhores comics da semana. Veja os comics mais populares e explore nossa coleção completa. Atualizações semanais e novos conteúdos sempre.">
-    <meta name="keywords" content="comics, quadrinhos, leitura online, comics populares, melhores comics, comics da semana">
+    <meta name="description" content="Descubra os melhores comics da semana. Veja os mais populares e explore a coleção completa. Atualizações semanais e novos conteúdos sempre.">
+    <meta name="keywords" content="comics, leitura online, comics populares, melhores comics, comics da semana">
 
-    <meta property="og:title" content="Comics Index - Descubra os Melhores Comics da Semana">
-    <meta property="og:description" content="Veja os top comics da semana com os quadrinhos mais visualizados e explore nossa coleção completa.">
+    <meta property="og:title" content="Comics - Descubra os Melhores da Semana">
+    <meta property="og:description" content="Veja os top comics da semana com os mais visualizados e explore a coleção completa.">
     <meta property="og:image" content="{{ asset('icon.jpg') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Comics Index - Descubra os Melhores Comics da Semana">
-    <meta name="twitter:description" content="Veja os quadrinhos mais populares da semana e explore nossa vasta coleção.">
+    <meta name="twitter:title" content="Comics - Descubra os Melhores da Semana">
+    <meta name="twitter:description" content="Veja os comics mais populares da semana e explore a vasta coleção.">
     <meta name="twitter:image" content="{{ asset('icon.jpg') }}">
 @endsection
 
@@ -51,12 +51,12 @@
                 <a href="{{ route('comics.index') }}"
                    class="rounded-full px-3 py-1.5 transition
                           {{ ($sort ?? 'latest') !== 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
-                    Latest
+                    Recentes
                 </a>
                 <a href="{{ route('comics.index', ['sort' => 'liked']) }}"
                    class="rounded-full px-3 py-1.5 transition
                           {{ ($sort ?? 'latest') === 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
-                    Most liked
+                    Mais curtidos
                 </a>
             </div>
         </div>
