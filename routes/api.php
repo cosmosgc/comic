@@ -1,19 +1,17 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\ComicController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\ComicController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
-
+use App\Http\Controllers\TagController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
-
 
 Route::get('/comics/update-slugs', [ComicController::class, 'updateMissingSlugs'])->name(name: 'comics.updateSlugs');
 
@@ -26,4 +24,6 @@ Route::get('/collections/{id}', [CollectionController::class, 'showById']);
 
 Route::get('/posts', [PostController::class, 'index']);
 
-Route::post('/analytics', [AnalyticsController::class, 'store'])->name(name: 'analytics');
+Route::get('/tags', [TagController::class, 'index'])->middleware('throttle:60,1')->name('api.tags');
+
+Route::post('/analytics', [AnalyticsController::class, 'store'])->middleware('throttle:60,1')->name(name: 'analytics');

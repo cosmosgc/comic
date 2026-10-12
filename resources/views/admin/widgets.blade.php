@@ -1,62 +1,61 @@
 @extends('layouts.admin-layout')
 
 @section('title', 'Widgets')
-@section('page-title', 'Widgets Management')
+@section('page-title', 'Widgets')
 
 @section('content')
-    <div class="container">
-        <h2 class="mb-4">All Widgets</h2>
-
-        {{-- Create Widget Form --}}
-        <div class="card mb-4">
-            <div class="card-header">Create New Widget</div>
-            <div class="card-body">
-                <form method="POST" action="{{ route('admin.widgets.store') }}">
-                    @csrf
-                    <div class="mb-3">
-                        <label for="title" class="form-label">Title (optional)</label>
-                        <input type="text" class="form-control" name="title" id="title">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="position_index" class="form-label">Position Index</label>
-                        <input type="number" class="form-control" name="position_index" id="position_index" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="content" class="form-label">HTML Content</label>
-                        <textarea class="form-control" name="content" id="content" rows="4" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-success">Create Widget</button>
-                </form>
-            </div>
+    {{-- Create Widget Form --}}
+    <div class="admin-card mb-6 max-w-2xl">
+        <div class="admin-card-header">
+            <span>Create New Widget</span>
         </div>
+        <div class="admin-card-body">
+            <form method="POST" action="{{ route('admin.widgets.store') }}" class="space-y-4">
+                @csrf
+                <div>
+                    <label for="title" class="admin-label">Title (optional)</label>
+                    <input type="text" class="admin-input" name="title" id="title">
+                </div>
 
-        {{-- Widget List --}}
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            @foreach ($widgets as $widget)
-                <div class="col">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <strong>{{ $widget->title ?? 'Untitled Widget' }}</strong>
-                            <span class="badge bg-primary">Position {{ $widget->position_index }}</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="border p-2 mb-2" style="background-color: #f8f9fa;">
-                                {!! $widget->content !!}
-                            </div>
+                <div>
+                    <label for="position_index" class="admin-label">Position Index</label>
+                    <input type="number" class="admin-input" name="position_index" id="position_index" required>
+                </div>
 
-                            <a href="{{ route('admin.widgets.edit', $widget->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                            <form action="{{ route('admin.widgets.destroy', $widget->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Delete this widget?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                            </form>
-                        </div>
+                <div>
+                    <label for="content" class="admin-label">HTML Content</label>
+                    <textarea class="admin-input" name="content" id="content" rows="4" required></textarea>
+                </div>
+
+                <button type="submit" class="admin-btn admin-btn-success">Create Widget</button>
+            </form>
+        </div>
+    </div>
+
+    {{-- Widget List --}}
+    <h2 class="mb-3 text-base font-semibold">All Widgets ({{ count($widgets) }})</h2>
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        @foreach ($widgets as $widget)
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <span class="truncate">{{ $widget->title ?? 'Untitled Widget' }}</span>
+                    <span class="admin-badge admin-badge-primary">Position {{ $widget->position_index }}</span>
+                </div>
+                <div class="admin-card-body space-y-3">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800">
+                        {!! $widget->content !!}
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('admin.widgets.edit', $widget->id) }}" class="admin-btn admin-btn-warning admin-btn-sm">Edit</a>
+                        <form action="{{ route('admin.widgets.destroy', $widget->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete this widget?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
+                        </form>
                     </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        @endforeach
     </div>
 @endsection

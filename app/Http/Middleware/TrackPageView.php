@@ -2,14 +2,15 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Analytics;
 use Closure;
 use Illuminate\Http\Request;
-use App\Models\Analytics;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class TrackPageView
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         // Record the page view
         Analytics::create([

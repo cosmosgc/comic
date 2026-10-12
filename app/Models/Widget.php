@@ -19,7 +19,15 @@ class Widget extends Model
     ];
 
     // Optional: cast content as HTML-safe string (if you want to customize later)
-    protected $casts = [
-        'position_index' => 'integer',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'position_index' => 'integer',
+        ];
+    }
 }

@@ -1,3 +1,223 @@
-nav.flex.items-center.justify-between svg {
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+[x-cloak] {
+    display: none !important;
+}
+
+@layer components {
+    /* ---------- Cards ---------- */
+    .admin-card {
+        @apply overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900;
+    }
+    .admin-card-header {
+        @apply flex items-center justify-between gap-3 border-b border-zinc-200 px-5 py-3 font-semibold text-zinc-900 dark:border-zinc-800 dark:text-zinc-100;
+    }
+    .admin-card-body {
+        @apply px-5 py-4;
+    }
+
+    /* ---------- Stat cards ---------- */
+    .admin-stat {
+        @apply rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900;
+    }
+    .admin-stat-label {
+        @apply text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400;
+    }
+    .admin-stat-value {
+        @apply mt-1 text-3xl font-bold text-zinc-900 dark:text-white;
+    }
+    .admin-stat-sub {
+        @apply mt-1 text-xs text-zinc-500 dark:text-zinc-400;
+    }
+
+    /* ---------- Tables ---------- */
+    .admin-table-wrap {
+        @apply overflow-x-auto;
+    }
+    table.admin-table {
+        @apply w-full text-left text-sm;
+    }
+    table.admin-table thead th {
+        @apply whitespace-nowrap border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400;
+    }
+    table.admin-table tbody td {
+        @apply border-b border-zinc-100 px-4 py-2.5 align-top text-zinc-700 last:border-b-0 dark:border-zinc-800/60 dark:text-zinc-300;
+    }
+    table.admin-table tbody tr {
+        @apply transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40;
+    }
+    table.admin-table code {
+        @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300;
+    }
+
+    /* Compact variant for wide tables (e.g. analytics): smaller text + tighter cells */
+    table.admin-table-compact {
+        @apply text-xs;
+    }
+    table.admin-table-compact thead th {
+        @apply px-2.5 py-2;
+    }
+    table.admin-table-compact tbody td {
+        @apply px-2.5 py-1.5;
+    }
+
+    /* ---------- Buttons ---------- */
+    .admin-btn {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-900;
+    }
+    .admin-btn-primary {
+        @apply bg-indigo-600 text-white hover:bg-indigo-500;
+    }
+    .admin-btn-secondary {
+        @apply border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700;
+    }
+    .admin-btn-danger {
+        @apply bg-red-600 text-white hover:bg-red-500;
+    }
+    .admin-btn-warning {
+        @apply bg-amber-500 text-white hover:bg-amber-400;
+    }
+    .admin-btn-success {
+        @apply bg-emerald-600 text-white hover:bg-emerald-500;
+    }
+    .admin-btn-sm {
+        @apply px-2.5 py-1 text-xs;
+    }
+    .admin-btn:disabled {
+        @apply cursor-not-allowed opacity-50;
+    }
+
+    /* ---------- Forms ---------- */
+    .admin-label {
+        @apply mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300;
+    }
+    .admin-input {
+        @apply w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500;
+    }
+    .admin-check {
+        @apply h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-800;
+    }
+    .admin-help {
+        @apply mt-1 block text-xs text-zinc-500 dark:text-zinc-400;
+    }
+
+    /* ---------- Badges ---------- */
+    .admin-badge {
+        @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    }
+    .admin-badge-success {
+        @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300;
+    }
+    .admin-badge-danger {
+        @apply bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
+    }
+    .admin-badge-warning {
+        @apply bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300;
+    }
+    .admin-badge-info {
+        @apply bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300;
+    }
+    .admin-badge-secondary {
+        @apply bg-zinc-200/70 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300;
+    }
+    .admin-badge-primary {
+        @apply bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-300;
+    }
+
+    /* ---------- Alerts ---------- */
+    .admin-alert {
+        @apply mb-4 rounded-xl border px-4 py-3 text-sm;
+    }
+    .admin-alert ul {
+        @apply mb-0 mt-2 list-disc pl-5;
+    }
+    .admin-alert-success {
+        @apply border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200;
+    }
+    .admin-alert-danger {
+        @apply border-red-200 bg-red-50 text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200;
+    }
+    .admin-alert-warning {
+        @apply border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200;
+    }
+    .admin-alert-info {
+        @apply border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200;
+    }
+
+    /* ---------- Sidebar nav ---------- */
+    .admin-nav-link {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white;
+    }
+    .admin-nav-link-active {
+        @apply bg-indigo-600 text-white hover:bg-indigo-600 hover:text-white dark:bg-indigo-600 dark:text-white dark:hover:bg-indigo-600;
+    }
+    .admin-nav-link svg {
+        @apply h-5 w-5 shrink-0;
+    }
+
+    /* ---------- Logs / misc ---------- */
+    .admin-log {
+        @apply max-h-[400px] overflow-y-auto whitespace-pre-wrap rounded-lg bg-zinc-950 p-4 font-mono text-xs leading-relaxed text-zinc-200 dark:border dark:border-zinc-800;
+    }
+    .admin-muted {
+        @apply text-sm text-zinc-500 dark:text-zinc-400;
+    }
+    .admin-code {
+        @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300;
+    }
+
+    /* ---------- DataTables (dark-aware, replaces DataTables default CSS) ---------- */
+    .dataTables_wrapper {
+        @apply text-sm;
+    }
+    .dataTables_wrapper .dataTables_length label,
+    .dataTables_wrapper .dataTables_filter label {
+        @apply flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400;
+    }
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        @apply rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100;
+    }
+    .dataTables_wrapper .dataTables_info {
+        @apply pt-3 text-xs text-zinc-500 dark:text-zinc-400;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        @apply pt-3;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        @apply mx-0.5 cursor-pointer rounded-lg border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        @apply bg-zinc-100 dark:bg-zinc-800;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        @apply border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-600;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        @apply cursor-not-allowed opacity-40;
+    }
+}
+
+/* Deploy progress bar state (toggled by JS) */
+#deploy-progress {
+    background-color: #4f46e5;
+}
+#deploy-progress.is-done {
+    background-color: #059669;
+}
+#deploy-progress.is-failed {
+    background-color: #dc2626;
+}
+
+/* Theme toggle icons: show sun in dark mode, moon in light mode */
+.theme-icon-moon {
+    display: none;
+}
+.dark .theme-icon-moon {
+    display: block;
+}
+.dark .theme-icon-sun {
     display: none;
 }

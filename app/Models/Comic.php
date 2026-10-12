@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Comic extends Model
@@ -24,13 +27,7 @@ class Comic extends Model
         'view_count',
     ];
 
-    // If you need to cast any attributes to specific data types
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-
-    public static function generateUniqueSlug($title)
+    public static function generateUniqueSlug(string $title): string
     {
         $slug = Str::slug($title); // Create the base slug
         $originalSlug = $slug; // Keep the original slug for comparison
@@ -45,27 +42,27 @@ class Comic extends Model
         return $slug;
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function pages()
+    public function pages(): HasMany
     {
         return $this->hasMany(Page::class);
     }
 
-    public function pageCount()
+    public function pageCount(): int
     {
         return $this->pages()->count();
     }
 
-    public function tags()
+    public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
     }
 
-    public function collections()
+    public function collections(): BelongsToMany
     {
         // NOTE: no default order here on purpose (see Collection::comics):
         // orderBy('pivot_order') leaks into exists()/first()/count()
@@ -74,17 +71,17 @@ class Comic extends Model
             ->withPivot('order'); // Include the 'order' column in the pivot table
     }
 
-    public function comments()
+    public function comments(): HasMany
     {
         return $this->hasMany(Comment::class)->latest();
     }
 
-    public function likedByUsers()
+    public function likedByUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'comic_user_likes')->withTimestamps();
     }
 
-    public function setCoverFromPage(Page $page)
+    public function setCoverFromPage(Page $page): void
     {
         $this->image_path = $page->image_path;
         $this->save();

@@ -5,32 +5,34 @@
 
 @section('content')
     @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="admin-alert admin-alert-success">{{ session('success') }}</div>
     @endif
     @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="admin-alert admin-alert-danger">{{ session('error') }}</div>
     @endif
 
-    <p class="text-muted">
+    <p class="admin-muted mb-6 max-w-3xl">
         Pushes this project's code to the hosting provider over FTPS — no console needed on the host.
         Run this from your local copy. The update <strong>refuses to run</strong> unless the remote
-        directory verifies as this Laravel project (see checks below). <code>.env</code>, uploads and
+        directory verifies as this Laravel project (see checks below). <code class="admin-code">.env</code>, uploads and
         caches are never overwritten, and nothing is ever deleted remotely.
     </p>
 
     {{-- Configuration --}}
-    <div class="card mb-4">
-        <div class="card-header">FTP configuration (.env)</div>
-        <div class="card-body p-0">
-            <table class="table mb-0">
+    <div class="admin-card mb-6">
+        <div class="admin-card-header">
+            <span>FTP configuration (.env)</span>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
                 <tbody>
                     <tr>
                         <td>PHP cURL extension</td>
                         <td>
                             @if ($curlAvailable)
-                                <span class="badge badge-success">Available</span>
+                                <span class="admin-badge admin-badge-success">Available</span>
                             @else
-                                <span class="badge badge-danger">Missing — FTP deploy requires ext-curl</span>
+                                <span class="admin-badge admin-badge-danger">Missing — FTP deploy requires ext-curl</span>
                             @endif
                         </td>
                     </tr>
@@ -44,46 +46,50 @@
             </table>
         </div>
         @if (!$configured)
-            <div class="card-footer text-danger">
-                Missing: <code>{{ implode(', ', $missing) }}</code>. Set them in <code>.env</code> (see <code>.env.example</code>).
+            <div class="border-t border-zinc-200 px-5 py-3 text-sm text-red-700 dark:border-zinc-800 dark:text-red-300">
+                Missing: <code class="admin-code">{{ implode(', ', $missing) }}</code>. Set them in <code class="admin-code">.env</code> (see <code class="admin-code">.env.example</code>).
             </div>
         @endif
     </div>
 
     {{-- Verify --}}
-    <div class="card mb-4">
-        <div class="card-header">1. Verify remote directory</div>
-        <div class="card-body">
+    <div class="admin-card mb-6">
+        <div class="admin-card-header">
+            <span>1. Verify remote directory</span>
+        </div>
+        <div class="admin-card-body">
             <form method="POST" action="{{ route('admin.deploy.verify') }}">
                 @csrf
-                <button type="submit" class="btn btn-secondary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
+                <button type="submit" class="admin-btn admin-btn-secondary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
                     Test connection &amp; verify project
                 </button>
             </form>
 
             @if ($verification)
-                <table class="table table-striped mt-3 mb-0">
-                    <tbody>
-                        @foreach ($verification['checks'] as $check)
-                            <tr>
-                                <td>{{ $check['label'] }}</td>
-                                <td>
-                                    @if ($check['ok'])
-                                        <span class="badge badge-success">PASS</span>
-                                    @else
-                                        <span class="badge badge-danger">FAIL</span>
-                                    @endif
-                                </td>
-                                <td><small>{{ $check['detail'] }}</small></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <div class="admin-table-wrap mt-4">
+                    <table class="admin-table">
+                        <tbody>
+                            @foreach ($verification['checks'] as $check)
+                                <tr>
+                                    <td>{{ $check['label'] }}</td>
+                                    <td>
+                                        @if ($check['ok'])
+                                            <span class="admin-badge admin-badge-success">PASS</span>
+                                        @else
+                                            <span class="admin-badge admin-badge-danger">FAIL</span>
+                                        @endif
+                                    </td>
+                                    <td class="admin-muted">{{ $check['detail'] }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
                 @if (!empty($verification['root_entries']))
-                    <div class="p-3 border-top">
+                    <div class="mt-3 border-t border-zinc-200 pt-3 text-sm dark:border-zinc-800">
                         <strong>Remote directory contents ({{ count($verification['root_entries']) }}):</strong><br>
-                        <small><code>{{ implode(', ', $verification['root_entries']) }}</code></small>
-                        <br><small class="text-muted">Use this list to set FTP_ROOT / FTP_PUBLIC_DIR correctly.</small>
+                        <code class="admin-code">{{ implode(', ', $verification['root_entries']) }}</code>
+                        <br><span class="admin-muted">Use this list to set FTP_ROOT / FTP_PUBLIC_DIR correctly.</span>
                     </div>
                 @endif
             @endif
@@ -91,56 +97,66 @@
     </div>
 
     {{-- Run --}}
-    <div class="card mb-4">
-        <div class="card-header">2. Run update</div>
-        <div class="card-body">
+    <div class="admin-card mb-6">
+        <div class="admin-card-header">
+            <span>2. Run update</span>
+        </div>
+        <div class="admin-card-body">
             <form method="POST" action="{{ route('admin.deploy.run') }}"
-                  onsubmit="return confirm('Upload changed files to the host?')">
+                  onsubmit="return confirm('Upload changed files to the host?')" class="space-y-2.5">
                 @csrf
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="dry_run" id="dry_run" value="1" checked>
-                    <label class="form-check-label" for="dry_run">Dry run (show what would be uploaded)</label>
+                <label class="flex items-start gap-2.5 text-sm">
+                    <input type="checkbox" class="admin-check mt-0.5" name="dry_run" id="dry_run" value="1" checked>
+                    <span>Dry run (show what would be uploaded)</span>
+                </label>
+                <label class="flex items-start gap-2.5 text-sm">
+                    <input type="checkbox" class="admin-check mt-0.5" name="force" id="force" value="1">
+                    <span>Force re-upload of every file</span>
+                </label>
+                <div>
+                    <label class="flex items-start gap-2.5 text-sm" for="include_vendor">
+                        <input type="checkbox" class="admin-check mt-0.5" name="include_vendor" id="include_vendor" value="1">
+                        <span>Include vendor/ (~9,000 files, ~49 MB)</span>
+                    </label>
+                    <span class="admin-help ml-6">Skipped by default — vendor rarely changes. If the host has no vendor/ yet, it is included automatically.</span>
                 </div>
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="force" id="force" value="1">
-                    <label class="form-check-label" for="force">Force re-upload of every file</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="include_vendor" id="include_vendor" value="1">
-                    <label class="form-check-label" for="include_vendor">Include vendor/ (~9,000 files, ~49 MB)</label>
-                    <small class="form-text text-muted d-block">Skipped by default — vendor rarely changes. If the host has no vendor/ yet, it is included automatically.</small>
-                </div>
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="quick" id="quick" value="1" checked>
-                    <label class="form-check-label" for="quick">Quick sync (only changed files)</label>
-                    <small class="form-text text-muted d-block">
+                <div>
+                    <label class="flex items-start gap-2.5 text-sm" for="quick">
+                        <input type="checkbox" class="admin-check mt-0.5" name="quick" id="quick" value="1" checked>
+                        <span>Quick sync (only changed files)</span>
+                    </label>
+                    <span class="admin-help ml-6">
                         @if ($quickSince)
                             Since last success ({{ date('Y-m-d H:i', $quickSince) }}) — finishes in about a minute.
                         @else
                             No successful run yet — the first run is always a full walk.
                         @endif
                         Remote-side edits made outside deploys are only picked up by a full walk.
-                    </small>
+                    </span>
                 </div>
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="full" id="full" value="1">
-                    <label class="form-check-label" for="full">Full verification walk (overrides quick)</label>
+                <label class="flex items-start gap-2.5 text-sm">
+                    <input type="checkbox" class="admin-check mt-0.5" name="full" id="full" value="1">
+                    <span>Full verification walk (overrides quick)</span>
+                </label>
+                <div>
+                    <label class="flex items-start gap-2.5 text-sm" for="include_build">
+                        <input type="checkbox" class="admin-check mt-0.5" name="include_build" id="include_build" value="1" checked>
+                        <span>Include compiled assets (public/build/)</span>
+                    </label>
+                    <span class="admin-help ml-6">Uncheck for PHP-only changes — skips the Vite build output.</span>
                 </div>
-                <div class="form-check mb-2">
-                    <input type="checkbox" class="form-check-input" name="include_build" id="include_build" value="1" checked>
-                    <label class="form-check-label" for="include_build">Include compiled assets (public/build/)</label>
-                    <small class="form-text text-muted d-block">Uncheck for PHP-only changes — skips the Vite build output.</small>
+                <label class="flex items-start gap-2.5 text-sm">
+                    <input type="checkbox" class="admin-check mt-0.5" name="confirm" id="confirm" value="1" required>
+                    <span>I understand this uploads code to the live host</span>
+                </label>
+                <div class="pt-1">
+                    <button type="submit" class="admin-btn admin-btn-primary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
+                        Run FTP update
+                    </button>
                 </div>
-                <div class="form-check mb-3">
-                    <input type="checkbox" class="form-check-input" name="confirm" id="confirm" value="1" required>
-                    <label class="form-check-label" for="confirm">I understand this uploads code to the live host</label>
-                </div>
-                <button type="submit" class="btn btn-primary" {{ !$configured || !$curlAvailable ? 'disabled' : '' }}>
-                    Run FTP update
-                </button>
             </form>
-            <p class="mt-3 mb-0 text-muted">
-                After the upload, open <a href="{{ route('admin.migrations') }}">Migrations</a> on the host
+            <p class="admin-muted mt-3">
+                After the upload, open <a href="{{ route('admin.migrations') }}" class="text-indigo-600 hover:underline dark:text-indigo-400">Migrations</a> on the host
                 and run any pending migrations.
             </p>
         </div>
@@ -148,24 +164,24 @@
 
     {{-- Finished run (persists across reloads, no polling) --}}
     @if ($runId && $runStatus && in_array($runStatus['state'] ?? null, ['done', 'failed', 'cancelled']))
-        <div class="card mb-4">
-            <div class="card-header">
-                Last run
+        <div class="admin-card mb-6">
+            <div class="admin-card-header">
+                <span>Last run</span>
                 @if (($runStatus['state'] ?? null) === 'done')
-                    <span class="badge badge-success">done</span>
+                    <span class="admin-badge admin-badge-success">done</span>
                 @else
-                    <span class="badge badge-danger">{{ $runStatus['state'] }}</span>
+                    <span class="admin-badge admin-badge-danger">{{ $runStatus['state'] }}</span>
                 @endif
             </div>
-            <div class="card-body">
+            <div class="admin-card-body space-y-2">
                 @if (!empty($runStatus['message']))
-                    <p class="mb-2">{{ $runStatus['message'] }}</p>
+                    <p>{{ $runStatus['message'] }}</p>
                 @endif
                 @if (isset($runStatus['done'], $runStatus['total']) && $runStatus['total'])
-                    <p class="mb-2 text-muted small">Sent {{ $runStatus['done'] }} of {{ $runStatus['total'] }} files.</p>
+                    <p class="admin-muted">Sent {{ $runStatus['done'] }} of {{ $runStatus['total'] }} files.</p>
                 @endif
                 @if (!empty($runStatus['log']))
-                    <pre id="deploy-result-log" class="mb-0" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">{{ implode("\n", array_slice($runStatus['log'], -80)) }}</pre>
+                    <pre id="deploy-result-log" class="admin-log">{{ implode("\n", array_slice($runStatus['log'], -80)) }}</pre>
                 @endif
             </div>
         </div>
@@ -173,55 +189,55 @@
 
     {{-- Live progress (background run) --}}
     @if ($runId && (! $runStatus || ! in_array($runStatus['state'] ?? null, ['done', 'failed', 'cancelled'])))
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>Run progress <small class="text-muted">(live — this page does not need to stay open)</small></span>
+        <div class="admin-card mb-6">
+            <div class="admin-card-header">
+                <span>Run progress <span class="admin-muted font-normal">(live — this page does not need to stay open)</span></span>
                 <form method="POST" action="{{ route('admin.deploy.cancel', ['id' => $runId]) }}"
                       onsubmit="return confirm('Cancel this deploy run? Already-uploaded files stay in place.')">
                     @csrf
-                    <button type="submit" id="deploy-cancel" class="btn btn-sm btn-outline-danger">Cancel run</button>
+                    <button type="submit" id="deploy-cancel" class="admin-btn admin-btn-sm border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-500/10">Cancel run</button>
                 </form>
             </div>
-            <div class="card-body">
-                <div class="mb-2">
-                    <span id="deploy-phase" class="badge badge-secondary">queued</span>
-                    <span id="deploy-modes" class="ml-2"></span>
+            <div class="admin-card-body">
+                <div class="mb-3 flex flex-wrap items-center gap-2">
+                    <span id="deploy-phase" class="admin-badge admin-badge-secondary">queued</span>
+                    <span id="deploy-modes" class="admin-muted"></span>
                 </div>
-                <div class="progress mb-3" style="height: 25px;">
-                    <div id="deploy-progress" class="progress-bar progress-bar-striped progress-bar-animated"
+                <div class="mb-4 h-6 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                    <div id="deploy-progress" class="flex h-full items-center justify-center text-xs font-semibold text-white transition-all duration-500"
                          role="progressbar" style="width: 0%;">0%</div>
                 </div>
-                <div class="row text-center mb-3">
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">Sent</div>
-                        <div id="stat-sent" class="h5 mb-0">0</div>
+                <div class="mb-4 grid grid-cols-3 gap-2 text-center sm:grid-cols-6">
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">Sent</div>
+                        <div id="stat-sent" class="text-lg font-bold">0</div>
                     </div>
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">Total</div>
-                        <div id="stat-total" class="h5 mb-0">—</div>
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">Total</div>
+                        <div id="stat-total" class="text-lg font-bold">—</div>
                     </div>
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">Remaining</div>
-                        <div id="stat-remaining" class="h5 mb-0">—</div>
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">Remaining</div>
+                        <div id="stat-remaining" class="text-lg font-bold">—</div>
                     </div>
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">Elapsed</div>
-                        <div id="stat-elapsed" class="h5 mb-0">0s</div>
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">Elapsed</div>
+                        <div id="stat-elapsed" class="text-lg font-bold">0s</div>
                     </div>
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">Rate</div>
-                        <div id="stat-rate" class="h5 mb-0">—</div>
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">Rate</div>
+                        <div id="stat-rate" class="text-lg font-bold">—</div>
                     </div>
-                    <div class="col-4 col-md-2 mb-2">
-                        <div class="text-muted small">ETA</div>
-                        <div id="stat-eta" class="h5 mb-0">—</div>
+                    <div class="rounded-lg bg-zinc-50 p-2.5 dark:bg-zinc-800/60">
+                        <div class="admin-muted text-xs">ETA</div>
+                        <div id="stat-eta" class="text-lg font-bold">—</div>
                     </div>
                 </div>
-                <p class="mb-1 small text-muted">Currently uploading</p>
-                <p id="deploy-current" class="mb-2"><code>—</code></p>
-                <p id="deploy-counts" class="mb-2 small text-muted"></p>
-                <p id="deploy-message" class="mb-2 text-muted">Starting…</p>
-                <pre id="deploy-log" class="mb-0" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+                <p class="admin-muted mb-1 text-xs">Currently uploading</p>
+                <p id="deploy-current" class="mb-2"><code class="admin-code">—</code></p>
+                <p id="deploy-counts" class="admin-muted mb-2 text-xs"></p>
+                <p id="deploy-message" class="admin-muted mb-2">Starting…</p>
+                <pre id="deploy-log" class="admin-log"></pre>
             </div>
         </div>
         <script>
@@ -251,13 +267,13 @@
                 }
 
                 const phaseLabels = {
-                    queued: ['queued', 'badge-secondary'],
-                    listing: ['listing files', 'badge-info'],
-                    uploading: ['uploading', 'badge-primary'],
-                    done: ['done', 'badge-success'],
-                    failed: ['failed', 'badge-danger'],
-                    cancelling: ['cancelling', 'badge-warning'],
-                    cancelled: ['cancelled', 'badge-warning'],
+                    queued: ['queued', 'admin-badge-secondary'],
+                    listing: ['listing files', 'admin-badge-info'],
+                    uploading: ['uploading', 'admin-badge-primary'],
+                    done: ['done', 'admin-badge-success'],
+                    failed: ['failed', 'admin-badge-danger'],
+                    cancelling: ['cancelling', 'admin-badge-warning'],
+                    cancelled: ['cancelled', 'admin-badge-warning'],
                 };
 
                 const timer = setInterval(async () => {
@@ -298,9 +314,9 @@
                     }
 
                     const phase = s.phase || s.state || 'queued';
-                    const [label, cls] = phaseLabels[phase] || [phase, 'badge-secondary'];
+                    const [label, cls] = phaseLabels[phase] || [phase, 'admin-badge-secondary'];
                     phaseEl.textContent = label;
-                    phaseEl.className = 'badge ' + cls;
+                    phaseEl.className = 'admin-badge ' + cls;
 
                     const modes = [];
                     if (s.dry_run) modes.push('dry run');
@@ -311,7 +327,7 @@
                     if (s.include_build === false) modes.push('no build');
                     modesEl.textContent = modes.join(' • ');
 
-                    currentEl.innerHTML = s.current ? '<code>' + s.current.replace(/</g, '&lt;') + '</code>' : '<code>—</code>';
+                    currentEl.innerHTML = s.current ? '<code class="admin-code">' + s.current.replace(/</g, '&lt;') + '</code>' : '<code class="admin-code">—</code>';
 
                     const c = s.counts || {};
                     const parts = [];
@@ -331,8 +347,7 @@
                     const cancelBtn = document.getElementById('deploy-cancel');
                     if (s.state === 'done' || s.state === 'failed' || s.state === 'cancelled') {
                         clearInterval(timer);
-                        bar.classList.remove('progress-bar-animated');
-                        bar.classList.add(s.state === 'done' ? 'bg-success' : 'bg-danger');
+                        bar.classList.add(s.state === 'done' ? 'is-done' : 'is-failed');
                         if (cancelBtn) cancelBtn.disabled = true;
                         if (s.state === 'cancelled' && s.message) msg.textContent = s.message + ' Re-run to resume.';
                     } else if (s.state === 'cancelling') {

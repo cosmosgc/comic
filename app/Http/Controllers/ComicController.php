@@ -16,6 +16,20 @@ use Illuminate\View\View;
 
 class ComicController extends Controller
 {
+    /**
+     * Owner-or-admin gate for comic mutation. Guests are blocked by the
+     * `auth` route middleware; this stops non-owners from touching
+     * other users' comics (admins bypass via admin_level >= 1).
+     */
+    protected function authorizeComicAccess(Comic $comic): void
+    {
+        $user = Auth::user();
+        abort_unless(
+            $user !== null && ((int) $comic->user_id === (int) $user->id || (int) $user->admin_level >= 1),
+            403
+        );
+    }
+
     public function index(Request $request)
     {
         // Counts degrade gracefully on hosts missing the new tables.
@@ -259,16 +273,7 @@ class ComicController extends Controller
 
         // Handle tags
         if ($request->filled('tags')) {
-            $tagNames = explode(',', $request->input('tags'));
-            $tagIds = [];
-
-            foreach ($tagNames as $tagName) {
-                $tagName = trim($tagName);
-                $tag = Tag::firstOrCreate(['name' => $tagName]);
-                $tagIds[] = $tag->id;
-            }
-
-            $comic->tags()->sync($tagIds);
+            $this->syncTagsFromString($comic, $request->input('tags'));
         }
 
         // Define the public folder path
@@ -380,35 +385,70 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->findOrFail($id);
+        $this->authorizeComicAccess($comic);
 
         return view('comics.edit', compact('comic'));
+    }
+
+    /**
+     * Parse a comma-separated tag string, create missing tags, and sync.
+     * Empty fragments are skipped; matching is exact (case preserved).
+     */
+    protected function syncTagsFromString(Comic $comic, ?string $raw): void
+    {
+        $tagIds = [];
+        foreach (explode(',', (string) $raw) as $tagName) {
+            $tagName = trim($tagName);
+            if ($tagName === '') {
+                continue;
+            }
+            $tagIds[] = Tag::firstOrCreate(['name' => $tagName])->id;
+        }
+
+        $comic->tags()->sync($tagIds);
     }
 
     public function update(Request $request, Comic $comic)
     {
 
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
-            // 'description' => 'required|string',
+            'description' => 'nullable|string|max:5000',
+            'tags' => 'nullable|string|max:2000',
         ]);
+        $this->authorizeComicAccess($comic);
         // Update comic details
         $comic->update([
-            'title' => $request->input('title'),
-            // 'description' => $request->input('description'),
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
         ]);
+
+        // Sync tags only when the editor submitted (an absent key means
+        // "untouched" — syncing null would wipe all tags).
+        if ($request->has('tags')) {
+            $this->syncTagsFromString($comic, $validated['tags'] ?? null);
+        }
 
         return redirect()->route('comics.edit', $comic->id)->with('success', 'Comic updated successfully.');
     }
 
     public function reorderPages(Request $request, Comic $comic)
     {
-        // The incoming request will be a JSON array of page data
-        $orderedPages = $request->input();
+        $this->authorizeComicAccess($comic);
 
-        foreach ($orderedPages as $pageData) {
-            $page = Page::findOrFail($pageData['id']);
-            $page->update(['page_number' => $pageData['page_number']]);
-        }
+        // Validate shape first: unknown ids or non-numeric positions 422.
+        // Scoping the update to $comic->pages() stops callers from
+        // renumbering pages that belong to other comics.
+        $orderedPages = $request->validate([
+            '*.id' => 'required|integer|exists:pages,id',
+            '*.page_number' => 'required|integer|min:1',
+        ]);
+
+        DB::transaction(function () use ($comic, $orderedPages) {
+            foreach ($orderedPages as $pageData) {
+                $comic->pages()->where('id', $pageData['id'])->update(['page_number' => $pageData['page_number']]);
+            }
+        });
 
         return response()->json(['success' => true]);
     }
@@ -416,6 +456,8 @@ class ComicController extends Controller
     public function deletePage($id)
     {
         $page = Page::findOrFail($id);
+        abort_unless($page->comic !== null, 404);
+        $this->authorizeComicAccess($page->comic);
 
         $filePath = public_path('storage/'.$page->image_path);
 
@@ -430,6 +472,8 @@ class ComicController extends Controller
 
     public function setCover(Comic $comic, Request $request)
     {
+        $this->authorizeComicAccess($comic);
+
         $request->validate([
             'page_id' => 'required|exists:pages,id',
         ]);

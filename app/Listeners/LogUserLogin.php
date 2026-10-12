@@ -2,20 +2,15 @@
 
 namespace App\Listeners;
 
-use Illuminate\Auth\Events\Login;
 use App\Models\Analytics;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 
 class LogUserLogin
 {
-    protected $request;
+    public function __construct(protected Request $request) {}
 
-    public function __construct(Request $request)
-    {
-        $this->request = $request;
-    }
-
-    public function handle(Login $event)
+    public function handle(Login $event): void
     {
         // Log the login event
         Analytics::create([

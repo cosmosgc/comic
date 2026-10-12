@@ -57,10 +57,11 @@
             <label for="tags" class="mb-1 block text-sm font-medium text-zinc-300">
                 Tags
             </label>
-            <input type="text"
-                   name="tags"
-                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm"
-                   placeholder="Insira tags, separado por vírgula">
+            @include('components.tag-editor', [
+                'name' => 'tags',
+                'inputId' => 'tags',
+                'placeholder' => 'Type to search or create tags…',
+            ])
         </div>
 
         <!-- Upload mode -->

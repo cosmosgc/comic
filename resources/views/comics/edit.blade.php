@@ -9,6 +9,12 @@
         Edit Comic: {{ $comic->title }}
     </h1>
 
+    @if (session('success'))
+        <div class="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <!-- Edit comic form -->
     <form action="{{ route('comics.update', $comic->id) }}"
           method="POST"
@@ -38,6 +44,20 @@
                       rows="4"
                       class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
                              focus:outline-none focus:ring-2 focus:ring-indigo-500/30">{{ $comic->description }}</textarea>
+        </div>
+
+        <!-- Tags -->
+        <div>
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Tags
+            </label>
+            @include('components.tag-editor', [
+                'name' => 'tags',
+                'value' => old('tags', $comic->tags->pluck('name')->implode(', ')),
+            ])
+            @error('tags')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
         </div>
 
         <button type="submit"

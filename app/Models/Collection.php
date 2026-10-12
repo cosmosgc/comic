@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Collection extends Model
 {
@@ -17,12 +20,20 @@ class Collection extends Model
         'is_favorites',
     ];
 
-    protected $casts = [
-        'is_public' => 'boolean',
-        'is_favorites' => 'boolean',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_public' => 'boolean',
+            'is_favorites' => 'boolean',
+        ];
+    }
 
-    public function comics()
+    public function comics(): BelongsToMany
     {
         // NOTE: no default order here on purpose. An orderBy('pivot_order')
         // on the relation leaks into exists()/first()/count() subqueries,
@@ -36,7 +47,7 @@ class Collection extends Model
     /**
      * Comics in manual sort order (for display).
      */
-    public function orderedComics()
+    public function orderedComics(): BelongsToMany
     {
         return $this->comics()->orderBy('collection_comic.order');
     }
@@ -58,17 +69,17 @@ class Collection extends Model
         return $this->coverCache;
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function scopePublic($query)
+    public function scopePublic(Builder $query): Builder
     {
         return $query->where('is_public', true);
     }
 
-    public function scopeForUser($query, User $user)
+    public function scopeForUser(Builder $query, User $user): Builder
     {
         return $query->where('user_id', $user->id);
     }

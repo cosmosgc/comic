@@ -188,9 +188,13 @@ class CollectionController extends Controller
         }
         $collection = Collection::create($attributes);
 
-        // Attach comics if any are selected
+        // Attach comics if any are selected (ids must exist).
         if ($request->filled('comics')) {
-            $collection->comics()->attach($request->comics);
+            $validatedComics = $request->validate([
+                'comics' => 'array',
+                'comics.*' => 'integer|exists:comics,id',
+            ]);
+            $collection->comics()->attach($validatedComics['comics']);
         }
 
         if ($request->wantsJson()) {
@@ -231,7 +235,11 @@ class CollectionController extends Controller
         // Sync comics only when the picker submitted (an absent key means
         // "untouched" — syncing null would wipe the whole collection).
         if ($request->has('comics')) {
-            $collection->comics()->sync($request->input('comics', []));
+            $validatedSync = $request->validate([
+                'comics' => 'array',
+                'comics.*' => 'integer|exists:comics,id',
+            ]);
+            $collection->comics()->sync($validatedSync['comics'] ?? []);
         }
 
         return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.');

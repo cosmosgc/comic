@@ -1,16 +1,15 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateCollectionsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create('collections', function (Blueprint $table) {
             $table->id();
@@ -24,27 +23,18 @@ class CreateCollectionsTable extends Migration
             $table->id();
             $table->foreignId('collection_id')->constrained()->onDelete('cascade');
             $table->foreignId('comic_id')->constrained()->onDelete('cascade');
-            $table->integer('order')->default(0); // Add the 'order' column
+            $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        // Drop the pivot table first
+        // Drop the pivot table first, then the collections table.
         Schema::dropIfExists('collection_comic');
-
-        // Then drop the collections table
         Schema::dropIfExists('collections');
-
-        Schema::table('collection_comic', function (Blueprint $table) {
-            $table->dropColumn('order');
-        });
     }
-}
-
+};

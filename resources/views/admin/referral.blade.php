@@ -2,16 +2,41 @@
 
 @section('title', 'Referral Analytics')
 
-@section('page-title', 'Referral Source vs URL Tree')
+@section('page-title', 'Referral Tree')
 
 @section('content')
-    <div id="tree" style="width: 100%; height: 600px; background-color: #121212; color: #ffffff;"></div>
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <span>Referral Source vs URL Tree</span>
+            <span class="admin-muted text-xs font-normal">scroll to zoom · drag to pan</span>
+        </div>
+        <div id="tree" class="h-[600px] w-full overflow-hidden"></div>
+    </div>
 @endsection
 
 @section('scripts')
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         const treeData = {!! $treeData !!};
+        const isDark = document.documentElement.classList.contains('dark');
+
+        const palette = {
+            bg: isDark ? '#09090b' : '#ffffff',
+            stroke: isDark ? '#52525b' : '#d4d4d8',
+            text: isDark ? '#e4e4e7' : '#3f3f46',
+            parent: '#6366f1',
+            leaf: '#10b981',
+        };
+
+        function paintTree() {
+            const dark = document.documentElement.classList.contains('dark');
+            palette.bg = dark ? '#09090b' : '#ffffff';
+            palette.stroke = dark ? '#52525b' : '#d4d4d8';
+            palette.text = dark ? '#e4e4e7' : '#3f3f46';
+            d3.select('#tree svg').style('background-color', palette.bg);
+            d3.selectAll('#tree .link').attr('stroke', palette.stroke);
+            d3.selectAll('#tree .node text').style('fill', palette.text);
+        }
 
         const width = document.getElementById('tree').offsetWidth;
         const height = document.getElementById('tree').offsetHeight;
@@ -19,7 +44,7 @@
         const svg = d3.select("#tree").append("svg")
             .attr("width", width)
             .attr("height", height)
-            .style("background-color", "#121212")
+            .style("background-color", palette.bg)
             .call(d3.zoom().on("zoom", function (event) {
                 svg.attr("transform", event.transform);
             }))
@@ -39,7 +64,7 @@
             .attr('y1', d => d.source.x)
             .attr('x2', d => d.target.y)
             .attr('y2', d => d.target.x)
-            .attr('stroke', '#ffffff')
+            .attr('stroke', palette.stroke)
             .attr('stroke-width', 1);
 
         const nodes = svg.selectAll('.node')
@@ -51,17 +76,19 @@
 
         nodes.append('circle')
             .attr('r', 8)
-            .attr('fill', d => d.children ? '#2f5d77' : '#4caf50');
+            .attr('fill', d => d.children ? palette.parent : palette.leaf);
 
         nodes.append('text')
             .attr('dy', 3)
             .attr('x', d => d.children ? -12 : 12)
-            .style('fill', '#ffffff')
+            .style('fill', palette.text)
             .text(d => d.data.name);
 
         // Create zoom behavior
         svg.call(d3.zoom().on("zoom", function(event) {
             svg.attr("transform", event.transform);
         }));
+
+        document.addEventListener('admin-theme-changed', paintTree);
     </script>
 @endsection

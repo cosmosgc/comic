@@ -29,10 +29,20 @@ class User extends Authenticatable
         'show_liked_posts',
     ];
 
-    protected $casts = [
-        'links' => 'array', // Ensure the links field is cast to an array
-        'show_liked_posts' => 'boolean',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'links' => 'array',
+            'show_liked_posts' => 'boolean',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -43,19 +53,6 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
 
     public function comics(): HasMany
     {

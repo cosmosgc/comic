@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Comic;
 use App\Models\Page;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
 class ComicUploadLimitsTest extends TestCase
@@ -14,9 +17,15 @@ class ComicUploadLimitsTest extends TestCase
     {
         // 1 MB cap for this test; the fake file is 2 MB.
         // Validation runs before any DB write, so this is DB-safe.
+        // Authenticated: comics.store now requires login (auth middleware
+        // rejects guests with 401 before validation ever runs).
         Config::set('upload.max_file_mb', 1);
 
-        $response = $this->postJson('/comics', [
+        $user = User::first();
+        if ($user === null) {
+            $this->markTestSkipped('No users in database.');
+        }
+        $response = $this->actingAs($user)->postJson('/comics', [
             'title' => 'Too Big Comic',
             'images' => [
                 UploadedFile::fake()->image('page01.jpg')->size(2048),
@@ -27,11 +36,18 @@ class ComicUploadLimitsTest extends TestCase
         $response->assertJsonValidationErrors('images.0');
     }
 
+    public function test_guest_cannot_upload_comic(): void
+    {
+        $response = $this->postJson('/comics', ['title' => 'Nope']);
+
+        $response->assertStatus(401);
+    }
+
     public function test_store_returns_comic_id_for_sequential_uploads(): void
     {
         // The upload page chains page appends off this id, so the contract matters.
         // comics.store requires a logged-in author (user_id NOT NULL).
-        $user = \App\Models\User::first();
+        $user = User::first();
         if ($user === null) {
             $this->markTestSkipped('No users in database.');
         }
@@ -65,7 +81,7 @@ class ComicUploadLimitsTest extends TestCase
     {
         Page::where('comic_id', $comicId)->delete();
         Comic::where('id', $comicId)->delete();
-        \Illuminate\Support\Facades\File::deleteDirectory(public_path("storage/comics/{$comicId}"));
+        File::deleteDirectory(public_path("storage/comics/{$comicId}"));
     }
 
     public function test_page_image_within_limit_passes_validation(): void
@@ -75,7 +91,7 @@ class ComicUploadLimitsTest extends TestCase
         Config::set('upload.max_file_mb', 10);
         $maxKb = config('upload.max_file_mb') * 1024;
 
-        $validator = \Illuminate\Support\Facades\Validator::make(
+        $validator = Validator::make(
             ['images' => [UploadedFile::fake()->image('page01.jpg')->size(100)]],
             ['images.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxKb]
         );

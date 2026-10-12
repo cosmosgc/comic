@@ -4,21 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddAvatarBioLinksToUsersTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('avatar_image_path')->nullable(); // For storing avatar image path
-            $table->text('bio')->nullable(); // For storing user biography
-            $table->json('links')->nullable(); // For storing an array of links
+            $table->string('avatar_image_path')->nullable();
+            $table->text('bio')->nullable();
+            $table->json('links')->nullable();
         });
     }
 
-    public function down()
+    public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['avatar_image_path', 'bio', 'links']);
         });
     }
-}
+};

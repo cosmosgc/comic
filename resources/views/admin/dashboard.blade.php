@@ -5,33 +5,46 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
-    <h1>Welcome, Admin</h1>
-    <p>Total Users: {{ $totalUsers }}</p>
-    <p>Total Comics: {{ $totalComics }}</p>
-
-    <h2>Analytics</h2>
-    <form method="GET" class="mb-4">
-        <label for="start_date">Start Date:</label>
-        <input type="date" name="start_date" value="{{ request('start_date') }}">
-
-        <label for="end_date">End Date:</label>
-        <input type="date" name="end_date" value="{{ request('end_date') }}">
-
-        <button type="submit" class="btn btn-primary btn-sm">Apply</button>
-    </form>
-
-    <div class="mb-3">
-        <label for="timeScale" class="form-label">Select Time Range:</label>
-        <select id="timeScale" class="form-select" style="max-width: 200px;">
-            <option value="daily" selected>Daily</option>
-            <option value="monthly">Monthly</option>
-            <option value="annual">Annually</option>
-        </select>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="admin-stat">
+            <div class="admin-stat-label">Total Users</div>
+            <div class="admin-stat-value">{{ $totalUsers }}</div>
+        </div>
+        <div class="admin-stat">
+            <div class="admin-stat-label">Total Comics</div>
+            <div class="admin-stat-value">{{ $totalComics }}</div>
+        </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-12">
-            <canvas id="analyticsChart"></canvas>
+    <div class="admin-card mt-6">
+        <div class="admin-card-header">
+            <span>Analytics</span>
+        </div>
+        <div class="admin-card-body space-y-4">
+            <form method="GET" class="flex flex-wrap items-end gap-3">
+                <div>
+                    <label for="start_date" class="admin-label">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="admin-input" value="{{ request('start_date') }}">
+                </div>
+                <div>
+                    <label for="end_date" class="admin-label">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="admin-input" value="{{ request('end_date') }}">
+                </div>
+                <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Apply</button>
+            </form>
+
+            <div class="max-w-xs">
+                <label for="timeScale" class="admin-label">Time Range</label>
+                <select id="timeScale" class="admin-input">
+                    <option value="daily" selected>Daily</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="annual">Annually</option>
+                </select>
+            </div>
+
+            <div class="relative h-80">
+                <canvas id="analyticsChart"></canvas>
+            </div>
         </div>
     </div>
 @endsection
@@ -77,16 +90,14 @@
             }
         };
 
-        const ctx = document.getElementById('analyticsChart').getContext('2d');
-        let analyticsChart = new Chart(ctx, getChartConfig('daily'));
-
-        document.getElementById('timeScale').addEventListener('change', function () {
-            const selectedScale = this.value;
-            analyticsChart.destroy(); // destroy old chart
-            analyticsChart = new Chart(ctx, getChartConfig(selectedScale)); // re-init chart
-        });
+        function adminIsDark() {
+            return document.documentElement.classList.contains('dark');
+        }
 
         function getChartConfig(scale) {
+            const dark = adminIsDark();
+            const tick = dark ? '#a1a1aa' : '#52525b';
+            const grid = dark ? '#27272a' : '#e4e4e7';
             return {
                 type: 'line',
                 data: {
@@ -96,7 +107,8 @@
                             label: 'Page Views',
                             data: rawData[scale].pageViews,
                             fill: false,
-                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
                             tension: 0.1
                         }
                     ]
@@ -104,12 +116,34 @@
                 options: {
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            ticks: { color: tick },
+                            grid: { color: grid }
+                        },
+                        x: {
+                            ticks: { color: tick },
+                            grid: { color: grid }
                         }
                     },
-                    responsive: true
+                    plugins: {
+                        legend: { labels: { color: tick } }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
             };
         }
+
+        const ctx = document.getElementById('analyticsChart').getContext('2d');
+        let analyticsChart = new Chart(ctx, getChartConfig('daily'));
+
+        function rebuildChart() {
+            const selectedScale = document.getElementById('timeScale').value;
+            analyticsChart.destroy();
+            analyticsChart = new Chart(ctx, getChartConfig(selectedScale));
+        }
+
+        document.getElementById('timeScale').addEventListener('change', rebuildChart);
+        document.addEventListener('admin-theme-changed', rebuildChart);
     </script>
 @endsection

@@ -59,6 +59,9 @@
 
                 @auth
                     <a href="{{ route('comics.create') }}" class="nav-link">Upload</a>
+                    @if (Auth::user()->admin_level >= 1)
+                        <a href="{{ route('admin.dashboard') }}" class="nav-link">Admin</a>
+                    @endif
 
                     <!-- User Dropdown -->
                     <div x-data="{ userOpen: false }" class="relative">
@@ -84,6 +87,12 @@
                             <a href="{{ route('profile.show') }}" class="dropdown-link">
                                 Profile
                             </a>
+
+                            @if (Auth::user()->admin_level >= 1)
+                                <a href="{{ route('admin.dashboard') }}" class="dropdown-link">
+                                    Admin
+                                </a>
+                            @endif
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -117,6 +126,9 @@
             <a href="{{ route('changelog.index') }}" class="mobile-link">What's new</a>
             @auth
                 <a href="{{ route('comics.create') }}" class="mobile-link">Upload</a>
+                @if (Auth::user()->admin_level >= 1)
+                    <a href="{{ route('admin.dashboard') }}" class="mobile-link">Admin</a>
+                @endif
                 <a href="{{ route('profile.show') }}" class="mobile-link">Profile</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

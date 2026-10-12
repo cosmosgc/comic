@@ -155,11 +155,6 @@ class AdminController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
 
-    public function phpinfo()
-    {
-        return view('admin.phpinfo');
-    }
-
     /**
      * Show migration status: files on disk vs. tables in the database.
      * Works without console access — the Run button calls migrate via HTTP.

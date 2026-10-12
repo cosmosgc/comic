@@ -2,34 +2,40 @@
 
 @section('title', 'Comics')
 
-@section('page-title', 'Comics Management')
+@section('page-title', 'Comics')
 
 @section('content')
-    <h2>All Comics</h2>
-    <table id="comicsTable" class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>artist</th>
-                <th>slug</th>
-                <th>Created At</th>
-                <th>views</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($comics as $comic)
-                <tr>
-                    <td>{{ $comic->id }}</td>
-                    <td>{{ $comic->title }}</td>
-                    <td>{{ $comic->author }}</td>
-                    <td>{{ $comic->slug }}</td>
-                    <td>{{ $comic->created_at }}</td>
-                    <td>{{ $comic->view_count }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <span>All Comics</span>
+        </div>
+        <div class="admin-table-wrap">
+            <table id="comicsTable" class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Artist</th>
+                        <th>Slug</th>
+                        <th>Created At</th>
+                        <th>Views</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($comics as $comic)
+                        <tr>
+                            <td>{{ $comic->id }}</td>
+                            <td class="font-medium">{{ $comic->title }}</td>
+                            <td>{{ $comic->author }}</td>
+                            <td><code>{{ $comic->slug }}</code></td>
+                            <td class="whitespace-nowrap">{{ $comic->created_at }}</td>
+                            <td>{{ $comic->view_count }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')

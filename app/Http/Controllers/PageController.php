@@ -2,15 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Page;
 use App\Models\Comic;
+use App\Models\Page;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PageController extends Controller
 {
+    /**
+     * Owner-or-admin gate, mirroring ComicController (page routes carry
+     * the parent comic id, so authorize against it).
+     */
+    protected function authorizeComicAccess(Comic $comic): void
+    {
+        $user = Auth::user();
+        abort_unless(
+            $user !== null && ((int) $comic->user_id === (int) $user->id || (int) $user->admin_level >= 1),
+            403
+        );
+    }
+
     public function create($comicId)
     {
         $comic = Comic::findOrFail($comicId);
+
         return view('pages.create', compact('comic'));
     }
 
@@ -22,6 +37,7 @@ class PageController extends Controller
         ]);
 
         $comic = Comic::findOrFail($comicId);
+        $this->authorizeComicAccess($comic);
 
         // Get uploaded file
         $file = $request->file('image');
@@ -32,7 +48,7 @@ class PageController extends Controller
         $destinationPath = public_path("storage/comics/{$comic->id}/pages");
 
         // Ensure directory exists
-        if (!file_exists($destinationPath)) {
+        if (! file_exists($destinationPath)) {
             mkdir($destinationPath, 0755, true);
         }
 
@@ -41,7 +57,7 @@ class PageController extends Controller
         $fullPath = "{$destinationPath}/{$filename}";
 
         if (file_exists($fullPath)) {
-            $hash = substr(md5(now() . rand()), 0, 8);
+            $hash = substr(md5(now().rand()), 0, 8);
             $filename = "{$originalName}_{$hash}.{$extension}";
         }
 
@@ -50,8 +66,8 @@ class PageController extends Controller
 
         // Get page number or calculate it
         $inputPageNumber = $request->input('page_number');
-        $pageNumber = (is_numeric($inputPageNumber) && (int)$inputPageNumber > 0)
-            ? (int)$inputPageNumber
+        $pageNumber = (is_numeric($inputPageNumber) && (int) $inputPageNumber > 0)
+            ? (int) $inputPageNumber
             : $comic->pages()->max('page_number') + 1;
 
         // Save relative path
@@ -74,6 +90,7 @@ class PageController extends Controller
             'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:'.(config('upload.max_file_mb', 10) * 1024),
         ]);
         $comic = Comic::findOrFail($comicId);
+        $this->authorizeComicAccess($comic);
         $pageNumber = $comic->pages()->count() + 1;
 
         // Get uploaded file
@@ -85,7 +102,7 @@ class PageController extends Controller
         $destinationPath = public_path("storage/comics/{$comic->id}");
 
         // Ensure directory exists
-        if (!file_exists($destinationPath)) {
+        if (! file_exists($destinationPath)) {
             mkdir($destinationPath, 0755, true);
         }
 
@@ -95,7 +112,7 @@ class PageController extends Controller
 
         // If file exists, add a hash
         if (file_exists($fullPath)) {
-            $hash = substr(md5(now() . rand()), 0, 8);
+            $hash = substr(md5(now().rand()), 0, 8);
             $filename = "{$originalName}_{$hash}.{$extension}";
         }
 
@@ -115,7 +132,8 @@ class PageController extends Controller
         return redirect()->route('comics.edit', $comic->id)->with('success', 'Page uploaded successfully.');
     }
 
-    public function getPagesByComicId($id) {
+    public function getPagesByComicId($id)
+    {
         // Fetch the pages related to the comic
         $pages = Page::where('comic_id', $id)->orderBy('page_number')->get();
 
