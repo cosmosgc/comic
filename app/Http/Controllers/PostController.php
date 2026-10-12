@@ -11,10 +11,37 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'q' => 'nullable|string|max:100',
+            'tab' => 'nullable|in:latest,trending',
+        ]);
+        $tab = $validated['tab'] ?? 'latest';
+        $query = trim($validated['q'] ?? '');
+
         $posts = Post::with(['author', 'referencedPost.author'])
-            ->withCount(['quotes', 'likedByUsers', 'replies'])
-            ->latest()
-            ->paginate(20);
+            ->withCount(['quotes', 'likedByUsers', 'replies']);
+
+        if ($query !== '') {
+            $posts->where(function ($q) use ($query) {
+                $q->where('text', 'like', '%'.$query.'%')
+                    ->orWhereHas('author', fn ($a) => $a->where('name', 'like', '%'.$query.'%'));
+            });
+        }
+
+        if ($tab === 'trending') {
+            // Engagement velocity: likes + 2x replies over the last 7 days.
+            $posts->where('posts.created_at', '>=', now()->subDays(7))
+                ->orderByRaw('(liked_by_users_count + replies_count * 2) DESC')
+                ->orderByDesc('posts.created_at');
+        } else {
+            $posts->latest();
+        }
+
+        $posts = $posts->paginate(20)->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json(['data' => $posts]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['data' => $posts]);
@@ -25,7 +52,7 @@ class PostController extends Controller
             ? $request->user()->likedPosts()->pluck('posts.id')->all()
             : [];
 
-        return view('posts.index', compact('posts', 'likedPostIds'));
+        return view('posts.index', compact('posts', 'likedPostIds', 'tab', 'query'));
     }
 
     public function store(Request $request)
@@ -75,6 +102,38 @@ class PostController extends Controller
         }
 
         return redirect()->route('posts.index');
+    }
+
+    /**
+     * Owner-or-admin gate for post edits.
+     */
+    protected function authorizePost(Post $post): void
+    {
+        $user = auth()->user();
+        abort_unless(
+            $user !== null && ((int) $post->author_id === (int) $user->id || (int) ($user->admin_level ?? 0) >= 1),
+            403
+        );
+    }
+
+    public function edit(Post $post)
+    {
+        $this->authorizePost($post);
+
+        return view('posts.edit', compact('post'));
+    }
+
+    public function update(Request $request, Post $post)
+    {
+        $this->authorizePost($post);
+
+        $validated = $request->validate([
+            'text' => 'nullable|string|max:280',
+        ]);
+
+        $post->update(['text' => $validated['text'] ?? null]);
+
+        return redirect()->route('posts.show', $post)->with('success', 'Post updated.');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -166,6 +167,8 @@ class ProfileController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'avatar_image' => 'nullable|image|max:2048', // Limit to 2MB
+            'banner_image' => 'nullable|image|max:4096', // Limit to 4MB
+            'remove_banner' => 'nullable|boolean',
             'bio' => 'nullable|string',
             'links' => 'nullable|array',
             'links.*' => 'url', // Each link should be valid URL
@@ -192,6 +195,26 @@ class ProfileController extends Controller
             $user->avatar_image_path = 'storage/avatars/'.$filename; // Store the relative path
         }
 
+        // Handle banner image upload (profile header background)
+        if ($request->hasFile('banner_image')) {
+            $directory = public_path('storage/banners');
+
+            if (! file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            $this->deleteStoredFile($user->banner_image_path);
+
+            $banner = $request->file('banner_image');
+            $filename = time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $banner->getClientOriginalName());
+            $banner->move($directory, $filename);
+
+            $user->banner_image_path = 'storage/banners/'.$filename;
+        } elseif ($request->boolean('remove_banner')) {
+            $this->deleteStoredFile($user->banner_image_path);
+            $user->banner_image_path = null;
+        }
+
         $user->bio = $request->input('bio');
         $user->links = $request->input('links') ?: []; // Store links as an array
         $user->show_liked_posts = $request->boolean('show_liked_posts');
@@ -204,5 +227,37 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
+    }
+
+    /**
+     * Hover-card data for @mentions and profile links (public JSON).
+     */
+    public function card(string $username)
+    {
+        $user = User::where('name', $username)->firstOrFail();
+
+        return response()->json([
+            'name' => $user->name,
+            'bio' => $user->bio,
+            'avatar_url' => $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'),
+            'banner_url' => $user->banner_image_path ? asset($user->banner_image_path) : null,
+            'profile_url' => route('profile.public.show.username', ['username' => $user->name]),
+            'comics_count' => $user->comics()->count(),
+            'posts_count' => Post::where('author_id', $user->id)->count(),
+        ]);
+    }
+
+    /**
+     * Delete a previously stored public file, if it exists.
+     */
+    protected function deleteStoredFile(?string $relativePath): void
+    {
+        if ($relativePath === null || $relativePath === '') {
+            return;
+        }
+        $fullPath = public_path('storage/'.ltrim(preg_replace('#^storage/#', '', $relativePath), '/'));
+        if (is_file($fullPath)) {
+            @unlink($fullPath);
+        }
     }
 }

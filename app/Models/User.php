@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar_image_path',
+        'banner_image_path',
         'bio',
         'links',
         'admin_level',

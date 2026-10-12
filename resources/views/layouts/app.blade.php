@@ -406,6 +406,123 @@
     </script>
 
 
+    <script>
+    const HOVERCARD_API = "{{ url('api/users') }}";
+    (function () {
+        const cache = new Map();
+        let card = null;
+        let showTimer = null;
+        let hideTimer = null;
+        let currentName = null;
+
+        function ensureCard() {
+            if (card) return card;
+            card = document.createElement('div');
+            card.id = 'profile-hovercard';
+            card.className = 'fixed z-[90] hidden w-72 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl';
+            card.addEventListener('mouseenter', function () {
+                clearTimeout(hideTimer);
+            });
+            card.addEventListener('mouseleave', scheduleHide);
+            document.body.appendChild(card);
+            return card;
+        }
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function render(data) {
+            const el = ensureCard();
+            const banner = data.banner_url
+                ? '<img src="' + esc(data.banner_url) + '" alt="" class="absolute inset-0 h-full w-full object-cover">'
+                : '';
+            el.innerHTML =
+                '<div class="relative h-20 bg-gradient-to-r from-indigo-900 via-zinc-900 to-zinc-900">' + banner + '</div>' +
+                '<div class="px-3 pb-3">' +
+                    '<img src="' + esc(data.avatar_url) + '" alt="" class="relative z-10 -mt-7 h-14 w-14 rounded-full border-4 border-zinc-900 object-cover">' +
+                    '<a href="' + esc(data.profile_url) + '" class="mt-1 block truncate font-bold text-zinc-100 hover:underline">' + esc(data.name) + '</a>' +
+                    (data.bio ? '<p class="mt-0.5 line-clamp-2 text-xs text-zinc-400">' + esc(data.bio) + '</p>' : '') +
+                    '<p class="mt-2 text-xs text-zinc-500">' +
+                        '<span class="font-semibold text-zinc-300">' + (data.comics_count ?? 0) + '</span> Comics · ' +
+                        '<span class="font-semibold text-zinc-300">' + (data.posts_count ?? 0) + '</span> Posts' +
+                    '</p>' +
+                '</div>';
+        }
+
+        function place(anchor) {
+            const el = ensureCard();
+            const rect = anchor.getBoundingClientRect();
+            const W = 288, H = el.offsetHeight || 220, GAP = 8;
+            let left = Math.min(Math.max(8, rect.left), window.innerWidth - W - 8);
+            let top = rect.bottom + GAP;
+            if (top + H > window.innerHeight - 8) {
+                top = Math.max(8, rect.top - H - GAP);
+            }
+            el.style.left = left + 'px';
+            el.style.top = top + 'px';
+        }
+
+        function show(anchor) {
+            const name = anchor.getAttribute('data-hovercard');
+            if (!name) return;
+            currentName = name;
+            const render2 = function (data) {
+                if (currentName !== name) return;
+                render(data);
+                const el = ensureCard();
+                el.classList.remove('hidden');
+                place(anchor);
+            };
+            if (cache.has(name)) {
+                render2(cache.get(name));
+                return;
+            }
+            fetch(HOVERCARD_API + '/' + encodeURIComponent(name) + '/card', { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data) return;
+                    cache.set(name, data);
+                    render2(data);
+                })
+                .catch(function () {});
+        }
+
+        function scheduleHide() {
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () {
+                if (card) card.classList.add('hidden');
+                currentName = null;
+            }, 200);
+        }
+
+        document.addEventListener('mouseover', function (e) {
+            const anchor = e.target.closest ? e.target.closest('[data-hovercard]') : null;
+            if (!anchor) return;
+            clearTimeout(hideTimer);
+            clearTimeout(showTimer);
+            const name = anchor.getAttribute('data-hovercard');
+            showTimer = setTimeout(function () { show(anchor); }, name && cache.has(name) ? 120 : 350);
+        });
+
+        document.addEventListener('mouseout', function (e) {
+            const anchor = e.target.closest ? e.target.closest('[data-hovercard]') : null;
+            if (!anchor) return;
+            clearTimeout(showTimer);
+            if (card && !card.matches(':hover')) scheduleHide();
+        });
+
+        document.addEventListener('scroll', function () {
+            if (card) card.classList.add('hidden');
+        }, { passive: true, capture: true });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && card) card.classList.add('hidden');
+        });
+    })();
+    </script>
+
 @yield('scripts')
 
 </body>

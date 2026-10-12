@@ -18,50 +18,7 @@
     @endif
 
     <!-- Profile card -->
-    <div class="mb-10 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
-        <div class="flex flex-col items-center text-center">
-
-            <img
-                src="{{ $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png') }}"
-                alt="Avatar"
-                class="mb-4 h-24 w-24 rounded-full border-2 border-zinc-700 object-cover"
-            >
-
-            <h2 class="text-xl font-semibold">
-                {{ $user->name }}
-            </h2>
-
-            <p class="mt-2 text-sm text-zinc-400">
-                <span class="font-medium text-zinc-300">Bio:</span>
-                {{ $user->bio ?? 'No bio available' }}
-            </p>
-
-            <!-- Links -->
-            <div class="mt-4 w-full max-w-md">
-                @if(isset($user->links) && count($user->links) > 0)
-                    <h3 class="mb-2 text-sm font-semibold text-zinc-300">
-                        Links
-                    </h3>
-
-                    <ul class="space-y-1">
-                        @foreach($user->links as $link)
-                            <li>
-                                <a href="{{ $link }}"
-                                   target="_blank"
-                                   class="break-all text-sm text-indigo-400 hover:underline">
-                                    {{ $link }}
-                                </a>
-                            </li>
-                        @endforeach
-                    </ul>
-                @else
-                    <p class="text-sm text-zinc-500">
-                        No links added.
-                    </p>
-                @endif
-            </div>
-        </div>
-    </div>
+    @include('profile.card', ['user' => $user, 'showEdit' => false])
 
     @php
         $likesAvailable = !empty($showLikes) && $likedPosts !== null;

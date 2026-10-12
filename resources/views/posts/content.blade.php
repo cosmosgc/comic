@@ -15,7 +15,8 @@
     {{-- Avatar --}}
     <div class="shrink-0">
         @if ($author)
-            <a href="{{ route('profile.public.show.username', ['username' => $author->name]) }}">
+            <a href="{{ route('profile.public.show.username', ['username' => $author->name]) }}"
+               data-hovercard="{{ $author->name }}">
                 <img src="{{ $avatar }}" alt="{{ $authorName }} avatar"
                      class="h-10 w-10 rounded-full border border-zinc-800 object-cover hover:opacity-80">
             </a>
@@ -30,6 +31,7 @@
         <div class="flex items-center gap-1 text-sm">
             @if ($author)
                 <a href="{{ route('profile.public.show.username', ['username' => $author->name]) }}"
+                   data-hovercard="{{ $author->name }}"
                    class="truncate font-bold text-zinc-100 hover:underline">
                     {{ $authorName }}
                 </a>
@@ -43,14 +45,20 @@
                title="{{ $post->created_at }}">
                 {{ $post->created_at?->diffForHumans() }}
             </a>
+            @if ($post->updated_at && $post->created_at && $post->updated_at->gt($post->created_at->copy()->addMinute()))
+                <span class="shrink-0 text-xs text-zinc-600" title="Edited {{ $post->updated_at }}">· edited</span>
+            @endif
         </div>
 
-        {{-- Text --}}
+        {{-- Text (links + mentions render as anchors) --}}
         @if (!empty($post->text))
-            <p class="mt-0.5 text-[15px] leading-normal text-zinc-100 whitespace-pre-line break-words">
-                {{ $post->text }}
-            </p>
+            <div class="mt-0.5 text-[15px] leading-normal text-zinc-100 whitespace-pre-line break-words">
+                {!! \App\Support\PostText::render($post->text) !!}
+            </div>
         @endif
+
+        {{-- Link preview (YouTube / comic / generic card) --}}
+        @include('posts.preview', ['preview' => \App\Support\LinkPreview::forText($post->text)])
 
         {{-- Media --}}
         @if (!empty($mediaFiles))
@@ -82,9 +90,9 @@
                     <span class="text-zinc-500">{{ $quoted->created_at?->diffForHumans() }}</span>
                 </div>
                 @if (!empty($quoted->text))
-                    <p class="mt-1 text-sm text-zinc-300 whitespace-pre-line break-words">
-                        {{ $quoted->text }}
-                    </p>
+                    <div class="mt-1 text-sm text-zinc-300 whitespace-pre-line break-words">
+                        {!! \App\Support\PostText::render($quoted->text) !!}
+                    </div>
                 @endif
             </div>
         @endif
@@ -206,6 +214,20 @@
                 </span>
                 <span class="share-label hidden">Copied!</span>
             </button>
+
+            {{-- Edit: owner or admin --}}
+            @if (auth()->check() && ((int) $post->author_id === (int) auth()->id() || (int) (auth()->user()->admin_level ?? 0) >= 1))
+                <a href="{{ route('posts.edit', $post) }}"
+                   title="Edit post"
+                   aria-label="Edit post"
+                   class="group flex items-center gap-1 text-xs transition hover:text-amber-400">
+                    <span class="rounded-full p-2 transition group-hover:bg-amber-500/10">
+                        <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/>
+                        </svg>
+                    </span>
+                </a>
+            @endif
         </div>
     </div>
 </div>

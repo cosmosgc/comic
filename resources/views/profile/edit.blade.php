@@ -57,6 +57,13 @@
             <label for="avatar_image" class="mb-1 block text-sm font-medium text-zinc-300">
                 Avatar Image
             </label>
+            <div class="mb-2 flex items-center gap-3">
+                <img id="avatarPreview"
+                     src="{{ $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png') }}"
+                     alt="Avatar preview"
+                     class="h-16 w-16 rounded-full border border-zinc-700 object-cover">
+                <p class="text-xs text-zinc-500">Current avatar — choosing a file below previews the replacement instantly.</p>
+            </div>
             <input type="file"
                    id="avatar_image"
                    name="avatar_image"
@@ -67,6 +74,42 @@
                           file:text-sm file:font-medium file:text-white
                           hover:file:bg-indigo-500">
             @error('avatar_image')
+                <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Banner -->
+        <div>
+            <label for="banner_image" class="mb-1 block text-sm font-medium text-zinc-300">
+                Profile Banner <span class="text-zinc-500">(wide image behind your avatar and name)</span>
+            </label>
+            @if ($user->banner_image_path)
+                <img id="bannerPreview" src="{{ asset($user->banner_image_path) }}"
+                     alt="Current profile banner"
+                     class="mb-2 h-28 w-full rounded-lg border border-zinc-700 object-cover">
+                <label class="mb-2 flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+                    <input type="checkbox"
+                           name="remove_banner"
+                           value="1"
+                           class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-red-600 focus:ring-red-500/40">
+                    Remove current banner
+                </label>
+            @endif
+            <img id="bannerPreviewNew"
+                     src=""
+                     alt="Banner preview"
+                     class="mb-2 hidden h-28 w-full rounded-lg border border-zinc-700 object-cover">
+            <input type="file"
+                   id="banner_image"
+                   name="banner_image"
+                   accept="image/*"
+                   class="block w-full rounded-lg border border-zinc-700 bg-zinc-950 text-sm
+                          file:mr-4 file:rounded-md file:border-0
+                          file:bg-indigo-600 file:px-4 file:py-2
+                          file:text-sm file:font-medium file:text-white
+                          hover:file:bg-indigo-500">
+            <p class="mt-1 text-xs text-zinc-500">Landscape works best (e.g. 1200×400). Max 4MB — uploading a new one replaces the current banner.</p>
+            @error('banner_image')
                 <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
             @enderror
         </div>
@@ -203,5 +246,24 @@ document.getElementById('links-container').addEventListener('click', function (e
         e.target.parentElement.remove();
     }
 });
+
+// Instant client-side preview for avatar + banner uploads.
+function livePreview(inputId, imgId) {
+    var input = document.getElementById(inputId);
+    var img = document.getElementById(imgId);
+    if (!input || !img) return;
+    input.addEventListener('change', function () {
+        var file = input.files && input.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            img.src = e.target.result;
+            img.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+livePreview('avatar_image', 'avatarPreview');
+livePreview('banner_image', document.getElementById('bannerPreview') ? 'bannerPreview' : 'bannerPreviewNew');
 </script>
 @endsection

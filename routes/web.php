@@ -122,6 +122,8 @@ Route::delete('/collections/{collection}/comics/{comic}', [CollectionController:
 // the non-nullable author_id column).
 Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('auth');
+Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->middleware('auth')->name('posts.edit');
+Route::put('/posts/{post}', [PostController::class, 'update'])->middleware('auth')->name('posts.update');
 Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like')->middleware('auth');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 // ////////////////////////////////////////////////////////////
