@@ -26,6 +26,7 @@ Route::get('/collections/{id}', [CollectionController::class, 'showById']);
 Route::get('/posts', [PostController::class, 'index']);
 
 Route::get('/tags', [TagController::class, 'index'])->middleware('throttle:60,1')->name('api.tags');
+Route::get('/tags/lookup', [TagController::class, 'lookup'])->middleware('throttle:15,1')->name('api.tags.lookup');
 
 Route::get('/users/{username}/card', [ProfileController::class, 'card'])
     ->middleware('throttle:120,1')

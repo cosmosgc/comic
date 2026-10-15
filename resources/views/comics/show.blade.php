@@ -376,7 +376,7 @@
         <div class="tags">
             <strong>Tags:</strong>
             @foreach($comic->tags as $tag)
-                <span class="tag">{{ $tag->name }}</span>
+                @include('components.tag-pill', ['tag' => $tag, 'class' => 'tag'])
             @endforeach
         </div>
     @endif
@@ -391,6 +391,11 @@
     @endif
 
     <div class="engage-row">
+        @auth
+            @if ((int) $comic->user_id === (int) auth()->id() || (int) auth()->user()->admin_level >= 1)
+                <a class="engage-btn" href="{{ route('comics.edit', $comic->id) }}" title="Editar este comic">✎ Editar</a>
+            @endif
+        @endauth
         @auth
             <button type="button" id="likeBtn" class="engage-btn {{ ($liked ?? false) ? 'active' : '' }}" title="Curtir este comic">
                 <span id="likeHeart">{{ ($liked ?? false) ? '♥' : '♡' }}</span>

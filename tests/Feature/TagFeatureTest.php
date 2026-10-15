@@ -65,6 +65,21 @@ class TagFeatureTest extends TestCase
         $this->assertSame('A brand new synopsis.', $comic->fresh()->description);
     }
 
+    public function test_update_saves_author(): void
+    {
+        $owner = User::factory()->create();
+        $comic = Comic::factory()->create(['user_id' => $owner->id, 'author' => 'Old Artist']);
+
+        $this->actingAs($owner)
+            ->put("/comics/{$comic->id}/update", [
+                'title' => $comic->title,
+                'author' => 'New Artist',
+            ])
+            ->assertRedirect(route('comics.edit', $comic->id));
+
+        $this->assertSame('New Artist', $comic->fresh()->author);
+    }
+
     public function test_non_owner_cannot_change_tags(): void
     {
         $owner = User::factory()->create();

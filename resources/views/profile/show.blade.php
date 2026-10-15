@@ -118,10 +118,10 @@
                             <!-- Tags -->
                             <div class="mt-3 flex flex-wrap gap-2">
                                 @foreach ($comic->tags as $tag)
-                                    <span
-                                        class="rounded-full bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-300">
-                                        {{ $tag->name }}
-                                    </span>
+                                    @include('components.tag-pill', [
+                                        'tag' => $tag,
+                                        'class' => 'rounded-full bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-300',
+                                    ])
                                 @endforeach
                             </div>
 

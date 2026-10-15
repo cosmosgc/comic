@@ -64,6 +64,11 @@
             ])
         </div>
 
+        <!-- External tag lookup (E-Hentai API) -->
+        <div>
+            @include('components.tag-lookup', ['tagsInputId' => 'tags', 'titleInputId' => 'title', 'authorInputId' => 'author'])
+        </div>
+
         <!-- Upload mode -->
         <div>
             <p class="mb-2 text-sm font-medium text-zinc-300">

@@ -30,6 +30,14 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
     Route::get('/comics', 'comics')->name('admin.comics');
 
+    Route::get('/tag-categories', 'tagCategories')->name('admin.tag-categories');
+    Route::get('/tag-categories/create', 'tagCategoryCreate')->name('admin.tag-categories.create');
+    Route::post('/tag-categories', 'tagCategoryStore')->name('admin.tag-categories.store');
+    Route::get('/tag-categories/{id}/edit', 'tagCategoryEdit')->name('admin.tag-categories.edit');
+    Route::put('/tag-categories/{id}', 'tagCategoryUpdate')->name('admin.tag-categories.update');
+    Route::delete('/tag-categories/{id}', 'tagCategoryDestroy')->name('admin.tag-categories.destroy');
+    Route::post('/tag-categories/recategorize', 'tagCategoryRecategorize')->name('admin.tag-categories.recategorize');
+
     Route::get('/widgets', 'widgets')->name('admin.widgets');
     Route::post('/widgets', 'storeWidget')->name('admin.widgets.store');
     Route::get('/widgets/{id}/edit', 'editWidget')->name('admin.widgets.edit');

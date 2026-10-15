@@ -391,7 +391,8 @@ class ComicController extends Controller
     }
 
     /**
-     * Parse a comma-separated tag string, create missing tags, and sync.
+     * Parse a comma-separated tag string, create missing tags (with
+     * auto-detected categories), and sync.
      * Empty fragments are skipped; matching is exact (case preserved).
      */
     protected function syncTagsFromString(Comic $comic, ?string $raw): void
@@ -402,7 +403,7 @@ class ComicController extends Controller
             if ($tagName === '') {
                 continue;
             }
-            $tagIds[] = Tag::firstOrCreate(['name' => $tagName])->id;
+            $tagIds[] = Tag::findOrCreateCategorized($tagName)->id;
         }
 
         $comic->tags()->sync($tagIds);
@@ -413,6 +414,7 @@ class ComicController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'author' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:5000',
             'tags' => 'nullable|string|max:2000',
         ]);
@@ -420,6 +422,7 @@ class ComicController extends Controller
         // Update comic details
         $comic->update([
             'title' => $validated['title'],
+            'author' => $validated['author'] ?? null,
             'description' => $validated['description'] ?? null,
         ]);
 

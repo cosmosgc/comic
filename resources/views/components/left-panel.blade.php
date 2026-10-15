@@ -20,11 +20,12 @@
                 @foreach ($tags as $tag)
                     <li>
                         <a href="{{ route('comics.search', ['tag' => $tag->name]) }}"
+                           @if ($tag->category) title="Categoria: {{ $tag->category->label }}" @endif
                            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-300
                                   transition hover:bg-zinc-800 hover:text-white">
 
-                            <i class="fa-solid fa-tag text-zinc-400"></i>
-                            <span class="min-w-0 flex-1 truncate">{{ $tag->name }}</span>
+                            <i class="fa-solid fa-tag" @if ($tag->category) style="color: {{ $tag->category->text }}" @else style="color: #71717a;" @endif></i>
+                            <span class="min-w-0 flex-1 truncate" @if ($tag->category) style="color: {{ $tag->category->text }}" @endif>{{ $tag->name }}</span>
 
                             @if (isset($tag->likes_sum) && (int) $tag->likes_sum > 0)
                                 <span class="shrink-0 rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-semibold text-rose-300" title="{{ (int) $tag->likes_sum }} likes">

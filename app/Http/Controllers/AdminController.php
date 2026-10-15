@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Analytics;
 use App\Models\Comic;
+use App\Models\Tag;
+use App\Models\TagCategory;
 use App\Models\User;
 use App\Models\Widget;
 use App\Services\ChangelogReader;
@@ -13,6 +15,7 @@ use App\Services\Deploy\DeployException;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\GithubPullRequests;
 use App\Services\MigrationInspector;
+use App\Services\TagCategorizer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -672,5 +675,132 @@ class AdminController extends Controller
         Widget::destroy($id);
 
         return redirect()->route('admin.widgets')->with('success', 'Widget excluído!');
+    }
+
+    /**
+     * Tag categories: color-coded groups (artist, character, copyright,
+     * species, general, meta, lore) with keyword/namespace mapping.
+     */
+    public function tagCategories()
+    {
+        $categories = TagCategory::withCount('tags')->orderBy('sort_order')->orderBy('name')->get();
+        $uncategorized = Tag::whereNull('category_id')->count();
+
+        return view('admin.tag-categories', compact('categories', 'uncategorized'));
+    }
+
+    public function tagCategoryCreate()
+    {
+        return view('admin.tag-category-form', ['category' => null]);
+    }
+
+    public function tagCategoryStore(Request $request)
+    {
+        $validated = $this->validateTagCategory($request);
+
+        TagCategory::create($validated);
+
+        return redirect()->route('admin.tag-categories')->with('success', 'Categoria criada.');
+    }
+
+    public function tagCategoryEdit($id)
+    {
+        $category = TagCategory::findOrFail($id);
+
+        return view('admin.tag-category-form', compact('category'));
+    }
+
+    public function tagCategoryUpdate(Request $request, $id)
+    {
+        $category = TagCategory::findOrFail($id);
+        $validated = $this->validateTagCategory($request, $category->id);
+
+        $category->update($validated);
+
+        return redirect()->route('admin.tag-categories')->with('success', 'Categoria atualizada.');
+    }
+
+    public function tagCategoryDestroy($id)
+    {
+        $category = TagCategory::findOrFail($id);
+
+        // Orphaned tags fall back to the "general" style at render time.
+        $fallback = TagCategory::where('name', 'general')->where('id', '!=', $category->id)->first();
+        Tag::where('category_id', $category->id)->update(['category_id' => $fallback?->id]);
+        $category->delete();
+
+        return redirect()->route('admin.tag-categories')->with('success', 'Categoria excluída.');
+    }
+
+    /**
+     * Re-run auto-categorization over every tag (picks up edited
+     * keywords, namespaces, or colors without touching names).
+     */
+    public function tagCategoryRecategorize(TagCategorizer $categorizer)
+    {
+        $categories = TagCategory::orderBy('sort_order')->orderBy('name')->get();
+        $changed = 0;
+
+        Tag::orderBy('id')->chunkById(500, function ($tags) use ($categorizer, $categories, &$changed) {
+            foreach ($tags as $tag) {
+                $categoryId = $categorizer->forName($tag->name, $categories)?->id;
+                if ($tag->category_id !== $categoryId) {
+                    $tag->category_id = $categoryId;
+                    $tag->save();
+                    $changed++;
+                }
+            }
+        });
+
+        return redirect()->route('admin.tag-categories')
+            ->with('success', "Recategorização concluída — {$changed} tag(s) atualizada(s).");
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function validateTagCategory(Request $request, ?int $ignoreId = null): array
+    {
+        $hex = 'required|string|regex:/^#[0-9a-fA-F]{6}$/|max:7';
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:50|regex:/^[a-z0-9_-]+$/|unique:tag_categories,name,'.$ignoreId,
+            'label' => 'required|string|max:50',
+            'background' => $hex,
+            'border' => $hex,
+            'text_color' => $hex,
+            'namespaces' => 'nullable|string|max:2000',
+            'keywords' => 'nullable|string|max:5000',
+            'sort_order' => 'nullable|integer|min:0|max:9999',
+        ]);
+
+        return [
+            'name' => mb_strtolower($validated['name']),
+            'label' => $validated['label'],
+            'background' => $validated['background'],
+            'border' => $validated['border'],
+            'text_color' => $validated['text_color'],
+            'namespaces' => self::splitList($validated['namespaces'] ?? null),
+            'keywords' => self::splitList($validated['keywords'] ?? null),
+            'sort_order' => $validated['sort_order'] ?? 0,
+        ];
+    }
+
+    /**
+     * Split a comma/newline-separated admin input into a clean list.
+     * Spaces are preserved inside entries ("live action" stays whole).
+     *
+     * @return array<int, string>
+     */
+    protected static function splitList(?string $raw): array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            fn ($part) => mb_strtolower(trim($part)),
+            preg_split('/[,\r\n]+/', $raw) ?: []
+        ))));
     }
 }

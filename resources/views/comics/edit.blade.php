@@ -29,10 +29,31 @@
                 Título
             </label>
             <input type="text"
+                   id="title"
                    name="title"
-                   value="{{ $comic->title }}"
+                   value="{{ old('title', $comic->title) }}"
                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
                           focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            @error('title')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Author / artist -->
+        <div>
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Autor / artista
+            </label>
+            <input type="text"
+                   id="author"
+                   name="author"
+                   value="{{ old('author', $comic->author) }}"
+                   placeholder="Nome do autor ou artista"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            @error('author')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
         </div>
 
         <!-- Description -->
@@ -43,7 +64,10 @@
             <textarea name="description"
                       rows="4"
                       class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30">{{ $comic->description }}</textarea>
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30">{{ old('description', $comic->description) }}</textarea>
+            @error('description')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
         </div>
 
         <!-- Tags -->
@@ -55,10 +79,19 @@
                 'name' => 'tags',
                 'value' => old('tags', $comic->tags->pluck('name')->implode(', ')),
                 'placeholder' => 'Digite para buscar ou criar tags…',
+                'styles' => $comic->tags->mapWithKeys(fn ($tag) => [
+                    mb_strtolower($tag->name) => $tag->category?->styleArray(),
+                ])->filter()->all(),
             ])
             @error('tags')
                 <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
             @enderror
+        </div>
+
+        <!-- External tag lookup (E-Hentai API): fetches web tags and
+             auto-checks the ones matching local tags. -->
+        <div>
+            @include('components.tag-lookup', ['tagsInputId' => 'tags', 'titleInputId' => 'title', 'authorInputId' => 'author'])
         </div>
 
         <button type="submit"

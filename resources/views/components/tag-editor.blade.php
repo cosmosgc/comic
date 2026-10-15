@@ -1,18 +1,21 @@
 {{-- Modern tag editor: pills + autocomplete. Works without Alpine (plain JS).
      Props: $name (hidden input name), $value (comma-separated preset),
             $inputId (hidden input id, defaults to $name),
-            $suggestUrl (autocomplete endpoint), $placeholder. --}}
+            $suggestUrl (autocomplete endpoint), $placeholder,
+            $styles (map of lowercase tag name → {background, border, text}
+            for presetting pill colors, e.g. from saved categories). --}}
 @props([
     'name' => 'tags',
     'value' => '',
     'inputId' => null,
     'suggestUrl' => null,
     'placeholder' => 'Digite uma tag e pressione Enter…',
+    'styles' => [],
 ])
 @php($inputId ??= $name)
 @php($suggestUrl ??= route('api.tags'))
 
-<div class="tag-editor relative" data-input-id="{{ $inputId }}" data-suggest-url="{{ $suggestUrl }}">
+<div class="tag-editor relative" data-input-id="{{ $inputId }}" data-suggest-url="{{ $suggestUrl }}" data-styles='@json($styles)'>
     <input type="hidden" id="{{ $inputId }}" name="{{ $name }}" value="{{ $value }}">
 
     <div class="tag-pills flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500/30">
@@ -42,6 +45,25 @@
         var activeIdx = -1;
         var debounce = null;
 
+        // Pill colors by category (lowercase name → {background, border, text}).
+        var styleMap = {};
+        try {
+            var preset = JSON.parse(root.dataset.styles || '{}');
+            Object.keys(preset || {}).forEach(function (k) {
+                if (preset[k]) styleMap[String(k).toLowerCase()] = preset[k];
+            });
+        } catch (e) { /* unstyled */ }
+
+        function cssTextFor(name) {
+            var s = styleMap[String(name).toLowerCase()];
+            if (!s) return '';
+            var parts = [];
+            if (s.background) parts.push('background-color:' + s.background);
+            if (s.border) parts.push('border-color:' + s.border);
+            if (s.text) parts.push('color:' + s.text);
+            return parts.join(';');
+        }
+
         function sync() {
             hidden.value = tags.join(', ');
         }
@@ -49,6 +71,8 @@
         function pill(name) {
             var el = document.createElement('span');
             el.className = 'inline-flex items-center gap-1 rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-xs font-medium text-indigo-200 ring-1 ring-inset ring-indigo-500/40';
+            var css = cssTextFor(name);
+            if (css) el.style.cssText = css + ';border-width:1px;border-style:solid;';
             el.textContent = name;
             var x = document.createElement('button');
             x.type = 'button';
@@ -70,10 +94,11 @@
             tags.forEach(function (t) { list.appendChild(pill(t)); });
         }
 
-        function add(raw) {
+        function add(raw, style) {
             var name = (raw || '').replace(/,/g, '').trim().slice(0, 50);
             if (!name) return;
             if (tags.some(function (t) { return t.toLowerCase() === name.toLowerCase(); })) return;
+            if (style) styleMap[name.toLowerCase()] = style;
             tags.push(name);
             sync();
             render();
@@ -88,10 +113,18 @@
         function pick(idx) {
             var items = suggest.querySelectorAll('li');
             if (items[idx]) {
-                add(items[idx].dataset.name);
+                add(items[idx].dataset.name, categoryOf(items[idx]));
                 box.value = '';
                 closeSuggest();
                 box.focus();
+            }
+        }
+
+        function categoryOf(li) {
+            try {
+                return JSON.parse(li.dataset.category || 'null');
+            } catch (e) {
+                return null;
             }
         }
 
@@ -110,11 +143,17 @@
                         fresh.forEach(function (t) {
                             var li = document.createElement('li');
                             li.dataset.name = t.name;
+                            li.dataset.category = JSON.stringify(t.category || null);
                             li.className = 'cursor-pointer px-3 py-1.5 text-sm text-zinc-200 hover:bg-indigo-600 hover:text-white';
+                            if (t.category) {
+                                if (t.category.text) li.style.color = t.category.text;
+                                if (t.category.background) li.style.backgroundColor = t.category.background;
+                                if (t.category.border) li.style.borderLeft = '3px solid ' + t.category.border;
+                            }
                             li.textContent = t.name;
                             li.addEventListener('mousedown', function (e) {
                                 e.preventDefault();
-                                add(t.name);
+                                add(t.name, t.category || null);
                                 box.value = '';
                                 closeSuggest();
                             });
@@ -175,6 +214,17 @@
 
         document.addEventListener('click', function (e) {
             if (!root.contains(e.target)) closeSuggest();
+        });
+
+        // External providers (e.g. the E-Hentai tag lookup) inject
+        // fetched tags via: document.dispatchEvent(new CustomEvent(
+        // 'tags:inject', { detail: { inputId, tags: [...] } })).
+        document.addEventListener('tags:inject', function (e) {
+            if (!e.detail || e.detail.inputId !== hidden.id) return;
+            (e.detail.tags || []).forEach(add);
+            box.value = '';
+            closeSuggest();
+            box.focus();
         });
 
         sync();

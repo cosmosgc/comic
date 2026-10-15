@@ -60,6 +60,42 @@ class ComicAuthorizationTest extends TestCase
         $this->actingAs($admin)->get("/comics/{$comic->id}/edit")->assertOk();
     }
 
+    public function test_owner_sees_edit_button_on_comic_page(): void
+    {
+        $owner = User::factory()->create();
+        $comic = Comic::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($owner)->get("/comics/id/{$comic->id}")
+            ->assertOk()
+            ->assertSee(route('comics.edit', $comic->id), false);
+    }
+
+    public function test_admin_sees_edit_button_on_comic_page(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = Comic::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($admin)->get("/comics/id/{$comic->id}")
+            ->assertOk()
+            ->assertSee(route('comics.edit', $comic->id), false);
+    }
+
+    public function test_non_owner_and_guest_do_not_see_edit_button(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create(['admin_level' => 0]);
+        $comic = Comic::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($stranger)->get("/comics/id/{$comic->id}")
+            ->assertOk()
+            ->assertDontSee(route('comics.edit', $comic->id), false);
+
+        $this->get("/comics/id/{$comic->id}")
+            ->assertOk()
+            ->assertDontSee(route('comics.edit', $comic->id), false);
+    }
+
     public function test_non_owner_cannot_reorder_or_delete_pages(): void
     {
         $owner = User::factory()->create();
