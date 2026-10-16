@@ -44,7 +44,8 @@ class AdminImportController extends Controller
         return view('admin.import', [
             'stage' => 'form',
             'defaultDate' => Comic::defaultScheduledDate()->format('Y-m-d\\TH:i'),
-            'queue' => Comic::scheduled()->orderBy('published_at')->orderBy('id')->limit(8)->get(['id', 'title', 'published_at']),
+            'queue' => Comic::scheduled()->with('ehImport:id,comic_id,total_pages')->withCount('pages')
+                ->orderBy('published_at')->orderBy('id')->limit(8)->get(['id', 'title', 'published_at']),
             'settingDefs' => EhImportSetting::definitions(),
         ]);
     }
@@ -141,6 +142,31 @@ class AdminImportController extends Controller
             'totalSize' => $import ? (int) $import->pages()->where('status', EhImportPage::STATUS_DONE)->sum('file_size') : 0,
             'logLines' => $this->logLines($import),
         ]);
+    }
+
+    /**
+     * Browser-assisted upload: the admin's browser downloads the image
+     * (it can reach hath ports the server firewall blocks) and posts
+     * the bytes here. Counts as a normal downloaded page.
+     */
+    public function uploadPageFile(Request $request, Comic $comic, int $number): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:'.(max(1, (int) config('ehimport.max_image_mb', 20)) * 1024),
+        ]);
+
+        $import = $comic->ehImport;
+        $row = $import?->pages()->where('page_number', $number)->first();
+        abort_unless($row !== null, 404);
+
+        $file = $request->file('image');
+        $bytes = (string) file_get_contents($file->getRealPath());
+        abort_if($bytes === '', 422, 'Arquivo vazio.');
+        $this->storePage($comic, $bytes, $this->importer->extensionFor($file->getMimeType(), $file->getClientOriginalName()), $number);
+        $row->update(['status' => EhImportPage::STATUS_DONE, 'error' => null, 'attempts' => 0, 'file_size' => strlen($bytes)]);
+        $this->logEvent($import, "Página {$number} enviada pelo navegador (".round(strlen($bytes) / 1024).' KB).');
+
+        return response()->json($this->finishImport($comic->fresh()));
     }
 
     /**

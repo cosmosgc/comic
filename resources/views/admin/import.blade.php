@@ -46,13 +46,32 @@
                     <span>Fila de agendados</span>
                 </div>
                 <div class="admin-card-body text-sm">
-                    <ul class="space-y-1">
+                    <ul class="space-y-3">
                         @foreach ($queue as $item)
+                            @php($expected = $item->ehImport?->total_pages ?? $item->pages_count)
+                            @php($missing = max(0, $expected - $item->pages_count))
+                            @php($pct = $expected > 0 ? (int) round($item->pages_count / $expected * 100) : 100)
                             <li>
-                                <a href="{{ route('comics.edit', $item->id) }}" class="text-indigo-600 hover:underline dark:text-indigo-300">
-                                    {{ $item->title }}
-                                </a>
-                                <span class="opacity-60">· {{ $item->published_at->format('d/m/Y H:i') }}</span>
+                                <div class="flex flex-wrap items-baseline gap-x-2">
+                                    <a href="{{ route('admin.import.progress', $item) }}" class="font-medium text-indigo-600 hover:underline dark:text-indigo-300">
+                                        {{ $item->title }}
+                                    </a>
+                                    <span class="text-xs opacity-60">{{ $item->published_at->format('d/m/Y H:i') }}</span>
+                                </div>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                                        <div class="h-full rounded-full {{ $missing > 0 ? 'bg-amber-500' : 'bg-emerald-500' }}" style="width: {{ $pct }}%"></div>
+                                    </div>
+                                    <span class="shrink-0 text-xs tabular-nums opacity-70">{{ $item->pages_count }}/{{ $expected }}</span>
+                                </div>
+                                @if ($missing > 0)
+                                    <p class="mt-0.5 text-xs text-amber-600 dark:text-amber-300">
+                                        Faltam {{ $missing }} página(s)
+                                        @if ($item->ehImport)
+                                            · <a href="{{ route('admin.import.progress', $item) }}" class="underline">continuar import</a>
+                                        @endif
+                                    </p>
+                                @endif
                             </li>
                         @endforeach
                     </ul>
@@ -204,7 +223,7 @@
                 <p id="import-stats" class="mt-1 text-xs opacity-60"></p>
                 <p id="import-failed" class="mt-1 hidden text-xs text-red-500"></p>
                 @if ($total > 0)
-                    <div id="import-pages" class="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5"
+                    <div id="import-pages" class="mt-4 grid grid-cols-5 gap-1.5 sm:grid-cols-8 lg:grid-cols-10"
                          data-retry-page-url="{{ route('admin.import.retry-page', $comic) }}">
                         @for ($n = 1; $n <= $total; $n++)
                             @php($thumb = $pageMap[$n] ?? null)
@@ -245,9 +264,18 @@
                             <img id="import-modal-img" src="" alt="" class="max-h-64 w-full rounded-lg object-contain bg-zinc-100 dark:bg-zinc-950">
                         </div>
                         <dl id="import-modal-rows" class="space-y-1.5 text-sm"></dl>
+                        <p id="import-modal-msg" class="mt-2 hidden text-xs"></p>
                         <div class="mt-4 flex flex-wrap gap-2">
                             <a id="import-modal-download" href="#" data-file-url-template="{{ route('admin.import.page-file', [$comic, '__N__']) }}" class="admin-btn admin-btn-sm">Baixar imagem</a>
+                            <button type="button" id="import-modal-browser" data-upload-url-template="{{ route('admin.import.page-upload', [$comic, '__N__']) }}" data-proxy-base="{{ config('ehimport.image_proxy') }}" class="admin-btn admin-btn-sm">Baixar pelo navegador</button>
                             <button type="button" id="import-modal-retry" class="admin-btn admin-btn-success admin-btn-sm">Tentar de novo</button>
+                        </div>
+                        <div class="mt-3 border-t border-zinc-200 pt-3 text-sm dark:border-zinc-800">
+                            <p class="mb-1 text-xs opacity-60">Ou salve a imagem no seu PC e anexe aqui (cai no número certo):</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <input type="file" id="import-modal-file" accept="image/*" class="text-xs">
+                                <button type="button" id="import-modal-attach" class="admin-btn admin-btn-sm">Anexar arquivo</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -327,7 +355,9 @@
     var modalImg = document.getElementById('import-modal-img');
     var modalRows = document.getElementById('import-modal-rows');
     var modalDownload = document.getElementById('import-modal-download');
+    var modalBrowser = document.getElementById('import-modal-browser');
     var modalRetry = document.getElementById('import-modal-retry');
+    var modalMsg = document.getElementById('import-modal-msg');
     var total = parseInt(root.dataset.total, 10) || 0;
     var polling = false;
     var rows = {};
@@ -436,6 +466,9 @@
         modalDownload.setAttribute('href', modalDownload.getAttribute('data-file-url-template').replace('__N__', n));
         modalRetry.setAttribute('data-number', n);
         modalRetry.classList.toggle('hidden', (d.status || '') !== 'failed');
+        modalBrowser.setAttribute('data-number', n);
+        modalBrowser.classList.toggle('hidden', (d.status || '') === 'done' || !d.image_url);
+        modalMsg.classList.add('hidden');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
@@ -608,6 +641,104 @@
     modalRetry.addEventListener('click', function () {
         retrySingle(parseInt(modalRetry.getAttribute('data-number'), 10), modalRetry, function () {
             modalRetry.textContent = 'Tentar de novo';
+        });
+    });
+    modalBrowser.addEventListener('click', function () {
+        var n = parseInt(modalBrowser.getAttribute('data-number'), 10);
+        var d = lastDetails[n] || {};
+        if (!d.image_url) return;
+        modalBrowser.disabled = true;
+        modalBrowser.textContent = 'Baixando…';
+        modalMsg.classList.add('hidden');
+        // The browser can reach hath ports the server firewall blocks,
+        // but the image host must allow CORS for fetch() to read it.
+        function postBlob(blob, where) {
+            if (!blob.type.startsWith('image/')) throw new Error('não veio imagem');
+            modalBrowser.textContent = 'Enviando (' + where + ')…';
+            var fd = new FormData();
+            fd.append('image', blob, 'page-' + n + '.jpg');
+            return fetch(modalBrowser.getAttribute('data-upload-url-template').replace('__N__', n), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                body: fd,
+            }).then(function (r) {
+                if (!r.ok) throw new Error('servidor recusou (' + r.status + ')');
+                window.location.reload();
+            });
+        }
+        function fetchDirect() {
+            return fetch(d.image_url, { headers: { 'Accept': 'image/*' } }).then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.blob();
+            });
+        }
+        function fetchProxied() {
+            var base = modalBrowser.getAttribute('data-proxy-base') || '';
+            if (!base) throw new Error('CORS bloqueado e sem proxy configurado');
+            var stripped = d.image_url.replace(/^https?:\/\//i, '');
+            return fetch(base + encodeURIComponent(stripped), { headers: { 'Accept': 'image/*' } }).then(function (r) {
+                if (!r.ok) throw new Error('proxy HTTP ' + r.status);
+                return r.blob();
+            });
+        }
+        fetchDirect()
+            .catch(function () { return fetchProxied(); })
+            .then(function (blob) { return postBlob(blob, 'navegador'); })
+            .catch(function (err) {
+                // fetch() failed: probe with a plain <img> (display needs
+                // no CORS) to tell "loads but unreadable" apart from
+                // "unreachable", then guide to the manual attach below.
+                probeImage(d.image_url, function (loads) {
+                    modalBrowser.disabled = false;
+                    modalBrowser.textContent = 'Baixar pelo navegador';
+                    modalMsg.textContent = loads
+                        ? 'A imagem carrega no navegador, mas o host bloqueia a leitura (CORS): ' + (err.message || 'erro') + '. Salve a imagem no PC e anexe abaixo.'
+                        : 'Não deu pelo navegador: ' + (err.message || 'erro') + '. Nem carrega aqui — tente o retry do servidor ou salve e anexe.';
+                    modalMsg.classList.remove('hidden');
+                });
+            });
+    });
+
+    // Plain <img> load test: display is CORS-free, so onload proves the
+    // browser reaches the host even when fetch/read is blocked.
+    function probeImage(url, done) {
+        var finished = false;
+        var img = new Image();
+        var timer = setTimeout(function () { finish(false); }, 15000);
+        function finish(ok) {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            img.onload = img.onerror = null;
+            done(ok);
+        }
+        img.onload = function () { finish(true); };
+        img.onerror = function () { finish(false); };
+        img.src = url;
+    }
+    var modalFile = document.getElementById('import-modal-file');
+    document.getElementById('import-modal-attach').addEventListener('click', function () {
+        var n = parseInt(modalRetry.getAttribute('data-number'), 10);
+        if (!modalFile.files.length) {
+            modalMsg.textContent = 'Escolha o arquivo da página ' + n + ' primeiro.';
+            modalMsg.classList.remove('hidden');
+            return;
+        }
+        modalMsg.classList.add('hidden');
+        var fd = new FormData();
+        fd.append('image', modalFile.files[0]);
+        fetch(modalBrowser.getAttribute('data-upload-url-template').replace('__N__', n), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: fd,
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('servidor recusou (' + r.status + ')');
+            window.location.reload();
+        })
+        .catch(function (err) {
+            modalMsg.textContent = 'Falha ao anexar: ' + (err.message || 'erro');
+            modalMsg.classList.remove('hidden');
         });
     });
 })();

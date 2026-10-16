@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\EhComicImporter;
 use App\Services\EhImportException;
 use Illuminate\Http\Client\Factory as HttpClientFactory;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -436,6 +437,27 @@ class EhImportTest extends TestCase
         }
     }
 
+    public function test_schedule_queue_shows_page_progress(): void
+    {
+        $full = Comic::factory()->create(['user_id' => $this->admin->id, 'title' => 'Queue Full', 'published_at' => now()->addDay()]);
+        $full->pages()->create(['image_path' => 'x', 'page_number' => 1]);
+
+        $partial = Comic::factory()->create(['user_id' => $this->admin->id, 'title' => 'Queue Partial', 'published_at' => now()->addDays(2)]);
+        $partial->pages()->create(['image_path' => 'x', 'page_number' => 1]);
+        EhImport::create(['comic_id' => $partial->id, 'total_pages' => 3]);
+
+        $this->actingAs($this->admin)->get('/admin/import')->assertOk()
+            ->assertSee('Queue Full', false)
+            ->assertSee('1/1', false)
+            ->assertSee('Queue Partial', false)
+            ->assertSee('1/3', false)
+            ->assertSee('Faltam 2 página(s)', false)
+            ->assertSee(route('admin.import.progress', $partial), false);
+
+        $this->deleteComicTree($full->id);
+        $this->deleteComicTree($partial->id);
+    }
+
     public function test_import_page_shows_tuning_form_to_admin(): void
     {
         $this->actingAs($this->admin)->get('/admin/import')->assertOk()
@@ -651,6 +673,66 @@ class EhImportTest extends TestCase
             $this->actingAs(User::factory()->create(['admin_level' => 0]))
                 ->get("/admin/import/{$comic->id}/pages/1/file")
                 ->assertRedirect('/');
+        } finally {
+            $this->deleteComicTree($comic->id);
+        }
+    }
+
+    public function test_browser_upload_stores_page_and_marks_done(): void
+    {
+        $comicId = null;
+
+        try {
+            $comic = Comic::factory()->create(['user_id' => $this->admin->id]);
+            $comicId = $comic->id;
+            $import = EhImport::create(['comic_id' => $comic->id, 'total_pages' => 1]);
+            $import->pages()->create([
+                'page_number' => 1,
+                'page_url' => 'https://e-hentai.org/s/aaaabbbbcc/123-1',
+                'status' => EhImportPage::STATUS_FAILED,
+                'attempts' => 3,
+                'error' => 'blocked port',
+            ]);
+
+            $this->actingAs($this->admin)
+                ->post("/admin/import/{$comic->id}/pages/1/file", [
+                    'image' => UploadedFile::fake()->image('browser.jpg', 200, 200)->size(50),
+                ])
+                ->assertOk()
+                ->assertJson(['done' => 1, 'total' => 1, 'complete' => true, 'failed' => []]);
+
+            $page = $comic->pages()->where('page_number', 1)->firstOrFail();
+            $this->assertFileExists(public_path('storage/'.$page->image_path));
+            $this->assertSame('done', $import->pages()->firstOrFail()->status);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
+    }
+
+    public function test_browser_upload_rejects_non_images_and_unknown_pages(): void
+    {
+        $comic = Comic::factory()->create(['user_id' => $this->admin->id]);
+        $import = EhImport::create(['comic_id' => $comic->id, 'total_pages' => 1]);
+        $import->pages()->create([
+            'page_number' => 1,
+            'page_url' => 'https://e-hentai.org/s/aaaabbbbcc/123-1',
+            'status' => EhImportPage::STATUS_FAILED,
+        ]);
+
+        try {
+            $this->actingAs($this->admin)
+                ->post("/admin/import/{$comic->id}/pages/1/file", [
+                    'image' => UploadedFile::fake()->create('notes.txt', 10, 'text/plain'),
+                ])
+                ->assertSessionHasErrors('image');
+
+            $this->actingAs($this->admin)
+                ->post("/admin/import/{$comic->id}/pages/9/file", [
+                    'image' => UploadedFile::fake()->image('browser.jpg', 100, 100)->size(20),
+                ])
+                ->assertNotFound();
         } finally {
             $this->deleteComicTree($comic->id);
         }

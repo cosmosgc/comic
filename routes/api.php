@@ -7,6 +7,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TransferController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -34,3 +35,11 @@ Route::get('/users/{username}/card', [ProfileController::class, 'card'])
     ->name('api.profile.card');
 
 Route::post('/analytics', [AnalyticsController::class, 'store'])->middleware('throttle:60,1')->name(name: 'analytics');
+
+// Server-to-server transfer intake (shared-secret auth, see config/transfer.php).
+Route::middleware('transfer.token')->prefix('transfer')->group(function () {
+    Route::post('/comics', [TransferController::class, 'store'])->name('api.transfer.store');
+    Route::get('/comics/{comic}/pages', [TransferController::class, 'pages'])->name('api.transfer.pages');
+    Route::post('/comics/{comic}/pages', [TransferController::class, 'storePage'])->name('api.transfer.page');
+    Route::post('/comics/{comic}/finalize', [TransferController::class, 'finalize'])->name('api.transfer.finalize');
+});

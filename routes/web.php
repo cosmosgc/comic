@@ -31,6 +31,10 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
     Route::get('/comics', 'comics')->name('admin.comics');
     Route::delete('/comics/{comic}', 'destroyComic')->name('admin.comics.destroy');
+    Route::get('/comics/{comic}/package', 'exportComicPackage')->name('admin.comics.package');
+    Route::post('/comics/package', 'importComicPackage')->name('admin.comics.package-import');
+    Route::post('/comics/{comic}/transfer', 'transferComic')->name('admin.comics.transfer');
+    Route::post('/transfers/{transfer}/push', 'pushTransfer')->name('admin.transfers.push');
 
     Route::get('/tag-categories', 'tagCategories')->name('admin.tag-categories');
     Route::get('/tag-categories/create', 'tagCategoryCreate')->name('admin.tag-categories.create');
@@ -56,6 +60,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::post('/import/settings', [AdminImportController::class, 'updateSettings'])->name('admin.import.settings');
     Route::get('/import/{comic}/progress', [AdminImportController::class, 'progress'])->name('admin.import.progress');
     Route::get('/import/{comic}/pages/{number}/file', [AdminImportController::class, 'downloadPageFile'])->whereNumber('number')->name('admin.import.page-file');
+    Route::post('/import/{comic}/pages/{number}/file', [AdminImportController::class, 'uploadPageFile'])->whereNumber('number')->name('admin.import.page-upload');
     Route::post('/import/{comic}/pages', [AdminImportController::class, 'fetchPages'])->name('admin.import.pages');
     Route::post('/import/{comic}/retry', [AdminImportController::class, 'retry'])->name('admin.import.retry');
     Route::post('/import/{comic}/retry-page', [AdminImportController::class, 'retryPage'])->name('admin.import.retry-page');

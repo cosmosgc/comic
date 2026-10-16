@@ -4,18 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Analytics;
 use App\Models\Comic;
+use App\Models\ComicTransfer;
+use App\Models\Page;
 use App\Models\Tag;
 use App\Models\TagCategory;
 use App\Models\User;
 use App\Models\Widget;
 use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
+use App\Services\ComicPackageException;
+use App\Services\ComicPackageService;
+use App\Services\ComicTransferService;
 use App\Services\Deploy\CurlFtpTransport;
 use App\Services\Deploy\DeployException;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\GithubPullRequests;
 use App\Services\MigrationInspector;
+use App\Services\TransferException;
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -99,9 +106,13 @@ class AdminController extends Controller
 
     public function comics()
     {
-        $comics = Comic::all(); // Fetch all users
+        $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')->get();
 
-        return view('admin.comics', compact('comics'));
+        return view('admin.comics', [
+            'comics' => $comics,
+            'transferConfigured' => trim((string) config('transfer.remote_url')) !== ''
+                && trim((string) config('transfer.remote_token')) !== '',
+        ]);
     }
 
     /**
@@ -116,6 +127,174 @@ class AdminController extends Controller
         $comic->delete();
 
         return redirect()->route('admin.comics')->with('success', "Comic \"{$title}\" excluído com todos os arquivos.");
+    }
+
+    /**
+     * Start (or resume) a server-to-server transfer: creates the remote
+     * shell on first run, then the view polls pushTransfer per chunk.
+     * Resumes re-push from page one (remote upserts by page number).
+     */
+    public function transferComic(Comic $comic, ComicTransferService $sender)
+    {
+        $transfer = $comic->transfer;
+        if ($transfer !== null && $transfer->isDone()) {
+            return response()->json(['message' => 'Já transferido.'], 409);
+        }
+
+        $pages = $comic->pages()->orderBy('page_number')->get(['id', 'page_number', 'image_path'])
+            ->filter(fn (Page $page) => is_file(public_path('storage/'.$page->image_path)))
+            ->values();
+        if ($pages->isEmpty()) {
+            return response()->json(['message' => 'Sem arquivos de página para enviar.'], 422);
+        }
+
+        try {
+            if ($transfer === null) {
+                $remoteId = $sender->createRemote($comic->fresh());
+                $transfer = ComicTransfer::create([
+                    'comic_id' => $comic->id,
+                    'remote_url' => trim((string) config('transfer.remote_url')),
+                    'status' => ComicTransfer::STATUS_SENDING,
+                    'remote_comic_id' => $remoteId,
+                    'next_page' => 1,
+                    'total_pages' => $pages->count(),
+                ]);
+            } else {
+                $transfer->update([
+                    'status' => ComicTransfer::STATUS_SENDING,
+                    'error' => null,
+                    'next_page' => 1,
+                    'total_pages' => $pages->count(),
+                ]);
+            }
+        } catch (TransferException|ConnectionException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        return response()->json([
+            'transfer_id' => $transfer->id,
+            'push_url' => route('admin.transfers.push', $transfer),
+            'total' => $transfer->total_pages,
+            'next' => $transfer->next_page,
+        ]);
+    }
+
+    /**
+     * Push the next chunk of pages to the remote site (polled as JSON).
+     * Pages already stored remotely are skipped, so retries after an
+     * interruption only send what's missing.
+     */
+    public function pushTransfer(ComicTransfer $transfer, ComicTransferService $sender)
+    {
+        if ($transfer->isDone()) {
+            return response()->json($this->transferPayload($transfer, true, $transfer->remote_view_url));
+        }
+
+        try {
+            $remotePages = $sender->remotePages($transfer);
+        } catch (TransferException|ConnectionException $e) {
+            return response()->json(['message' => $e->getMessage()], 502);
+        }
+
+        $comic = $transfer->comic;
+        $pages = $comic->pages()->orderBy('page_number')->get(['id', 'page_number', 'image_path']);
+        $skipped = 0;
+        $processed = 0;
+        $chunk = max(1, (int) config('transfer.chunk', 2));
+
+        while ($processed < $chunk) {
+            $page = $pages->firstWhere('page_number', $transfer->next_page);
+            if ($page === null) {
+                break;
+            }
+            $transfer->increment('next_page');
+            if (in_array($page->page_number, $remotePages, true)) {
+                $skipped++;
+
+                continue;
+            }
+            $full = public_path('storage/'.$page->image_path);
+            if (! is_file($full)) {
+                $skipped++;
+
+                continue;
+            }
+            try {
+                $sender->pushPage($transfer->fresh(), $page, $full);
+            } catch (TransferException|ConnectionException $e) {
+                $transfer->update(['error' => mb_substr($e->getMessage(), 0, 500)]);
+
+                return response()->json(['message' => $e->getMessage()], 502);
+            }
+            $processed++;
+        }
+
+        $transfer->update(['error' => null]);
+
+        if ($transfer->fresh()->next_page > $transfer->total_pages) {
+            try {
+                $final = $sender->finalize($transfer->fresh());
+            } catch (TransferException|ConnectionException $e) {
+                $transfer->update(['error' => mb_substr($e->getMessage(), 0, 500)]);
+
+                return response()->json(['message' => $e->getMessage()], 502);
+            }
+            $transfer->update(['status' => ComicTransfer::STATUS_DONE, 'remote_view_url' => $final['url'] ?? null]);
+
+            return response()->json($this->transferPayload($transfer->fresh(), true, $final['url'] ?? null));
+        }
+
+        return response()->json($this->transferPayload($transfer->fresh(), false));
+    }
+
+    /**
+     * @return array{done: int, total: int, complete: bool, url?: string|null, skipped?: int}
+     */
+    protected function transferPayload(ComicTransfer $transfer, bool $complete, ?string $url = null): array
+    {
+        $payload = [
+            'done' => min($transfer->next_page - 1, $transfer->total_pages),
+            'total' => $transfer->total_pages,
+            'complete' => $complete,
+        ];
+        if ($url !== null) {
+            $payload['url'] = $url;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Download a transfer package (.zip with manifest + images) to
+     * import on another installation (e.g. local → remote).
+     */
+    public function exportComicPackage(Comic $comic, ComicPackageService $packages)
+    {
+        try {
+            $path = $packages->export($comic);
+        } catch (ComicPackageException $e) {
+            return redirect()->route('admin.comics')->with('error', $e->getMessage());
+        }
+
+        return response()->download($path, "comic-{$comic->id}-{$comic->slug}.zip")->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Rebuild a comic from an uploaded transfer package (fresh IDs,
+     * tags resolved, cover + order preserved).
+     */
+    public function importComicPackage(Request $request, ComicPackageService $packages)
+    {
+        $request->validate(['package' => 'required|file|mimes:zip|max:512000']);
+
+        try {
+            $comic = $packages->import($request->file('package')->getRealPath(), auth()->id());
+        } catch (ComicPackageException $e) {
+            return redirect()->route('admin.comics')->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('comics.edit', $comic->id)
+            ->with('success', "Pacote importado: {$comic->title} ({$comic->pages()->count()} página(s)).");
     }
 
     public function users()

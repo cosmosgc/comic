@@ -303,7 +303,10 @@ class EhComicImporter
         return $cookies;
     }
 
-    protected function extensionFor(?string $contentType, string $url): string
+    /**
+     * Map a MIME type (or URL) to a storable image extension.
+     */
+    public function extensionFor(?string $contentType, string $url): string
     {
         $map = [
             'image/jpeg' => 'jpg',

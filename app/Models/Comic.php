@@ -187,6 +187,14 @@ class Comic extends Model
     }
 
     /**
+     * Outgoing server-to-server transfer state (local side only).
+     */
+    public function transfer(): HasOne
+    {
+        return $this->hasOne(ComicTransfer::class);
+    }
+
+    /**
      * Tags grouped by category label, ordered by the category's
      * sort order (artist → copyright → character → …).
      * Hidden categories are excluded (their tags stay stored and
