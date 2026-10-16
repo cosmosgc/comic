@@ -42,7 +42,7 @@ class ProfileController extends Controller
     {
         try {
             $user = User::findOrFail($id); // Attempt to fetch user by ID
-            $comics = $user->comics()->paginate(10)->withQueryString(); // Fetch user's comics
+            $comics = $user->comics()->visibleTo(Auth::user())->paginate(10)->withQueryString(); // Fetch user's comics
 
             return $this->publicProfile($user, $comics);
         } catch (\Exception $e) {
@@ -54,7 +54,7 @@ class ProfileController extends Controller
     {
         try {
             $user = User::where('name', $username)->firstOrFail(); // Attempt to fetch user by username
-            $comics = $user->comics()->paginate(10)->withQueryString(); // Fetch user's comics
+            $comics = $user->comics()->visibleTo(Auth::user())->paginate(10)->withQueryString(); // Fetch user's comics
 
             return $this->publicProfile($user, $comics);
         } catch (\Exception $e) {
@@ -242,7 +242,7 @@ class ProfileController extends Controller
             'avatar_url' => $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'),
             'banner_url' => $user->banner_image_path ? asset($user->banner_image_path) : null,
             'profile_url' => route('profile.public.show.username', ['username' => $user->name]),
-            'comics_count' => $user->comics()->count(),
+            'comics_count' => $user->comics()->visibleTo(Auth::user())->count(),
             'posts_count' => Post::where('author_id', $user->id)->count(),
         ]);
     }

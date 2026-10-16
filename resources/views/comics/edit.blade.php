@@ -80,7 +80,7 @@
                 'value' => old('tags', $comic->tags->pluck('name')->implode(', ')),
                 'placeholder' => 'Digite para buscar ou criar tags…',
                 'styles' => $comic->tags->mapWithKeys(fn ($tag) => [
-                    mb_strtolower($tag->name) => $tag->category?->styleArray(),
+                    mb_strtolower($tag->name) => $tag->displayCategory?->styleArray(),
                 ])->filter()->all(),
             ])
             @error('tags')
@@ -92,6 +92,30 @@
              auto-checks the ones matching local tags. -->
         <div>
             @include('components.tag-lookup', ['tagsInputId' => 'tags', 'titleInputId' => 'title', 'authorInputId' => 'author'])
+        </div>
+
+        <!-- Schedule publishing -->
+        <div>
+            <label class="mb-1 block text-sm font-medium text-zinc-300">
+                Agendar publicação
+            </label>
+            <input type="datetime-local"
+                   name="published_at"
+                   value="{{ old('published_at', $comic->published_at?->format('Y-m-d\\TH:i')) }}"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            @if ($comic->isScheduled())
+                <p class="mt-1 text-xs text-amber-300">
+                    ⏳ Agendado para {{ $comic->published_at->format('d/m/Y H:i') }} — visível só para você e admins até lá.
+                </p>
+            @else
+                <p class="mt-1 text-xs text-zinc-500">
+                    Vazio = publicado. Escolha uma data futura para agendar; limpar o campo publica na hora.
+                </p>
+            @endif
+            @error('published_at')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
         </div>
 
         <button type="submit"

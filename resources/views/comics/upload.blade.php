@@ -69,6 +69,21 @@
             @include('components.tag-lookup', ['tagsInputId' => 'tags', 'titleInputId' => 'title', 'authorInputId' => 'author'])
         </div>
 
+        <!-- Schedule publishing -->
+        <div>
+            <label for="published_at" class="mb-1 block text-sm font-medium text-zinc-300">
+                Agendar publicação
+            </label>
+            <input type="datetime-local"
+                   id="published_at"
+                   name="published_at"
+                   class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
+                          focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            <p class="mt-1 text-xs text-zinc-500">
+                Opcional: escolha data e hora para o comic aparecer no site. Vazio = publica na hora.
+            </p>
+        </div>
+
         <!-- Upload mode -->
         <div>
             <p class="mb-2 text-sm font-medium text-zinc-300">
@@ -680,6 +695,7 @@ document.addEventListener('DOMContentLoaded', function () {
             createData.append('author', fieldValue('author'));
             createData.append('desc', fieldValue('desc'));
             createData.append('tags', fieldValue('tags'));
+            createData.append('published_at', fieldValue('published_at'));
             createData.append('upload_mode', mode);
             createData.append(mode === 'folder' ? 'folder[]' : 'images[]', prepared[firstIdx].blob, prepared[firstIdx].name);
 

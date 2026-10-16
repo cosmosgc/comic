@@ -65,7 +65,7 @@ class CollectionController extends Controller
             $counts[] = 'likedByUsers';
         }
 
-        $query = $collection->orderedComics()->withCount($counts);
+        $query = $collection->orderedComics()->visibleTo($request->user())->withCount($counts);
         if ($request->filled('q')) {
             $search = $request->input('q');
             $query->where(function ($query) use ($search) {

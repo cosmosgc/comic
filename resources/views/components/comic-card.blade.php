@@ -38,6 +38,12 @@
         </h2>
     </a>
 
+    @if ($comic->isScheduled())
+        <p class="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-600/20 px-2 py-0.5 text-xs font-medium text-amber-300">
+            ⏳ Agendado{{ $comic->published_at ? ' · '.$comic->published_at->format('d/m H:i') : '' }}
+        </p>
+    @endif
+
     @if (!isset($minified) || !$minified)
         <!-- Author & Date -->
         <p class="text-sm text-zinc-400">

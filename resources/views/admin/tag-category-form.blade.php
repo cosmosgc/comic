@@ -75,6 +75,15 @@
                     @error('sort_order')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
                 </div>
 
+                <div>
+                    <label class="flex cursor-pointer items-center gap-2 text-sm">
+                        <input type="checkbox" name="is_visible" value="1" class="h-4 w-4"
+                               {{ old('is_visible', $category?->is_visible ?? true) ? 'checked' : '' }}>
+                        Visível no site
+                    </label>
+                    <p class="mt-1 text-xs opacity-60">Desmarcado: as tags somem das listas públicas (cartões, leitor, lateral), mas continuam salvas, buscáveis e editáveis.</p>
+                </div>
+
                 <div class="flex flex-wrap gap-2">
                     <button type="submit" class="admin-btn admin-btn-success">{{ $category ? 'Salvar' : 'Criar categoria' }}</button>
                     <a href="{{ route('admin.tag-categories') }}" class="admin-btn">Voltar</a>

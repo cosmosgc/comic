@@ -101,17 +101,19 @@ class TagController extends Controller
                 if ($hit !== null) {
                     $matchedById[$hit->id] = $hit;
                 }
-                // Preview category: stored one for known tags, detected
-                // on the fly for new ones (what saving would assign).
-                $category = $hit?->category
-                    ?? $categorizer->forName($t['full']);
+                // Preview category: stored one for known tags, otherwise
+                // what saving would assign (short name + namespace
+                // category, auto-created with random colors when new).
+                $preview = $categorizer->preview($t['full']);
                 $tags[] = [
                     'full' => $t['full'],
                     'namespace' => $t['namespace'],
                     'name' => $t['name'],
                     'matched' => $hit !== null,
                     'local' => $hit !== null ? ['id' => $hit->id, 'name' => $hit->name] : null,
-                    'category' => self::categoryArray($category),
+                    'category' => self::categoryArray($hit?->category ?? $preview['category']),
+                    'auto_create' => $hit === null && $preview['auto_create'],
+                    'short_name' => $preview['name'],
                 ];
             }
 

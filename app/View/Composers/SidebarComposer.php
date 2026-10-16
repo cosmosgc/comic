@@ -41,18 +41,20 @@ class SidebarComposer
             return collect();
         }
 
-        // Total likes across all comics tagged with each tag.
+        // Total likes across all published comics tagged with each tag.
         $query = Tag::query()
             ->select('tags.*')
-            ->withCount('comics as comics_count');
+            ->withCount(['comics as comics_count' => fn ($q) => $q->published()]);
 
         if ($hasLikes) {
-            $query->selectSub(
-                'SELECT COUNT(*) FROM comic_user_likes '.
+            $likesSub = 'SELECT COUNT(*) FROM comic_user_likes '.
                 'INNER JOIN comic_tag AS ct_likes ON ct_likes.comic_id = comic_user_likes.comic_id '.
-                'WHERE ct_likes.tag_id = tags.id',
-                'likes_sum'
-            );
+                'WHERE ct_likes.tag_id = tags.id';
+            if (Schema::hasColumn('comics', 'published_at')) {
+                $likesSub .= ' AND EXISTS (SELECT 1 FROM comics WHERE comics.id = ct_likes.comic_id '.
+                    'AND (comics.published_at IS NULL OR comics.published_at <= CURRENT_TIMESTAMP))';
+            }
+            $query->selectSub($likesSub, 'likes_sum');
         }
 
         $candidates = $query
@@ -86,11 +88,11 @@ class SidebarComposer
     }
 
     /**
-     * Newest comics first.
+     * Newest published comics first.
      */
     public static function latestUploads(int $limit = self::SIDEBAR_COMICS_LIMIT)
     {
-        $query = Comic::query()->withCount(self::engagementCounts())->latest();
+        $query = Comic::query()->published()->withCount(self::engagementCounts())->latest();
 
         return $query->limit($limit)->get();
     }
@@ -111,7 +113,7 @@ class SidebarComposer
             return self::latestUploads($limit);
         }
 
-        $maxLikes = (int) (Comic::withCount('likedByUsers as likes')
+        $maxLikes = (int) (Comic::published()->withCount('likedByUsers as likes')
             ->orderByDesc('likes')
             ->first()?->likes ?? 0);
 
@@ -119,7 +121,7 @@ class SidebarComposer
         // fresh sites with huge outliers still show variety).
         $threshold = $maxLikes > 0 ? random_int(0, min($maxLikes, 5)) : 0;
 
-        $pool = Comic::query()
+        $pool = Comic::query()->published()
             ->withCount($counts)
             ->orderByDesc('liked_by_users_count')
             ->orderByDesc('created_at')
@@ -133,7 +135,7 @@ class SidebarComposer
         }
 
         if ($pool->count() < $limit) {
-            $fallback = Comic::query()
+            $fallback = Comic::query()->published()
                 ->withCount($counts)
                 ->whereNotIn('id', $pool->pluck('id'))
                 ->inRandomOrder()

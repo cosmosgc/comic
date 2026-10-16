@@ -46,7 +46,7 @@ class ComicController extends Controller
         $sort = $request->input('sort') === 'liked' && in_array('likedByUsers', $counts, true)
             ? 'liked'
             : 'latest';
-        $query = Comic::withCount($counts);
+        $query = Comic::withCount($counts)->published();
         if ($sort === 'liked') {
             $query->orderByDesc('liked_by_users_count')->orderByDesc('created_at');
         } else {
@@ -58,13 +58,13 @@ class ComicController extends Controller
             : [];
         $widgets = Widget::all();
         $showPanels = true;
-        // Get IDs of the last 20 comics posted
-        $lastTwentyIds = Comic::orderBy('created_at', 'desc')
+        // Get IDs of the last 20 published comics posted
+        $lastTwentyIds = Comic::published()->orderBy('created_at', 'desc')
             ->take(20)
             ->pluck('id');
 
         // Now get top 5 from those 20 by view_count
-        $topComics = Comic::withCount($counts)
+        $topComics = Comic::published()->withCount($counts)
             ->whereIn('id', $lastTwentyIds)
             ->orderBy('view_count', 'desc')
             ->take(5)
@@ -86,6 +86,7 @@ class ComicController extends Controller
     public function show($id)
     {
         $comic = Comic::findOrFail($id);
+        abort_unless($comic->isVisibleTo(Auth::user()), 404);
 
         return view('comics.show', compact('comic'));
     }
@@ -130,6 +131,7 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->findOrFail($id);
+        abort_unless($comic->isVisibleTo(Auth::user()), 404);
         $comic->increment('view_count');
 
         return view('comics.show', array_merge(compact('comic'), $this->readerEngagement($comic)));
@@ -141,6 +143,7 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->where('slug', $slug)->firstOrFail();
+        abort_unless($comic->isVisibleTo(Auth::user()), 404);
         $comic->increment('view_count');
 
         return view('comics.show', array_merge(compact('comic'), $this->readerEngagement($comic)));
@@ -164,7 +167,7 @@ class ComicController extends Controller
      */
     public function search(Request $request)
     {
-        $query = Comic::query();
+        $query = Comic::query()->published();
 
         // 🔎 Text search
         if ($request->filled('search')) {
@@ -207,6 +210,7 @@ class ComicController extends Controller
     {
         // Fetch the comic along with its related pages
         $comic = Comic::with('pages')->findOrFail($id);
+        abort_unless($comic->isVisibleTo(Auth::user()), 404);
         $comic->increment('view_count');
 
         // Return the comic and its pages as a single JSON response
@@ -215,7 +219,7 @@ class ComicController extends Controller
 
     public function getAllComics(Request $request)
     {
-        $query = Comic::query();
+        $query = Comic::query()->published();
 
         // Check if there is a search query
         if ($request->filled('search')) {
@@ -257,6 +261,7 @@ class ComicController extends Controller
             'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
             'images' => 'required_without:folder|array',
             'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
+            'published_at' => 'nullable|date',
         ]);
 
         // Generate slug if not provided
@@ -268,6 +273,7 @@ class ComicController extends Controller
             'author' => $request->input('author'),
             'description' => $request->input('desc'),
             'slug' => $slug,
+            'published_at' => $request->filled('published_at') ? $request->date('published_at') : null,
             'user_id' => Auth::id(),
         ]);
 
@@ -417,6 +423,7 @@ class ComicController extends Controller
             'author' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:5000',
             'tags' => 'nullable|string|max:2000',
+            'published_at' => 'nullable|date',
         ]);
         $this->authorizeComicAccess($comic);
         // Update comic details
@@ -424,6 +431,7 @@ class ComicController extends Controller
             'title' => $validated['title'],
             'author' => $validated['author'] ?? null,
             'description' => $validated['description'] ?? null,
+            'published_at' => $request->filled('published_at') ? $request->date('published_at') : null,
         ]);
 
         // Sync tags only when the editor submitted (an absent key means

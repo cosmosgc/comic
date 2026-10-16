@@ -37,6 +37,8 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::put('/tag-categories/{id}', 'tagCategoryUpdate')->name('admin.tag-categories.update');
     Route::delete('/tag-categories/{id}', 'tagCategoryDestroy')->name('admin.tag-categories.destroy');
     Route::post('/tag-categories/recategorize', 'tagCategoryRecategorize')->name('admin.tag-categories.recategorize');
+    Route::post('/tag-categories/{id}/toggle', 'tagCategoryToggle')->name('admin.tag-categories.toggle');
+    Route::post('/tag-categories/{id}/clear-learned', 'tagCategoryClearLearned')->name('admin.tag-categories.clear-learned');
 
     Route::get('/widgets', 'widgets')->name('admin.widgets');
     Route::post('/widgets', 'storeWidget')->name('admin.widgets.store');

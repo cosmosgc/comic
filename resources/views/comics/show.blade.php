@@ -42,6 +42,13 @@
         .tags, .collections {
             margin: 10px 0;
         }
+        .tag-group {
+            margin: 6px 0;
+        }
+        .tag-group strong {
+            margin-right: 6px;
+            font-size: 0.85em;
+        }
         .tag, .collection {
             display: inline-block;
             background-color: #444;
@@ -350,6 +357,11 @@
 
 <div class="comic-header">
     <h1>{{ $comic->title }}</h1>
+    @if ($comic->isScheduled())
+        <p style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#78350a;color:#fde68a;font-size:0.85em;">
+            ⏳ Agendado para {{ $comic->published_at->format('d/m/Y H:i') }} — visível só para você e admins
+        </p>
+    @endif
     <div class="comic-meta">
         <p>By {{ $comic->author ?? 'Unknown Author' }}</p>
         @if ($comic->user)
@@ -374,9 +386,13 @@
     </div>
     @if($comic->tags->count())
         <div class="tags">
-            <strong>Tags:</strong>
-            @foreach($comic->tags as $tag)
-                @include('components.tag-pill', ['tag' => $tag, 'class' => 'tag'])
+            @foreach($comic->tagsGroupedByCategory() as $groupLabel => $groupTags)
+                <div class="tag-group">
+                    <strong>{{ $groupLabel }}:</strong>
+                    @foreach($groupTags as $tag)
+                        @include('components.tag-pill', ['tag' => $tag, 'class' => 'tag'])
+                    @endforeach
+                </div>
             @endforeach
         </div>
     @endif

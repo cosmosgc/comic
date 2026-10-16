@@ -38,7 +38,7 @@ class LinkPreview
         // Internal comic links: /comics/{slug} or /comics/id/{id}.
         if (preg_match('#^/comics/id/(\d+)$#', $path, $m)) {
             $comic = Comic::find($m[1]);
-            if ($comic !== null) {
+            if ($comic !== null && $comic->isPublished()) {
                 return self::comicCard($url, $comic);
             }
 
@@ -46,7 +46,7 @@ class LinkPreview
         }
         if (preg_match('#^/comics/([^/]+)$#', $path, $m) && ! in_array($m[1], ['create', 'search'], true)) {
             $comic = Comic::where('slug', $m[1])->first();
-            if ($comic !== null) {
+            if ($comic !== null && $comic->isPublished()) {
                 return self::comicCard($url, $comic);
             }
 

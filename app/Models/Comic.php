@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class Comic extends Model
@@ -23,9 +25,20 @@ class Comic extends Model
         'author',
         'image_path',
         'slug',
+        'published_at',
         'user_id',
         'view_count',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'published_at' => 'datetime',
+        ];
+    }
 
     public static function generateUniqueSlug(string $title): string
     {
@@ -47,6 +60,87 @@ class Comic extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Publicly visible comics: never scheduled, or the schedule already
+     * passed. Hosts without the migration see everything (no column).
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $inner) {
+            $inner->whereNull('comics.published_at')
+                ->orWhere('comics.published_at', '<=', now());
+        });
+    }
+
+    /**
+     * Comics waiting for their scheduled date (future published_at).
+     */
+    public function scopeScheduled(Builder $query): Builder
+    {
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('comics.published_at', '>', now());
+    }
+
+    /**
+     * What $user may see in lists: everything published, plus their own
+     * scheduled comics (admins see all scheduled). Guests get published.
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return $query;
+        }
+
+        if ($user !== null && (int) $user->admin_level >= 1) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $inner) use ($user) {
+            $inner->whereNull('comics.published_at')
+                ->orWhere('comics.published_at', '<=', now());
+            if ($user !== null) {
+                $inner->orWhere('comics.user_id', $user->id);
+            }
+        });
+    }
+
+    /**
+     * Still waiting for its scheduled date.
+     */
+    public function isScheduled(): bool
+    {
+        return $this->published_at !== null && $this->published_at->isFuture();
+    }
+
+    /**
+     * Publicly available right now.
+     */
+    public function isPublished(): bool
+    {
+        return ! $this->isScheduled();
+    }
+
+    /**
+     * Owner and admins may preview scheduled comics; everyone else
+     * only sees published ones.
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        if ($this->isPublished()) {
+            return true;
+        }
+
+        return $user !== null
+            && ((int) $this->user_id === (int) $user->id || (int) $user->admin_level >= 1);
+    }
+
     public function pages(): HasMany
     {
         return $this->hasMany(Page::class);
@@ -60,6 +154,26 @@ class Comic extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Tags grouped by category label, ordered by the category's
+     * sort order (artist → copyright → character → …).
+     * Hidden categories are excluded (their tags stay stored and
+     * searchable, they just don't render).
+     * Powers the category-grouped tag list on the reader page.
+     *
+     * @return \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, Tag>>
+     */
+    public function tagsGroupedByCategory(): \Illuminate\Support\Collection
+    {
+        return $this->tags
+            ->filter(fn (Tag $tag) => ($tag->displayCategory?->is_visible ?? true))
+            ->groupBy(fn (Tag $tag) => $tag->displayCategory?->id ?? 0)
+            ->sortBy(fn ($tags) => $tags->first()->displayCategory?->sort_order ?? 9999)
+            ->mapWithKeys(fn ($tags) => [
+                ($tags->first()->displayCategory?->label ?? 'General') => $tags->values(),
+            ]);
     }
 
     public function collections(): BelongsToMany

@@ -113,6 +113,15 @@
             span.textContent = t.full + (t.matched && t.local && t.local.name !== t.full ? ' → ' + t.local.name : '');
             label.appendChild(cb);
             label.appendChild(span);
+            // Namespaces auto-create their category on save ("male:dog boy"
+            // stores "dog boy" under a new "male" category): flag it.
+            if (t.auto_create && t.category) {
+                var badge = document.createElement('span');
+                badge.className = 'rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide';
+                badge.textContent = '+' + t.category.name;
+                badge.title = 'Nova categoria "' + t.category.name + '" será criada ao aplicar (tag salva como "' + (t.short_name || t.name) + '")';
+                label.appendChild(badge);
+            }
             return label;
         }
 

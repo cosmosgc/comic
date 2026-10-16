@@ -107,6 +107,11 @@ return new class extends Migration
                     'leafeon',
                     'legendary_pokemon',
                     'pokemon_(species)',
+                    'furry',
+                    'dog boy',
+                    'dog girl',
+                    'cat boy',
+                    'cat girl',
                 ],
             ],
             [
@@ -115,7 +120,11 @@ return new class extends Migration
                 'background' => '#252525',
                 'border' => '#5a5a5a',
                 'text_color' => '#f0f0f0',
-                'namespaces' => ['general', 'female', 'male', 'mixed', 'other', 'language'],
+                // Bare attributes (female:/male:/other:/language:) are NOT
+                // pinned here on purpose: keyword rules get a chance first
+                // ("female:furry" → Species, "other:full color" → Meta) and
+                // anything unmatched still lands in General via fallback.
+                'namespaces' => ['general'],
                 'keywords' => [],
             ],
             [
@@ -125,7 +134,18 @@ return new class extends Migration
                 'border' => '#7a57a0',
                 'text_color' => '#f0ddff',
                 'namespaces' => ['meta'],
-                'keywords' => ['absurd_res', 'digital_media_(artwork)', 'hi_res', 'monochrome'],
+                'keywords' => [
+                    'absurd_res',
+                    'digital_media_(artwork)',
+                    'hi_res',
+                    'monochrome',
+                    'sole male',
+                    'sole female',
+                    'translated',
+                    'full color',
+                    'full colour',
+                    'comic',
+                ],
             ],
             [
                 'name' => 'lore',

@@ -15,7 +15,6 @@ use App\Services\Deploy\DeployException;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\GithubPullRequests;
 use App\Services\MigrationInspector;
-use App\Services\TagCategorizer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -733,24 +732,62 @@ class AdminController extends Controller
     }
 
     /**
-     * Re-run auto-categorization over every tag (picks up edited
-     * keywords, namespaces, or colors without touching names).
+     * Flip a category's public visibility. Hidden categories keep
+     * their tags stored (search + editor unaffected).
      */
-    public function tagCategoryRecategorize(TagCategorizer $categorizer)
+    public function tagCategoryToggle($id)
     {
-        $categories = TagCategory::orderBy('sort_order')->orderBy('name')->get();
+        $category = TagCategory::findOrFail($id);
+        $category->update(['is_visible' => ! $category->is_visible]);
+
+        return redirect()->route('admin.tag-categories')->with(
+            'success',
+            $category->is_visible
+                ? "Categoria {$category->label} visível novamente."
+                : "Categoria {$category->label} oculta do site."
+        );
+    }
+
+    /**
+     * Forget what namespaced imports taught this category (its learned
+     * vocabulary). Curated keywords are untouched.
+     */
+    public function tagCategoryClearLearned($id)
+    {
+        $category = TagCategory::findOrFail($id);
+        $category->update(['learned_keywords' => []]);
+
+        return redirect()->route('admin.tag-categories')->with(
+            'success',
+            "Vocabulário aprendido de {$category->label} apagado."
+        );
+    }
+
+    /**
+     * Re-run tag normalization over every tag: strips EH namespace
+     * prefixes, merges twins, and reapplies categories (creating
+     * unknown namespace categories). Picks up edited keywords,
+     * namespaces, or colors without touching anything else.
+     */
+    public function tagCategoryRecategorize()
+    {
+        $names = Tag::orderBy('id')->pluck('name');
         $changed = 0;
 
-        Tag::orderBy('id')->chunkById(500, function ($tags) use ($categorizer, $categories, &$changed) {
-            foreach ($tags as $tag) {
-                $categoryId = $categorizer->forName($tag->name, $categories)?->id;
-                if ($tag->category_id !== $categoryId) {
-                    $tag->category_id = $categoryId;
-                    $tag->save();
-                    $changed++;
-                }
+        foreach ($names as $name) {
+            $original = Tag::where('name', $name)->first();
+            if ($original === null) {
+                continue; // merged away by an earlier twin
             }
-        });
+
+            $resolved = Tag::findOrCreateResolved($name, true)->fresh();
+
+            if ($resolved->id !== $original->id
+                || $resolved->name !== $original->name
+                || $resolved->category_id !== $original->category_id) {
+                $changed++;
+            }
+        }
 
         return redirect()->route('admin.tag-categories')
             ->with('success', "Recategorização concluída — {$changed} tag(s) atualizada(s).");
@@ -783,6 +820,7 @@ class AdminController extends Controller
             'namespaces' => self::splitList($validated['namespaces'] ?? null),
             'keywords' => self::splitList($validated['keywords'] ?? null),
             'sort_order' => $validated['sort_order'] ?? 0,
+            'is_visible' => $request->boolean('is_visible'),
         ];
     }
 

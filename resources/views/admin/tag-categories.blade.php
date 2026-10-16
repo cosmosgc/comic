@@ -28,6 +28,9 @@
             <p class="mt-2">
                 Depois de ajustar palavras-chave, namespaces ou cores, use
                 <strong>Recategorizar todas</strong> para reaplicar em todas as tags existentes.
+                Imports com namespace ensinam a categoria sozinhos
+                (<code>male:dog boy</code> adiciona <code>dog boy</code> ao vocabulário
+                aprendido de Male, que tem prioridade na resolução).
                 @if ($uncategorized > 0)
                     <span class="font-semibold">{{ $uncategorized }} tag(s) sem categoria.</span>
                 @endif
@@ -56,6 +59,7 @@
                         <th>Namespaces</th>
                         <th>Palavras-chave</th>
                         <th>Tags</th>
+                        <th>Visível</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -82,9 +86,30 @@
                             </td>
                             <td class="max-w-64 truncate" title="{{ implode(', ', $category->keywords ?? []) }}">
                                 {{ implode(', ', $category->keywords ?? []) ?: '—' }}
+                                @if (! empty($category->learned_keywords))
+                                    <br>
+                                    <span class="opacity-60" title="Aprendidas de imports (têm prioridade). Botão Limpar abaixo.">+ {{ implode(', ', $category->learned_keywords) }}</span>
+                                @endif
                             </td>
                             <td>{{ $category->tags_count }}</td>
+                            <td>
+                                @if ($category->is_visible)
+                                    <span class="admin-badge admin-badge-primary">Visível</span>
+                                @else
+                                    <span class="admin-badge admin-badge-secondary">Oculta</span>
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap">
+                                <form action="{{ route('admin.tag-categories.toggle', $category->id) }}" method="POST" class="inline-block">
+                                    @csrf
+                                    <button type="submit" class="admin-btn admin-btn-sm">{{ $category->is_visible ? 'Ocultar' : 'Mostrar' }}</button>
+                                </form>
+                                @if (! empty($category->learned_keywords))
+                                    <form action="{{ route('admin.tag-categories.clear-learned', $category->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Apagar o vocabulário aprendido de {{ $category->label }}?')">
+                                        @csrf
+                                        <button type="submit" class="admin-btn admin-btn-sm">Limpar aprendidas</button>
+                                    </form>
+                                @endif
                                 <a href="{{ route('admin.tag-categories.edit', $category->id) }}" class="admin-btn admin-btn-warning admin-btn-sm">Editar</a>
                                 <form action="{{ route('admin.tag-categories.destroy', $category->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Excluir a categoria {{ $category->label }}? As tags voltam para General.')">
                                     @csrf
