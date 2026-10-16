@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -109,6 +111,24 @@ class Comic extends Model
                 $inner->orWhere('comics.user_id', $user->id);
             }
         });
+    }
+
+    /**
+     * Default schedule for the next comic: one day after the latest
+     * scheduled one, or tomorrow when the queue is empty. Drives the
+     * prefilled date in the admin import (and anywhere else that
+     * schedules ahead).
+     */
+    public static function defaultScheduledDate(): CarbonInterface
+    {
+        $fallback = now()->addDay();
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return $fallback;
+        }
+
+        $max = self::where('published_at', '>', now())->max('published_at');
+
+        return $max ? Carbon::parse($max)->addDay() : $fallback;
     }
 
     /**

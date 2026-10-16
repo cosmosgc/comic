@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminImportController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -48,6 +49,12 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
 
     Route::get('/migrations', 'migrations')->name('admin.migrations');
     Route::post('/migrations/run', 'runMigrations')->name('admin.migrations.run');
+    Route::get('/import', [AdminImportController::class, 'show'])->name('admin.import');
+    Route::post('/import/preview', [AdminImportController::class, 'preview'])->name('admin.import.preview');
+    Route::post('/import', [AdminImportController::class, 'store'])->name('admin.import.store');
+    Route::get('/import/{comic}/progress', [AdminImportController::class, 'progress'])->name('admin.import.progress');
+    Route::post('/import/{comic}/pages', [AdminImportController::class, 'fetchPages'])->name('admin.import.pages');
+    Route::delete('/import/{comic}', [AdminImportController::class, 'destroy'])->name('admin.import.destroy');
     Route::get('/deploy', 'deploy')->name('admin.deploy');
     Route::post('/deploy/verify', 'verifyDeploy')->name('admin.deploy.verify');
     Route::post('/deploy/run', 'runDeploy')->name('admin.deploy.run');
