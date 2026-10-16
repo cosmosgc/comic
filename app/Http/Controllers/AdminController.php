@@ -18,6 +18,7 @@ use App\Services\MigrationInspector;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -101,6 +102,20 @@ class AdminController extends Controller
         $comics = Comic::all(); // Fetch all users
 
         return view('admin.comics', compact('comics'));
+    }
+
+    /**
+     * Delete a comic with everything attached: pages, tags/likes pivots,
+     * comments and import tracking go via FK cascades; the cover + page
+     * files under storage/comics/{id} are removed from disk.
+     */
+    public function destroyComic(Comic $comic)
+    {
+        File::deleteDirectory(public_path("storage/comics/{$comic->id}"));
+        $title = $comic->title;
+        $comic->delete();
+
+        return redirect()->route('admin.comics')->with('success', "Comic \"{$title}\" excluído com todos os arquivos.");
     }
 
     public function users()

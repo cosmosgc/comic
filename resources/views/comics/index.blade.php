@@ -21,25 +21,6 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
 
-    <!-- Top comics: swipeable rail on phones, grid on desktop -->
-    <section class="mb-10">
-        <h2 class="mb-4 text-xl font-semibold">
-            Top comics da semana
-        </h2>
-
-        <ul class="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:pb-0 lg:grid-cols-4">
-            @foreach ($topComics as $comic)
-                <li class="relative w-40 shrink-0 snap-start sm:w-48 md:w-auto">
-                    <span class="absolute right-2 top-2 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-white">
-                        👁 {{ $comic->view_count }}
-                    </span>
-
-                    <x-comic-card :comic="$comic" :minified="true" :liked-comic-ids="$likedComicIds ?? []" />
-                </li>
-            @endforeach
-        </ul>
-    </section>
-
     <!-- All comics -->
     <section>
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -47,25 +28,56 @@
                 Comics
             </h1>
 
-            <div class="flex items-center gap-1 text-sm font-semibold">
-                <a href="{{ route('comics.index') }}"
-                   class="rounded-full px-3 py-1.5 transition
-                          {{ ($sort ?? 'latest') !== 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
-                    Recentes
-                </a>
-                <a href="{{ route('comics.index', ['sort' => 'liked']) }}"
-                   class="rounded-full px-3 py-1.5 transition
-                          {{ ($sort ?? 'latest') === 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
-                    Mais curtidos
-                </a>
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 text-sm font-semibold" role="group" aria-label="Ordenar comics">
+                    <a href="{{ route('comics.index') }}"
+                       class="rounded-full px-3 py-1.5 transition
+                              {{ ($sort ?? 'latest') !== 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                        Recentes
+                    </a>
+                    <a href="{{ route('comics.index', ['sort' => 'liked']) }}"
+                       class="rounded-full px-3 py-1.5 transition
+                              {{ ($sort ?? 'latest') === 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                        Mais curtidos
+                    </a>
+                </div>
+
+                <div class="flex items-center gap-1" role="group" aria-label="Layout dos comics">
+                    <button type="button"
+                            data-comics-layout="grid"
+                            aria-pressed="{{ ($layout ?? 'grid') === 'grid' ? 'true' : 'false' }}"
+                            title="Ver em grade"
+                            class="rounded-lg p-2 transition {{ ($layout ?? 'grid') === 'grid' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 012.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+                        </svg>
+                    </button>
+                    <button type="button"
+                            data-comics-layout="list"
+                            aria-pressed="{{ ($layout ?? 'grid') === 'list' ? 'true' : 'false' }}"
+                            title="Ver em lista"
+                            class="rounded-lg p-2 transition {{ ($layout ?? 'grid') === 'list' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
-            @foreach ($comics as $comic)
-                <x-comic-card :comic="$comic" :liked-comic-ids="$likedComicIds ?? []" />
-            @endforeach
-        </div>
+        @if (($layout ?? 'grid') === 'list')
+            <div class="flex flex-col gap-4" data-comics-layout-root="list">
+                @foreach ($comics as $comic)
+                    <x-comic-list-item :comic="$comic" :liked-comic-ids="$likedComicIds ?? []" />
+                @endforeach
+            </div>
+        @else
+            <div class="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4" data-comics-layout-root="grid">
+                @foreach ($comics as $comic)
+                    <x-comic-card :comic="$comic" :liked-comic-ids="$likedComicIds ?? []" />
+                @endforeach
+            </div>
+        @endif
 
         <!-- Pagination -->
         <div class="mt-8 flex justify-center">
@@ -74,4 +86,22 @@
     </section>
 
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Grid/list preference: stored in a cookie (like the upload-mode
+    // choice) so the server renders the chosen layout on every visit.
+    document.querySelectorAll('[data-comics-layout]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var layout = btn.getAttribute('data-comics-layout');
+            var d = new Date();
+            d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
+            document.cookie = 'comics_layout=' + layout + ';expires=' + d.toUTCString() + ';path=/';
+            window.location.reload();
+        });
+    });
+});
+</script>
 @endsection

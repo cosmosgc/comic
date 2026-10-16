@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -174,6 +175,15 @@ class Comic extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * E-Hentai import tracking (one record per comic, cascade-deleted
+     * with it). Null for manually uploaded comics.
+     */
+    public function ehImport(): HasOne
+    {
+        return $this->hasOne(EhImport::class);
     }
 
     /**

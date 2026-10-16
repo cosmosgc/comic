@@ -30,6 +30,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::get('/users/{id}/edit', 'editUser')->name('admin.users.edit');
     Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
     Route::get('/comics', 'comics')->name('admin.comics');
+    Route::delete('/comics/{comic}', 'destroyComic')->name('admin.comics.destroy');
 
     Route::get('/tag-categories', 'tagCategories')->name('admin.tag-categories');
     Route::get('/tag-categories/create', 'tagCategoryCreate')->name('admin.tag-categories.create');
@@ -52,8 +53,13 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::get('/import', [AdminImportController::class, 'show'])->name('admin.import');
     Route::post('/import/preview', [AdminImportController::class, 'preview'])->name('admin.import.preview');
     Route::post('/import', [AdminImportController::class, 'store'])->name('admin.import.store');
+    Route::post('/import/settings', [AdminImportController::class, 'updateSettings'])->name('admin.import.settings');
     Route::get('/import/{comic}/progress', [AdminImportController::class, 'progress'])->name('admin.import.progress');
+    Route::get('/import/{comic}/pages/{number}/file', [AdminImportController::class, 'downloadPageFile'])->whereNumber('number')->name('admin.import.page-file');
     Route::post('/import/{comic}/pages', [AdminImportController::class, 'fetchPages'])->name('admin.import.pages');
+    Route::post('/import/{comic}/retry', [AdminImportController::class, 'retry'])->name('admin.import.retry');
+    Route::post('/import/{comic}/retry-page', [AdminImportController::class, 'retryPage'])->name('admin.import.retry-page');
+    Route::post('/import/{comic}/redownload', [AdminImportController::class, 'redownload'])->name('admin.import.redownload');
     Route::delete('/import/{comic}', [AdminImportController::class, 'destroy'])->name('admin.import.destroy');
     Route::get('/deploy', 'deploy')->name('admin.deploy');
     Route::post('/deploy/verify', 'verifyDeploy')->name('admin.deploy.verify');

@@ -56,6 +56,8 @@ class ComicController extends Controller
         $likedComicIds = Auth::check() && Schema::hasTable('comic_user_likes')
             ? DB::table('comic_user_likes')->where('user_id', Auth::id())->pluck('comic_id')->all()
             : [];
+        // Card layout preference (cookie set by the grid/list toggle).
+        $layout = $request->cookie('comics_layout') === 'list' ? 'list' : 'grid';
         $widgets = Widget::all();
         $showPanels = true;
         // Get IDs of the last 20 published comics posted
@@ -75,7 +77,7 @@ class ComicController extends Controller
         $latestComics = SidebarComposer::latestUploads();
         $recommendedComics = SidebarComposer::recommended();
 
-        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'latestComics', 'recommendedComics'));
+        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'latestComics', 'recommendedComics', 'layout'));
     }
 
     public function create()

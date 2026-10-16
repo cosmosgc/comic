@@ -19,6 +19,7 @@
                         <th>Slug</th>
                         <th>Criado em</th>
                         <th>Visualizações</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,6 +31,15 @@
                             <td><code>{{ $comic->slug }}</code></td>
                             <td class="whitespace-nowrap">{{ $comic->created_at }}</td>
                             <td>{{ $comic->view_count }}</td>
+                            <td class="whitespace-nowrap">
+                                <a href="{{ route('comics.edit', $comic->id) }}" class="admin-btn admin-btn-sm">Editar</a>
+                                <form action="{{ route('admin.comics.destroy', $comic) }}" method="POST" class="inline-block"
+                                      onsubmit="return confirm('Excluir &quot;{{ $comic->title }}&quot; com todas as páginas e arquivos? Isso não pode ser desfeito.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Excluir</button>
+                                </form>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

@@ -156,7 +156,10 @@ class EhComicImporter
     }
 
     /**
-     * Download one image into memory, validated.
+     * Download one image into memory, validated. When the direct fetch
+     * fails (e.g. hosts blocking non-standard hath ports) and an image
+     * proxy is configured, retry once through it — the original error
+     * is reported if the proxy fails too.
      *
      * @return array{bytes: string, extension: string}
      *
@@ -165,30 +168,71 @@ class EhComicImporter
     public function downloadImage(string $imageUrl): array
     {
         try {
+            return $this->fetchImageBytes($imageUrl);
+        } catch (EhImportException $original) {
+            $proxy = trim((string) config('ehimport.image_proxy', ''));
+            if ($proxy === '') {
+                throw $original;
+            }
+
+            try {
+                return $this->fetchImageBytes($this->proxiedUrl($proxy, $imageUrl), $imageUrl);
+            } catch (EhImportException $proxyError) {
+                throw new EhImportException($original->getMessage().' [proxy também falhou: '.$proxyError->getMessage().']');
+            }
+        }
+    }
+
+    /**
+     * @return array{bytes: string, extension: string}
+     *
+     * @throws EhImportException
+     */
+    protected function fetchImageBytes(string $imageUrl, ?string $label = null): array
+    {
+        $label ??= $imageUrl;
+
+        // Extra pause before the heavy call (plus jitter below).
+        $this->politeDelay(max(0, (int) config('ehimport.image_delay_ms', 3000)));
+
+        try {
             $response = Http::connectTimeout(10)
                 ->timeout((int) config('ehimport.image_timeout', 45))
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Laravel comic importer)', 'Referer' => 'https://e-hentai.org/'])
                 ->get($imageUrl);
         } catch (\Throwable $e) {
-            throw new EhImportException('Falha de rede ao baixar '.$imageUrl.': '.$e->getMessage());
+            throw new EhImportException('Falha de rede ao baixar '.$label.': '.$e->getMessage());
         }
 
         if (! $response->ok()) {
-            throw new EhImportException('Download retornou HTTP '.$response->status().': '.$imageUrl);
+            throw new EhImportException('Download retornou HTTP '.$response->status().': '.$label);
         }
 
         $bytes = $response->body();
         $maxBytes = max(1, (int) config('ehimport.max_image_mb', 20)) * 1024 * 1024;
         if ($bytes === '' || strlen($bytes) > $maxBytes) {
-            throw new EhImportException('Imagem vazia ou grande demais: '.$imageUrl);
+            throw new EhImportException('Imagem vazia ou grande demais: '.$label);
         }
         if (@getimagesizefromstring($bytes) === false) {
-            throw new EhImportException('O arquivo baixado não é uma imagem válida: '.$imageUrl);
+            throw new EhImportException('O arquivo baixado não é uma imagem válida: '.$label);
         }
 
         $this->politeDelay();
 
-        return ['bytes' => $bytes, 'extension' => $this->extensionFor($response->header('Content-Type'), $imageUrl)];
+        return ['bytes' => $bytes, 'extension' => $this->extensionFor($response->header('Content-Type'), $label)];
+    }
+
+    /**
+     * Route an image through a relay on standard ports (e.g. wsrv.nl),
+     * for hosts whose firewall blocks the hath network's random ports.
+     * The proxy base must end with the url parameter, e.g.
+     * https://images.weserv.nl/?url=
+     */
+    public function proxiedUrl(string $proxy, string $imageUrl): string
+    {
+        $stripped = (string) preg_replace('#^https?://#i', '', trim($imageUrl));
+
+        return rtrim($proxy).rawurlencode($stripped);
     }
 
     /**
@@ -279,9 +323,11 @@ class EhComicImporter
             : 'jpg';
     }
 
-    protected function politeDelay(): void
+    protected function politeDelay(?int $baseMs = null): void
     {
-        $ms = (int) config('ehimport.delay_ms', 1200);
+        $base = $baseMs ?? (int) config('ehimport.delay_ms', 1200);
+        $jitter = (int) config('ehimport.delay_jitter_ms', 800);
+        $ms = $base + ($jitter > 0 ? random_int(0, $jitter) : 0);
         if ($ms > 0) {
             usleep($ms * 1000);
         }

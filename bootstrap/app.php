@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'track.views' => TrackPageView::class,
         ]);
+        // Raw JS preference cookie (grid/list toggle) — never encrypted.
+        $middleware->encryptCookies(except: ['comics_layout']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -46,4 +46,39 @@
         @endif
     </div>
 
+    <!-- Top comics (only pages that provide $topComics, e.g. home) -->
+    @if (($topComics ?? collect())->isNotEmpty())
+        <div class="px-4 pb-4">
+            <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+                Top comics da semana
+            </h5>
+
+            <ul class="space-y-1">
+                @foreach ($topComics as $rank => $comic)
+                    <li>
+                        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}"
+                           title="{{ $comic->title }}"
+                           class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition hover:bg-zinc-800">
+                            <span class="w-5 shrink-0 text-center text-sm font-bold text-zinc-500">
+                                {{ $rank + 1 }}
+                            </span>
+                            <img src="{{ asset('storage/' . $comic->image_path) }}"
+                                 alt="{{ $comic->title }} cover"
+                                 loading="lazy"
+                                 class="h-16 w-12 shrink-0 rounded object-cover">
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-sm font-medium text-zinc-200">
+                                    {{ $comic->title }}
+                                </span>
+                                <span class="mt-0.5 block text-xs text-zinc-500">
+                                    👁 {{ $comic->view_count }}
+                                </span>
+                            </span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
 </aside>
