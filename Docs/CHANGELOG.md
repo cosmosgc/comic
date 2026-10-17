@@ -28,11 +28,13 @@ Example:
 ## [Unreleased]
 
 ### Added
-- **Fórum** (§forum-plan): seções/quadros, tópicos e respostas com Markdown, citações, reações, inscrições, anexos, tópicos não lidos, busca, tags e respostas aceitas (perguntas)
-- Fórum — UI afastada: layout próprio (`forum-layout`) com navbar violeta distinta, banner de "modo fórum" e rota `forum.exit` para voltar ao site normal; scripts compartilhados (hover cards, toggle de seguir, toast de XP) extraídos para `layouts.partials.interactions`
-- Fórum — moderação: denúncias, aprovação de posts, trancar/fixar/mover/aprovar, moderadores por quadro, banimentos (temporários/permanentes) e linha do tempo de auditoria
-- Fórum — admin: painel com gráfico de atividade de 30 dias, CRUD da árvore de categorias e painel de configurações (`forum_settings`) sobreposto ao `config/forum.php`; `ForumSeeder` cria a estrutura padrão (idempotente, rode com `db:seed --class=ForumSeeder`)
-- Fórum — gamificação/notificações: XP por tópico/resposta/reação/resposta aceita, conquistas (`first_thread`, `conversationalist`, `helpful`, `moderator`) e `ForumNotification` no sino existente
+- **Fórum** (plano em `Docs/forum-plan.md`): área de discussão completa, separada do feed de comics e das rotas do site
+- Fórum — estrutura: seções e quadros em dois níveis (criados pelo admin), tópicos do tipo discussão ou pergunta e respostas com citação, tudo renderizado em Markdown sanitizado (HTML bruto é escapado)
+- Fórum — interação: reações idempotentes (👍😂😮😢), inscrição por tópico com aviso de novos posts, anexos de imagem, marcação de lidos/não lidos, busca (título, corpo, autor e tag), tags por tópico e respostas aceitas (solução) creditando XP a quem respondeu
+- Fórum — UI afastada: layout próprio (`layouts.forum-layout`) com navbar violeta distinta e banner de "modo fórum"; a rota nomeada `forum.exit` (`GET /forum/exit`, declarada antes do catch-all `/{categorySlug}`) volta ao site normal a partir do banner, do navbar, do rodapé e do menu mobile; hover cards, toggle de seguir e toast de XP foram extraídos para `layouts.partials.interactions`, reutilizado pelos dois layouts
+- Fórum — moderação: denúncias de tópicos e posts, fila de aprovação de posts, trancar/fixar/mover/aprovar, moderadores por quadro ou globais, banimentos temporários/permanentes (com aviso por notificação) e registro de auditoria em `forum_moderation_log`
+- Fórum — admin (`/admin/forum`): painel com gráfico de atividade de 30 dias (Chart.js), CRUD da árvore de categorias com toggles de visível/trancado e painel de configurações (`forum_settings`) sobreposto ao `config/forum.php`; `ForumSeeder` cria a estrutura padrão (idempotente: `php artisan db:seed --class=ForumSeeder`)
+- Fórum — gamificação e notificações: XP por tópico/resposta/reação/resposta aceita, conquistas `first_thread`, `conversationalist`, `helpful` e `moderator`, e `ForumNotification` entregue pelo sino/`notifications` já existente
 - Novas migrations (prefixo `forum_`): `forum_categories`, `forum_threads`, `forum_posts`, `forum_post_reactions`, `forum_tags` + `forum_tag_thread`, `forum_attachments`, `forum_subscriptions`, `forum_thread_reads`, `forum_reports`, `forum_bans`, `forum_moderators`, `forum_moderation_log`, `forum_settings`
 - Follows (§3): follow/unfollow button on profiles, hover cards and user lists; "Seguindo" feed tab; follower/following counts and paginated lists
 - User handles (§4): unique `@handle` reserved on register, backfilled for existing accounts, used for profile URLs and reliable mentions
