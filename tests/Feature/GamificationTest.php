@@ -259,7 +259,8 @@ class GamificationTest extends TestCase
         $this->actingAs($admin)->get(route('admin.gamification'))
             ->assertOk()
             ->assertSee('Gamificação')
-            ->assertSee('Recalcular');
+            ->assertSee('Recalcular')
+            ->assertSee('curveChart');
     }
 
     public function test_leaderboard_lists_users_by_experience(): void

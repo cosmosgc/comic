@@ -183,12 +183,17 @@
     <div class="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
         <h2 class="mb-1 text-lg font-bold">Prévia da curva</h2>
         <p class="mb-3 text-sm text-zinc-500">Com a configuração atual salva ({{ $curves[$levelCurve] ?? $levelCurve }}, base {{ $levelBase }}).</p>
+
+        <div class="mb-4 h-72 w-full">
+            <canvas id="curveChart" aria-label="Gráfico da curva de níveis" role="img"></canvas>
+        </div>
+
         <div class="overflow-x-auto">
             <table class="w-full min-w-[420px] text-sm">
                 <thead class="text-left text-xs uppercase text-zinc-500">
                     <tr><th class="px-2 py-1">Nível</th><th class="px-2 py-1">XP total</th><th class="px-2 py-1">XP para subir</th></tr>
                 </thead>
-                <tbody>
+                <tbody id="curveTableBody">
                     @foreach ($curvePreview as $row)
                         <tr class="border-t border-zinc-200 dark:border-zinc-800">
                             <td class="px-2 py-1 font-bold">{{ $row['level'] }}</td>
@@ -349,5 +354,133 @@
             },
         };
     }
+
+    // ---- Level curve chart (Chart.js, loaded globally by the admin layout) ----
+    (function () {
+        const canvas = document.getElementById('curveChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const LEVELS = {{ count($curvePreview) }};
+        const baseInput = document.querySelector('input[name="level_base"]');
+        const curveSelect = document.querySelector('select[name="level_curve"]');
+        const tableBody = document.getElementById('curveTableBody');
+
+        // Mirrors App\Services\Gamification::thresholdFor().
+        function threshold(level, base, curve) {
+            if (level <= 1) return 0;
+            const n = level - 1;
+            switch (curve) {
+                case 'linear': return base * n;
+                case 'quadratic': return base * n * n;
+                case 'exponential': return base * (Math.pow(2, Math.min(n, 40)) - 1);
+                default: return Math.floor(base * n * (n + 1) / 2);
+            }
+        }
+
+        function series() {
+            const base = Math.max(1, parseInt(baseInput && baseInput.value, 10) || 100);
+            const curve = (curveSelect && curveSelect.value) || 'triangular';
+            const levels = [];
+            const totals = [];
+            const needed = [];
+            for (let level = 1; level <= LEVELS; level++) {
+                const total = threshold(level, base, curve);
+                levels.push(level);
+                totals.push(total);
+                needed.push(total - threshold(level - 1, base, curve));
+            }
+            return { levels, totals, needed };
+        }
+
+        function fmt(n) {
+            n = Number(n) || 0;
+            if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1).replace('.', ',') + 'M';
+            if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1).replace('.', ',') + 'k';
+            return n.toLocaleString('pt-BR');
+        }
+
+        const initial = series();
+        const chart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: initial.levels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'XP total (acumulado)',
+                        data: initial.totals,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        pointRadius: 2,
+                        fill: true,
+                        yAxisID: 'y',
+                    },
+                    {
+                        type: 'bar',
+                        label: 'XP para subir',
+                        data: initial.needed,
+                        backgroundColor: 'rgba(16, 185, 129, 0.55)',
+                        borderRadius: 3,
+                        yAxisID: 'y1',
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#9ca3af' } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('pt-BR') + ' XP',
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Nível', color: '#9ca3af' },
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                    },
+                    y: {
+                        position: 'left',
+                        title: { display: true, text: 'XP total', color: '#9ca3af' },
+                        ticks: { color: '#9ca3af', callback: (v) => fmt(v) },
+                        grid: { color: 'rgba(148, 163, 184, 0.15)' },
+                    },
+                    y1: {
+                        position: 'right',
+                        title: { display: true, text: 'XP por nível', color: '#9ca3af' },
+                        ticks: { color: '#9ca3af', callback: (v) => fmt(v) },
+                        grid: { drawOnChartArea: false },
+                    },
+                },
+            },
+        });
+
+        function refresh() {
+            const data = series();
+            chart.data.labels = data.levels;
+            chart.data.datasets[0].data = data.totals;
+            chart.data.datasets[1].data = data.needed;
+            chart.update('none');
+
+            if (tableBody) {
+                tableBody.innerHTML = data.levels.map((level, i) =>
+                    '<tr class="border-t border-zinc-200 dark:border-zinc-800">'
+                    + '<td class="px-2 py-1 font-bold">' + level + '</td>'
+                    + '<td class="px-2 py-1">' + data.totals[i].toLocaleString('pt-BR') + '</td>'
+                    + '<td class="px-2 py-1 text-zinc-500">' + data.needed[i].toLocaleString('pt-BR') + '</td>'
+                    + '</tr>'
+                ).join('');
+            }
+        }
+
+        if (baseInput) baseInput.addEventListener('input', refresh);
+        if (curveSelect) curveSelect.addEventListener('change', refresh);
+    })();
 </script>
 @endsection
