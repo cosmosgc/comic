@@ -37,7 +37,9 @@ class AdminComicDeleteTest extends TestCase
         $comic->collections()->attach(Collection::create(['name' => 'C', 'user_id' => $admin->id])->id);
 
         $dir = public_path("storage/comics/{$comic->id}");
-        mkdir($dir, 0755, true);
+        // ensureDirectoryExists: a leftover folder from another test must
+        // not turn this into a "mkdir(): File exists" error.
+        File::ensureDirectoryExists($dir);
         file_put_contents($dir.'/page.jpg', 'fake');
 
         $this->actingAs($admin)->delete("/admin/comics/{$comic->id}")

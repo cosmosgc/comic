@@ -307,6 +307,7 @@ class ComicController extends Controller
 
         $request->validate([
             'title' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'folder' => 'required_without:images|array',
             'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
             'images' => 'required_without:folder|array',
@@ -314,8 +315,12 @@ class ComicController extends Controller
             'published_at' => 'nullable|date',
         ]);
 
-        // Generate slug if not provided
-        $slug = $request->input('slug') ?: Comic::generateUniqueSlug($request->input('title'));
+        // A client-supplied slug still goes through Str::slug() and the
+        // uniqueness loop — and falls back to the title when it sanitizes
+        // to nothing — so it can never collide (unique index → 500) or
+        // carry invalid characters.
+        $requestedSlug = trim((string) $request->input('slug'));
+        $slug = Comic::generateUniqueSlug($requestedSlug !== '' ? $requestedSlug : (string) $request->input('title'));
 
         // Create the comic entry
         $comic = Comic::create([

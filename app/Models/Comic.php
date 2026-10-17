@@ -46,6 +46,11 @@ class Comic extends Model
     public static function generateUniqueSlug(string $title): string
     {
         $slug = Str::slug($title); // Create the base slug
+        if ($slug === '') {
+            // Titles made only of symbols/emoji would otherwise yield an
+            // unreachable empty slug.
+            $slug = 'comic';
+        }
         $originalSlug = $slug; // Keep the original slug for comparison
         $count = 1;
 

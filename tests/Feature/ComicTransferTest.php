@@ -286,7 +286,7 @@ class ComicTransferTest extends TestCase
     {
         $comic = Comic::factory()->create();
         $dir = public_path("storage/comics/{$comic->id}");
-        mkdir($dir, 0755, true);
+        File::ensureDirectoryExists($dir);
         $bytes = base64_decode('R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
         for ($n = 1; $n <= $count; $n++) {
             $name = 'page-'.str_pad((string) $n, 4, '0', STR_PAD_LEFT).'.gif';
