@@ -2,17 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Services\ChangelogReader;
 use Tests\TestCase;
 
 class ChangelogTest extends TestCase
 {
     public function test_index_lists_entries(): void
     {
+        // The first page shows the most recent entries, so assert against
+        // whatever the newest one is instead of a fixed old title.
+        $newest = ChangelogReader::fromDefaultPath()->all()->first();
+
         $response = $this->get('/changelog');
 
         $response->assertStatus(200);
         $response->assertSee('Novidades', false);
-        $response->assertSee('Admin Migrations panel');
+        $response->assertSee($newest['title']);
     }
 
     public function test_index_search_filters_entries(): void

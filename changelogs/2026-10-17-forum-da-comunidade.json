@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum da comunidade",
+    "date": "2026-10-17",
+    "category": "Added",
+    "tags": ["forum", "comunidade", "discussao"],
+    "summary": "Área de discussão separada do feed, com quadros, tópicos, respostas, reações, tags, busca e respostas aceitas.",
+    "body": "Chegou o **Fórum**: um espaço de discussão organizado por quadros, com visual próprio e separado do feed de comics.\n\n## 🧵 Onde fica\n- Menu **Comunidade → Fórum** (link `/forum`)\n- O fórum tem navbar violeta e um banner de \"modo fórum\"; para voltar ao site normal, use o banner, o menu ou o link **Sair do fórum**\n\n## 🗂️ Quadros e tópicos\n- Seções com quadros em dois níveis, cada um com ícone, descrição e contagem de tópicos e respostas\n- Crie tópicos do tipo **discussão** ou **pergunta**\n- Ordene por atividade, novos, mais respostas, mais reações ou sem resposta\n- Tópicos fixados e trancados ficam destacados na lista\n\n## 💬 Respostas\n- Responda, cite uma mensagem específica e edite ou apague a própria resposta por um tempo\n- Reações rápidas em cada resposta: 👍 😂 😮 😢\n- Siga um tópico para ser avisado de respostas novas e use a página **Não lidos** para ver o que você ainda não leu\n- Anexe imagens às respostas (até 4 por resposta)\n- Em tópicos de pergunta, marque a **solução** — quem respondeu ganha XP\n\n## 🔎 Busca e tags\n- Busca por título, conteúdo, autor e tag\n- Tags por tópico para agrupar assuntos\n- Texto em Markdown (negrito, listas, citações, código); HTML bruto é escapado por segurança\n\n## 🚩 Denúncias\n- Denuncie um tópico ou uma resposta pelo botão de denúncia\n\n## Como testar\n1. Abra **Comunidade → Fórum** e entre em um quadro\n2. Crie um tópico do tipo pergunta e responda citando uma mensagem\n3. Reaja a uma resposta e siga o tópico\n4. Marque uma resposta como solução e veja o XP"
+}

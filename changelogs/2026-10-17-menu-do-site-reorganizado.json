@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Menu do site reorganizado",
+    "date": "2026-10-17",
+    "category": "Changed",
+    "tags": ["navegacao", "menu", "ui"],
+    "summary": "Menus agrupados por seção (Explorar e Comunidade) e o botão Publicar sempre à vista.",
+    "body": "O topo do site ficou mais limpo: em vez de vários links soltos, agora existem menus por seção.\n\n## 🧭 O que mudou\n- **Explorar**: Comics, Ranking e Novidades\n- **Comunidade**: Comunidade (posts) e Fórum\n- **Publicar** agora é um botão sempre visível no topo — não fica mais escondido dentro de um menu\n- No celular, um único botão ☰ abre o menu com os grupos (Explorar, Comunidade e Conta)\n- O menu da conta continua com Perfil, Salvos, Admin (para admins) e Sair\n\n## Como testar\n1. Abra a home e clique em **Explorar** e **Comunidade**\n2. Confira o botão **Publicar** no topo\n3. Abra o site no celular e use o ☰ para ver os grupos"
+}

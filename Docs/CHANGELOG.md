@@ -28,6 +28,9 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Gamificação: XP por interação (upload, post, resposta, comentário, curtida, coleção, busca, login) com aviso em tela, níveis por curva configurável, conquistas, sequência diária com bônus, notificações de nível/conquista, vitrine no perfil e página pública de **Ranking**
+- Menu do site reorganizado: links agrupados em **Explorar** (Comics, Ranking, Novidades) e **Comunidade** (Comunidade, Fórum), botão **Publicar** sempre visível e um único ☰ no celular com grupos
+- Entradas do changelog público (`changelogs/*.json`) para fórum, rede social (seguir/@usuário/salvos/hashtags), gamificação e o novo menu
 - Atividades: novo registro "Iniciou leitura" — o primeiro acesso de um usuário logado a um comic aparece em Admin → Atividades (visitantes e comics agendados não geram registro; reaproveita o mesmo link "Ver" do comic)
 - Admin de comics: data de lançamento editável direto na lista (campo `datetime-local`), badge "⏳ Em breve" enquanto o comic não foi publicado e atalho "Publicar agora" (`POST /admin/comics/{comic}/schedule`)
 - **Fórum** (plano em `Docs/forum-plan.md`): área de discussão completa, separada do feed de comics e das rotas do site

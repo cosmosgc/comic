@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Seguir pessoas, @usuário, salvos e hashtags",
+    "date": "2026-10-17",
+    "category": "Added",
+    "tags": ["social", "seguir", "perfil", "notificacoes", "hashtags"],
+    "summary": "Siga e seja seguido, use @usuário para menções com notificação, salve posts e acompanhe hashtags em alta.",
+    "body": "A parte social do site ficou completa: dá para seguir gente, ser mencionado, guardar posts e acompanhar hashtags.\n\n## 👥 Seguir e seguidores\n- Botão **Seguir** nos perfis, nos hovercards e nas listas de usuários\n- Contadores de seguidores e seguindo, com listas paginadas\n- Nova aba **Seguindo** no feed de posts — mostra só quem você segue\n\n## @ Menções e notificações\n- Cada conta tem um **@usuário** único, usado no endereço do perfil e para menções que funcionam sempre\n- Mencionar @alguém avisa a pessoa pelo sino 🔔, junto com resposta, citação, curtida em post e novo seguidor\n- Notificações com estado lido/não lido e botão para marcar todas como lidas\n\n## 🔖 Salvos\n- Botão de salvar em cada post e uma página **Salvos** (no menu da conta) — particular, só você vê o que guardou\n\n## # Hashtags\n- Escrever #algumacoisa no post vira um link para a página daquela hashtag\n- O widget **Em alta** na barra lateral mostra as hashtags mais usadas\n\n## 🚩 Denúncias\n- Denuncie um post pela barra de ações dele\n\n## Como testar\n1. Abra o perfil de alguém e clique em **Seguir**; veja a aba Seguindo no feed\n2. Mencione @alguém num post e confira o sino da pessoa\n3. Salve um post e abra **Salvos** no menu da conta\n4. Poste algo com #hashtag e clique no link gerado"
+}
