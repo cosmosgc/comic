@@ -19,6 +19,7 @@ class DeployHost extends Command
         {--quick : Only consider files changed since the last success (default when a success exists)}
         {--full : Full walk, ignoring the last success (default on first run)}
         {--skip-build : Skip public/build/ compiled assets}
+        {--force-build : Re-upload public/build/ even when sizes match (rebuild the public build)}
         {--status-file= : Write progress JSON to this file (used for background runs)}';
 
     protected $description = 'Sync this project to the hosting provider over FTPS (no console needed on the host)';
@@ -72,6 +73,10 @@ class DeployHost extends Command
 
         $statusFile = $this->option('status-file');
         $includeVendor = (bool) $this->option('with-vendor');
+        $forceBuild = (bool) $this->option('force-build');
+        // Force-build wins over --skip-build: asking to force the build while
+        // skipping it would silently do nothing.
+        $includeBuild = ! (bool) $this->option('skip-build') || $forceBuild;
         // Quick when possible, full on first run or when forced.
         $quick = $this->option('full') ? false : ($this->option('quick') || $deployer->lastSuccessAt() !== null);
         $shouldStop = $statusFile
@@ -100,7 +105,8 @@ class DeployHost extends Command
             $shouldStop,
             $includeVendor,
             $quick,
-            ! (bool) $this->option('skip-build')
+            $includeBuild,
+            $forceBuild
         );
         $this->info(count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.');
         if ($statusFile) {
@@ -115,6 +121,7 @@ class DeployHost extends Command
                     'quick_skipped' => $plan['quick_skipped'] ?? 0,
                     'quick' => $plan['quick'] ?? false,
                     'build_skipped' => $plan['build_skipped'] ?? 0,
+                    'build_forced' => $plan['build_forced'] ?? 0,
                 ],
                 'message' => count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged.',
             ], true);
@@ -182,7 +189,8 @@ class DeployHost extends Command
                         ]);
                     }
                 },
-                ! (bool) $this->option('skip-build')
+                $includeBuild,
+                $forceBuild
             );
         } catch (DeployCancelled $e) {
             if ($statusFile) {

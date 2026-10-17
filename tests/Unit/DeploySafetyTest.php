@@ -436,6 +436,57 @@ class DeploySafetyTest extends TestCase
         $this->assertSame(0, $with['build_skipped']);
     }
 
+    public function test_force_build_reuploads_unchanged_build_assets(): void
+    {
+        $root = $this->buildProject();
+        $config = config('deploy');
+        $config['root'] = '/';
+        $ftp = $this->seedValidRemote();
+        // Remote already has the same build asset (same size) — normally skipped.
+        $ftp->seedFile('/public/build/assets/app.css', 'css');
+
+        $deployer = new FtpDeployer(new ProjectVerifier, $root, $config);
+
+        $normal = $deployer->plan($ftp, false, null, null, true, false, true, false);
+        foreach ($normal['uploads'] as $item) {
+            $this->assertStringNotContainsString('public/build', $item['remote']);
+        }
+        $this->assertSame(0, $normal['build_forced']);
+
+        $forced = $deployer->plan($ftp, false, null, null, true, false, true, true);
+        $built = array_column($forced['uploads'], 'remote');
+        $this->assertContains('/public/build/assets/app.css', $built);
+        $this->assertSame(1, $forced['build_forced']);
+    }
+
+    public function test_force_build_bypasses_quick_mode_for_build_assets(): void
+    {
+        $root = $this->buildProject();
+        $config = config('deploy');
+        $config['root'] = '/';
+        // Build asset untouched since before the last success: quick mode skips it.
+        touch($root.'/public/build/assets/app.css', time() - 7200);
+        $success = $root.'/storage/app/deploy/last-success.json';
+        if (! is_dir(dirname($success))) {
+            mkdir(dirname($success), 0777, true);
+        }
+        file_put_contents($success, json_encode(['timestamp' => time() - 3600, 'uploaded' => 1]));
+
+        $ftp = $this->seedValidRemote();
+        $ftp->seedFile('/public/build/assets/app.css', 'css');
+        $deployer = new FtpDeployer(new ProjectVerifier, $root, $config);
+
+        $normal = $deployer->plan($ftp, false, null, null, true, true, true, false);
+        $this->assertTrue($normal['quick']);
+        foreach ($normal['uploads'] as $item) {
+            $this->assertStringNotContainsString('public/build', $item['remote']);
+        }
+
+        $forced = $deployer->plan($ftp, false, null, null, true, true, true, true);
+        $built = array_column($forced['uploads'], 'remote');
+        $this->assertContains('/public/build/assets/app.css', $built);
+    }
+
     public function test_dry_run_uploads_nothing(): void
     {
         $ftp = $this->seedValidRemote();
@@ -521,6 +572,31 @@ class DeploySafetyTest extends TestCase
         $config['root'] = '/';
 
         return new FtpDeployer(new ProjectVerifier, $this->localProject(), $config);
+    }
+
+    /** Build a fake local project with compiled build assets. */
+    protected function buildProject(): string
+    {
+        $root = sys_get_temp_dir().'/deploy-force-build-'.uniqid();
+        $files = [
+            'composer.json' => json_encode(['name' => 'laravel/laravel']),
+            'artisan' => '#!/usr/bin/env php artisan',
+            'bootstrap/app.php' => '<?php // app',
+            'vendor/autoload.php' => '<?php // autoload',
+            'public/index.php' => '<?php require bootstrap/autoload',
+            'app/Code.php' => '<?php',
+            'public/build/assets/app.css' => 'css',
+        ];
+        foreach ($files as $relative => $content) {
+            $absolute = $root.'/'.$relative;
+            if (! is_dir(dirname($absolute))) {
+                mkdir(dirname($absolute), 0777, true);
+            }
+            file_put_contents($absolute, $content);
+        }
+        $this->tmpDirs[] = $root;
+
+        return $root;
     }
 
     /** Build a fake local project in a temp dir. */

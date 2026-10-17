@@ -88,9 +88,10 @@ class FtpDeployer
      * @param  bool  $includeVendor  false to skip vendor/ (it rarely changes).
      * @param  bool  $quick  only consider files changed since the last success.
      * @param  bool  $includeBuild  false to skip public/build/ (compiled assets).
-     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int, vendor_skipped: int, vendor_forced: bool, quick: bool, quick_skipped: int, since: int|null, build_skipped: int}
+     * @param  bool  $forceBuild  always re-upload public/build/, ignoring size and quick mode.
+     * @return array{uploads: list<array{local: string, remote: string, size: int}>, skipped: int, excluded: int, vendor_skipped: int, vendor_forced: bool, quick: bool, quick_skipped: int, since: int|null, build_skipped: int, build_forced: int}
      */
-    public function plan(FtpTransport $ftp, bool $force = false, ?callable $onProgress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, bool $includeBuild = true): array
+    public function plan(FtpTransport $ftp, bool $force = false, ?callable $onProgress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, bool $includeBuild = true, bool $forceBuild = false): array
     {
         // Quick mode narrows candidates to files changed since the last
         // successful sync. Without a baseline it degrades to a full walk.
@@ -115,12 +116,15 @@ class FtpDeployer
 
                 continue;
             }
-            if (! $includeBuild && $this->isBuildPath($relative)) {
+            $isBuild = $this->isBuildPath($relative);
+            if (! $includeBuild && $isBuild) {
                 $buildSkipped++;
 
                 continue;
             }
-            if ($quickActive && filemtime($absolute) !== false && filemtime($absolute) <= $since) {
+            // Force-build keeps the compiled assets in the plan even in
+            // quick mode, where an unchanged mtime would otherwise skip them.
+            if ($quickActive && ! ($forceBuild && $isBuild) && filemtime($absolute) !== false && filemtime($absolute) <= $since) {
                 $quickSkipped++;
 
                 continue;
@@ -140,14 +144,20 @@ class FtpDeployer
         $remoteIndex = $this->remoteIndex($ftp, array_keys($included), $onProgress, $shouldStop);
         $uploads = [];
         $skipped = 0;
+        $buildForced = 0;
 
         foreach ($included as $relative => $absolute) {
             $remote = $this->remotePath($relative);
             $size = filesize($absolute);
             $remoteEntry = $remoteIndex[$remote] ?? null;
+            $isBuild = $this->isBuildPath($relative);
+            $forceThis = $force || ($forceBuild && $isBuild);
 
-            if ($force || $remoteEntry === null || ($remoteEntry['size'] ?? -1) !== $size) {
+            if ($forceThis || $remoteEntry === null || ($remoteEntry['size'] ?? -1) !== $size) {
                 $uploads[] = ['local' => $absolute, 'remote' => $remote, 'size' => $size];
+                if ($forceBuild && $isBuild && ! $force) {
+                    $buildForced++;
+                }
             } else {
                 $skipped++;
             }
@@ -162,6 +172,7 @@ class FtpDeployer
             'quick' => $quickActive,
             'quick_skipped' => $quickSkipped,
             'build_skipped' => $buildSkipped,
+            'build_forced' => $buildForced,
             'since' => $since,
         ];
     }
@@ -178,9 +189,10 @@ class FtpDeployer
      * @param  bool  $quick  only consider files changed since the last success.
      * @param  callable(string $remote, int $doneSoFar, int $total): void|null  $onFile  called before each upload.
      * @param  bool  $includeBuild  false to skip public/build/ (compiled assets).
+     * @param  bool  $forceBuild  always re-upload public/build/, ignoring size and quick mode.
      * @return array{ok: bool, message: string, uploaded: int, skipped: int, log: list<string>}
      */
-    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null, ?array $plan = null, ?callable $progress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, ?callable $onFile = null, bool $includeBuild = true): array
+    public function sync(FtpTransport $ftp, bool $force = false, bool $dryRun = false, ?callable $log = null, ?array $plan = null, ?callable $progress = null, ?callable $shouldStop = null, bool $includeVendor = true, bool $quick = false, ?callable $onFile = null, bool $includeBuild = true, bool $forceBuild = false): array
     {
         $lines = [];
         $emit = function (string $line) use (&$lines, $log) {
@@ -209,7 +221,7 @@ class FtpDeployer
         }
         $emit('Verification passed: remote directory is this Laravel project.');
 
-        $plan ??= $this->plan($ftp, $force, null, $shouldStop, $includeVendor, $quick, $includeBuild);
+        $plan ??= $this->plan($ftp, $force, null, $shouldStop, $includeVendor, $quick, $includeBuild, $forceBuild);
         if ($plan['quick'] ?? false) {
             $since = isset($plan['since']) && $plan['since']
                 ? date('Y-m-d H:i', $plan['since'])
@@ -225,6 +237,7 @@ class FtpDeployer
             count($plan['uploads']).' file(s) to upload, '.$plan['skipped'].' unchanged, '.$plan['excluded'].' excluded.'
             .(($plan['vendor_skipped'] ?? 0) > 0 ? ' '.($plan['vendor_skipped'] ?? 0).' vendor skipped.' : '')
             .(($plan['build_skipped'] ?? 0) > 0 ? ' '.($plan['build_skipped'] ?? 0).' build skipped.' : '')
+            .(($plan['build_forced'] ?? 0) > 0 ? ' '.($plan['build_forced'] ?? 0).' build re-uploaded (forced).' : '')
         );
 
         if ($dryRun) {

@@ -89,6 +89,14 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function overlayGamificationSettings(): void
     {
+        // Never overlay in tests: feature tests boot before switching to the
+        // in-memory database, so this would read the (dev) default connection
+        // and leak real overrides into the suite. Tests that cover overlaying
+        // call GamificationSetting::applyToConfig() explicitly.
+        if ($this->app->environment('testing')) {
+            return;
+        }
+
         try {
             if (! Schema::hasTable('gamification_settings')) {
                 return;

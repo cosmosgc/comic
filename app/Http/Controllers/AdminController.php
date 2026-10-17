@@ -670,6 +670,10 @@ class AdminController extends Controller
         // Checkbox is checked by default in the form; unchecked submits
         // nothing, which excludes the compiled assets (PHP-only change).
         $includeBuild = $request->boolean('include_build');
+        // Force-build re-uploads public/build/ even when sizes match, and
+        // implies including it (asking to force a skipped dir is a no-op).
+        $forceBuild = $request->boolean('force_build');
+        $includeBuild = $includeBuild || $forceBuild;
         // Quick when possible, full on first run or when forced.
         $full = $request->boolean('full');
         $quick = ! $full && ($request->boolean('quick') || $deployer->lastSuccessAt() !== null);
@@ -699,6 +703,7 @@ class AdminController extends Controller
             'force' => $force,
             'include_vendor' => $includeVendor,
             'include_build' => $includeBuild,
+            'force_build' => $forceBuild,
             'quick' => $quick && ! $full,
             'full' => $full,
             'done' => 0,
@@ -709,7 +714,7 @@ class AdminController extends Controller
         ]));
 
         try {
-            $this->spawnDeployWorker($statusPath, $dryRun, $force, $includeVendor, $quick, $full, $includeBuild);
+            $this->spawnDeployWorker($statusPath, $dryRun, $force, $includeVendor, $quick, $full, $includeBuild, $forceBuild);
         } catch (\Throwable $e) {
             @unlink($statusPath);
 
@@ -814,7 +819,7 @@ class AdminController extends Controller
         return null;
     }
 
-    protected function spawnDeployWorker(string $statusPath, bool $dryRun, bool $force, bool $includeVendor, bool $quick, bool $full, bool $includeBuild): void
+    protected function spawnDeployWorker(string $statusPath, bool $dryRun, bool $force, bool $includeVendor, bool $quick, bool $full, bool $includeBuild, bool $forceBuild = false): void
     {
         $php = PHP_BINARY;
         if (str_ends_with(strtolower($php), 'php-cgi.exe')) {
@@ -827,6 +832,7 @@ class AdminController extends Controller
             .($includeVendor ? ' --with-vendor' : '')
             .($full ? ' --full' : ($quick ? ' --quick' : ''))
             .($includeBuild ? '' : ' --skip-build')
+            .($forceBuild ? ' --force-build' : '')
             .' --status-file='.escapeshellarg($statusPath);
 
         if (DIRECTORY_SEPARATOR === '\\') {

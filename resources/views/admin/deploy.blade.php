@@ -145,6 +145,16 @@
                     </label>
                     <span class="admin-help ml-6">Desmarque para mudanças só em PHP — pula o build do Vite.</span>
                 </div>
+                <div>
+                    <label class="flex items-start gap-2.5 text-sm" for="force_build">
+                        <input type="checkbox" class="admin-check mt-0.5" name="force_build" id="force_build" value="1">
+                        <span>Forçar build público (reenviar public/build/ inteiro)</span>
+                    </label>
+                    <span class="admin-help ml-6">
+                        Envia todos os assets compilados mesmo com o mesmo tamanho, e ignora o modo rápido para eles.
+                        Use depois de rodar <code class="admin-code">npm run build</code> para garantir que o host recebe o build novo.
+                    </span>
+                </div>
                 <label class="flex items-start gap-2.5 text-sm">
                     <input type="checkbox" class="admin-check mt-0.5" name="confirm" id="confirm" value="1" required>
                     <span>Entendo que isto envia código ao host ativo</span>
@@ -325,6 +335,7 @@
                     if (s.quick) modes.push('rápido');
                     if (s.full) modes.push('completo');
                     if (s.include_build === false) modes.push('sem build');
+                    if (s.force_build) modes.push('build forçado');
                     modesEl.textContent = modes.join(' • ');
 
                     currentEl.innerHTML = s.current ? '<code class="admin-code">' + s.current.replace(/</g, '&lt;') + '</code>' : '<code class="admin-code">—</code>';
@@ -336,6 +347,7 @@
                     if (c.vendor_skipped) parts.push(c.vendor_skipped + ' vendor pulados');
                     if (c.quick_skipped) parts.push(c.quick_skipped + ' mais antigos que o último sucesso');
                     if (c.build_skipped) parts.push(c.build_skipped + ' build pulado');
+                    if (c.build_forced) parts.push(c.build_forced + ' build reenviado');
                     if (c.quick) parts.push('modo rápido');
                     countsEl.textContent = parts.join(' • ');
 
