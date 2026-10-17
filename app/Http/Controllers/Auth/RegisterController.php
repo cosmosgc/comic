@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Collection;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -35,6 +36,13 @@ class RegisterController extends Controller
         if (Schema::hasColumn('collections', 'user_id')) {
             Collection::favoritesFor($user);
         }
+
+        ActivityLogger::log('auth.register', [
+            'user' => $user,
+            'subject' => $user,
+            'description' => 'Criou a conta "'.$user->name.'"',
+            'ip' => $request->ip(),
+        ]);
 
         return redirect()->route('login');
     }

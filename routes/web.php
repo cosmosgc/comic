@@ -25,6 +25,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::get('/', 'users')->name('admin.users.index');
     Route::get('/dashboard', 'dashboard')->name('admin.dashboard');
     Route::get('/analytics', 'analytics')->name('admin.analytics');
+    Route::get('/activities', 'activities')->name('admin.activities');
     Route::get('/users', 'users')->name('admin.users');
     Route::delete('/users/{id}', 'destroyUser')->name('admin.users.destroy');
     Route::get('/users/{id}/edit', 'editUser')->name('admin.users.edit');

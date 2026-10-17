@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Collection;
 use App\Models\Comic;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -197,6 +198,14 @@ class CollectionController extends Controller
             $collection->comics()->attach($validatedComics['comics']);
         }
 
+        ActivityLogger::log('collection.created', [
+            'user' => $request->user(),
+            'subject' => $collection,
+            'description' => 'Criou a coleção "'.$collection->name.'"',
+            'metadata' => ['collection_id' => $collection->id, 'comics' => $collection->comics()->count()],
+            'ip' => $request->ip(),
+        ]);
+
         if ($request->wantsJson()) {
             return response()->json($collection->fresh(), 201);
         }
@@ -267,6 +276,15 @@ class CollectionController extends Controller
         if (! $collection->comics()->where('comics.id', $comic->id)->exists()) {
             $maxOrder = (int) $collection->comics()->max('collection_comic.order');
             $collection->comics()->attach($comic->id, ['order' => $maxOrder + 1]);
+
+            ActivityLogger::log('collection.added', [
+                'user' => $request->user(),
+                'subject' => $comic,
+                'url' => ActivityLogger::urlFor($collection),
+                'description' => 'Adicionou "'.$comic->title.'" à coleção "'.$collection->name.'"',
+                'metadata' => ['collection_id' => $collection->id, 'comic_id' => $comic->id],
+                'ip' => $request->ip(),
+            ]);
         }
 
         if ($request->wantsJson()) {
@@ -312,6 +330,14 @@ class CollectionController extends Controller
             $favorites->comics()->attach($comic->id, ['order' => $maxOrder + 1]);
             $favorited = true;
         }
+
+        ActivityLogger::log($favorited ? 'collection.favorited' : 'collection.unfavorited', [
+            'user' => $request->user(),
+            'subject' => $comic,
+            'description' => ($favorited ? 'Favoritou "' : 'Removeu dos favoritos "').$comic->title.'"',
+            'metadata' => ['comic_id' => $comic->id, 'favorited' => $favorited],
+            'ip' => $request->ip(),
+        ]);
 
         return response()->json([
             'favorited' => $favorited,

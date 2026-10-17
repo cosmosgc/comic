@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -38,6 +39,16 @@ class PostController extends Controller
         }
 
         $posts = $posts->paginate(20)->withQueryString();
+
+        if ($query !== '') {
+            ActivityLogger::log('search.posts', [
+                'user' => $request->user(),
+                'description' => 'Buscou posts por "'.$query.'"',
+                'url' => $request->fullUrl(),
+                'metadata' => ['q' => $query, 'tab' => $tab, 'results' => $posts->total()],
+                'ip' => $request->ip(),
+            ]);
+        }
 
         if ($request->wantsJson()) {
             return response()->json(['data' => $posts]);
@@ -96,6 +107,20 @@ class PostController extends Controller
             $post->media = $mediaPaths;
             $post->save();
         }
+
+        ActivityLogger::log($post->parent_id ? 'post.replied' : 'post.created', [
+            'user' => $request->user(),
+            'subject' => $post,
+            'description' => ($post->parent_id ? 'Respondeu na thread #'.$post->parent_id : 'Criou o post #'.$post->id)
+                .($post->text ? ' — '.ActivityLogger::excerpt($post->text) : ''),
+            'metadata' => [
+                'post_id' => $post->id,
+                'parent_id' => $post->parent_id,
+                'referenced_post_id' => $post->referenced_post_id,
+                'has_media' => ! empty($post->media),
+            ],
+            'ip' => $request->ip(),
+        ]);
 
         if ($post->parent_id) {
             return redirect()->route('posts.show', $post->parent_id);

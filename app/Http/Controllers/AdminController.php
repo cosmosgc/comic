@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Analytics;
 use App\Models\Comic;
 use App\Models\ComicTransfer;
@@ -102,6 +103,57 @@ class AdminController extends Controller
         $analytics = Analytics::latest()->paginate(1000); // Show recent events
 
         return view('admin.analytics', compact('analytics'));
+    }
+
+    /**
+     * Recent user interactions (searches, likes, posts, replies,
+     * comments, uploads, collections, auth) with a "Ver" link to
+     * whatever the user interacted with.
+     */
+    public function activities(Request $request)
+    {
+        $validated = $request->validate([
+            'action' => 'nullable|string|max:50',
+            'q' => 'nullable|string|max:100',
+        ]);
+
+        $query = ActivityLog::with('user')->latest();
+
+        $action = $validated['action'] ?? null;
+        if ($action !== null && $action !== '' && array_key_exists($action, ActivityLog::actions())) {
+            $query->where('action', $action);
+        } else {
+            $action = null;
+        }
+
+        $search = trim($validated['q'] ?? '');
+        if ($search !== '') {
+            $query->where(function ($inner) use ($search) {
+                $inner->where('description', 'like', '%'.$search.'%')
+                    ->orWhere('url', 'like', '%'.$search.'%')
+                    ->orWhere('ip_address', 'like', '%'.$search.'%')
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', '%'.$search.'%'));
+            });
+        }
+
+        $activities = $query->paginate(25)->withQueryString();
+
+        // Guests have no user_id: attribute them to a known user seen
+        // from the same IP before (activity log, then analytics history).
+        $guestIps = $activities->getCollection()
+            ->whereNull('user_id')
+            ->pluck('ip_address')
+            ->filter()
+            ->unique()
+            ->all();
+
+        return view('admin.activities', [
+            'activities' => $activities,
+            'actions' => ActivityLog::actions(),
+            'activeAction' => $action,
+            'search' => $search,
+            'ipUsers' => ActivityLog::usersForIps($guestIps),
+        ]);
     }
 
     public function comics()

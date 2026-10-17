@@ -6,6 +6,7 @@ use App\Models\Comic;
 use App\Models\Page;
 use App\Models\Tag;
 use App\Models\Widget;
+use App\Support\ActivityLogger;
 use App\View\Composers\SidebarComposer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -200,6 +201,27 @@ class ComicController extends Controller
             ? DB::table('comic_user_likes')->where('user_id', Auth::id())->pluck('comic_id')->all()
             : [];
 
+        if ($request->filled('search') || $request->filled('tag')) {
+            $parts = [];
+            if ($request->filled('search')) {
+                $parts[] = '"'.$request->input('search').'"';
+            }
+            if ($request->filled('tag')) {
+                $parts[] = 'tag '.$request->input('tag');
+            }
+            ActivityLogger::log('search.comics', [
+                'user' => $request->user(),
+                'description' => 'Buscou comics por '.implode(' + ', $parts),
+                'url' => $request->fullUrl(),
+                'metadata' => [
+                    'search' => $request->input('search'),
+                    'tag' => $request->input('tag'),
+                    'results' => $comics->total(),
+                ],
+                'ip' => $request->ip(),
+            ]);
+        }
+
         return view('comics.search', [
             'comics' => $comics,
             'searchTerm' => $request->input('search'),
@@ -351,6 +373,14 @@ class ComicController extends Controller
         if ($firstImagePath) {
             $comic->update(['image_path' => $firstImagePath]);
         }
+
+        ActivityLogger::log('comic.uploaded', [
+            'user' => $request->user(),
+            'subject' => $comic->fresh(),
+            'description' => 'Enviou o comic "'.$comic->title.'"',
+            'metadata' => ['comic_id' => $comic->id, 'pages' => $comic->pages()->count()],
+            'ip' => $request->ip(),
+        ]);
 
         return response()->json([
             'message' => 'Comic publicado com sucesso.',

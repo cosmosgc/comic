@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\Analytics;
+use App\Support\ActivityLogger;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,13 @@ class LogUserLogin
             'url' => 'login',  // You can specify a URL or event name
             'user_agent' => $this->request->userAgent(),
             'event_type' => 'login',
+        ]);
+
+        ActivityLogger::log('auth.login', [
+            'user' => $event->user,
+            'description' => 'Fez login',
+            'metadata' => ['email' => $event->user->email ?? null],
+            'ip' => $this->request->ip(),
         ]);
     }
 }

@@ -2,13 +2,16 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogUserLogin;
 use App\Models\EhImportSetting;
 use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\Deploy\ProjectVerifier;
 use App\View\Composers\SidebarComposer;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -41,6 +44,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The Login listener has no EventServiceProvider here (Laravel 12
+        // streamlined structure), so it is wired explicitly. Without this,
+        // neither the analytics login row nor the activity feed gets one.
+        Event::listen(Login::class, LogUserLogin::class);
+
         View::composer(
             ['components.left-panel', 'components.right-panel'],
             SidebarComposer::class

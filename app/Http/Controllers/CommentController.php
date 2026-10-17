@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comic;
 use App\Models\Comment;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
@@ -40,6 +41,15 @@ class CommentController extends Controller
         $comment->user()->associate($request->user());
         $comment->save();
         $comment->load('user:id,name,avatar_image_path');
+
+        ActivityLogger::log('comic.commented', [
+            'user' => $request->user(),
+            'subject' => $comment,
+            'url' => ActivityLogger::urlFor($comic),
+            'description' => 'Comentou em "'.$comic->title.'" — '.ActivityLogger::excerpt($comment->body, 100),
+            'metadata' => ['comment_id' => $comment->id, 'comic_id' => $comic->id],
+            'ip' => $request->ip(),
+        ]);
 
         if ($request->wantsJson()) {
             return response()->json($comment, 201);
