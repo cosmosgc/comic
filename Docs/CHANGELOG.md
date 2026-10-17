@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Atividades: novo registro "Iniciou leitura" — o primeiro acesso de um usuário logado a um comic aparece em Admin → Atividades (visitantes e comics agendados não geram registro; reaproveita o mesmo link "Ver" do comic)
 - Admin de comics: data de lançamento editável direto na lista (campo `datetime-local`), badge "⏳ Em breve" enquanto o comic não foi publicado e atalho "Publicar agora" (`POST /admin/comics/{comic}/schedule`)
 - **Fórum** (plano em `Docs/forum-plan.md`): área de discussão completa, separada do feed de comics e das rotas do site
 - Fórum — estrutura: seções e quadros em dois níveis (criados pelo admin), tópicos do tipo discussão ou pergunta e respostas com citação, tudo renderizado em Markdown sanitizado (HTML bruto é escapado)

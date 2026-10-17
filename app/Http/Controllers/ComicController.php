@@ -136,6 +136,7 @@ class ComicController extends Controller
         }])->findOrFail($id);
         abort_unless($comic->isVisibleTo(Auth::user()), 404);
         $comic->increment('view_count');
+        $this->logReading($comic);
 
         return view('comics.show', array_merge(compact('comic'), $this->readerEngagement($comic)));
     }
@@ -148,8 +149,32 @@ class ComicController extends Controller
         }])->where('slug', $slug)->firstOrFail();
         abort_unless($comic->isVisibleTo(Auth::user()), 404);
         $comic->increment('view_count');
+        $this->logReading($comic);
 
         return view('comics.show', array_merge(compact('comic'), $this->readerEngagement($comic)));
+    }
+
+    /**
+     * Feed the admin "Atividades recentes" panel with a "started
+     * reading" entry the first time a signed-in user opens a comic.
+     * Guests are skipped (nothing to attribute, and anonymous traffic
+     * would flood the feed) and scheduled comics are ignored until
+     * they are actually released.
+     */
+    protected function logReading(Comic $comic): void
+    {
+        if (! $comic->isPublished()) {
+            return;
+        }
+
+        if (Auth::user() === null || ActivityLogger::alreadyLogged('comic.reading', $comic)) {
+            return;
+        }
+
+        ActivityLogger::log('comic.reading', [
+            'subject' => $comic,
+            'description' => 'Começou a ler "'.$comic->title.'"',
+        ]);
     }
 
     /**

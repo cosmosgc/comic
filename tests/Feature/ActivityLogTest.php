@@ -51,6 +51,61 @@ class ActivityLogTest extends TestCase
         $this->assertSame(route('posts.show', $post->id), $log->url);
     }
 
+    public function test_reading_a_comic_records_activity_once(): void
+    {
+        $user = User::factory()->create();
+        $comic = Comic::factory()->create(['title' => 'Reading Target']);
+
+        $this->actingAs($user)->get("/comics/id/{$comic->id}")->assertOk();
+        // Re-opening by id or slug must not duplicate the entry.
+        $this->get("/comics/{$comic->slug}")->assertOk();
+
+        $logs = ActivityLog::where('action', 'comic.reading')->get();
+        $this->assertCount(1, $logs);
+
+        $log = $logs->first();
+        $this->assertSame($user->id, $log->user_id);
+        $this->assertSame($comic->id, $log->subject_id);
+        $this->assertStringContainsString('Reading Target', (string) $log->description);
+        $this->assertSame(route('comics.showBySlug', $comic->slug), $log->url);
+    }
+
+    public function test_guests_do_not_record_reading_activity(): void
+    {
+        $comic = Comic::factory()->create();
+
+        $this->get("/comics/id/{$comic->id}")->assertOk();
+
+        $this->assertDatabaseMissing('activity_logs', ['action' => 'comic.reading']);
+    }
+
+    public function test_previewing_a_scheduled_comic_does_not_record_reading(): void
+    {
+        $owner = User::factory()->create();
+        $comic = Comic::factory()->create([
+            'user_id' => $owner->id,
+            'published_at' => now()->addDay(),
+        ]);
+
+        $this->actingAs($owner)->get("/comics/id/{$comic->id}")->assertOk();
+
+        $this->assertDatabaseMissing('activity_logs', ['action' => 'comic.reading']);
+    }
+
+    public function test_admin_activities_view_filters_the_reading_action(): void
+    {
+        $admin = $this->makeAdmin();
+        $reader = User::factory()->create();
+        $comic = Comic::factory()->create(['title' => 'Feed Reading']);
+
+        $this->actingAs($reader)->get("/comics/{$comic->slug}")->assertOk();
+
+        $this->actingAs($admin)->get('/admin/activities?action=comic.reading')
+            ->assertOk()
+            ->assertSee('Iniciou leitura')
+            ->assertSee('Feed Reading');
+    }
+
     public function test_login_event_records_activity(): void
     {
         // The listener is wired explicitly in AppServiceProvider.

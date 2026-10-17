@@ -46,6 +46,7 @@ class ActivityLog extends Model
             'search.comics' => 'Busca de comics',
             'search.posts' => 'Busca de posts',
             'comic.uploaded' => 'Comic enviado',
+            'comic.reading' => 'Iniciou leitura',
             'comic.liked' => 'Comic curtido',
             'comic.unliked' => 'Descurtiu comic',
             'comic.commented' => 'Comentário em comic',

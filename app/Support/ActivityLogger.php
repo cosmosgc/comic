@@ -12,6 +12,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\Gamification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -74,6 +75,32 @@ class ActivityLogger
             report($e);
 
             return null;
+        }
+    }
+
+    /**
+     * Has this user already triggered $action on $subject? Used for
+     * one-shot interactions ("started reading a comic") that should
+     * appear in the feed only the first time.
+     */
+    public static function alreadyLogged(string $action, Model $subject, User|int|null $user = null): bool
+    {
+        try {
+            $id = self::userId($user);
+            if ($id === null || ! Schema::hasTable('activity_logs')) {
+                return false;
+            }
+
+            return ActivityLog::query()
+                ->where('user_id', $id)
+                ->where('action', $action)
+                ->where('subject_type', $subject->getMorphClass())
+                ->where('subject_id', $subject->getKey())
+                ->exists();
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
         }
     }
 
