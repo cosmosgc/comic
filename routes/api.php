@@ -15,16 +15,19 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/comics/update-slugs', [ComicController::class, 'updateMissingSlugs'])->name(name: 'comics.updateSlugs');
+// Public read-only endpoints. Throttled so a single client cannot hammer
+// the site's own JSON API; the old `GET /comics/update-slugs` mass-write
+// endpoint now lives in the `comics:backfill-slugs` console command.
+Route::get('/comics', [ComicController::class, 'getAllComics'])
+    ->middleware('throttle:240,1')
+    ->name('api.comics');
+Route::get('/comics/{id}', [ComicController::class, 'getComic'])->middleware('throttle:120,1');
+Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId'])->middleware('throttle:120,1');
 
-Route::get('/comics', [ComicController::class, 'getAllComics'])->name('api.comics');
-Route::get('/comics/{id}', [ComicController::class, 'getComic']);
-Route::get('/comics/{id}/pages', [PageController::class, 'getPagesByComicId']);
+Route::get('/collections', [CollectionController::class, 'getAllCollections'])->middleware('throttle:120,1');
+Route::get('/collections/{id}', [CollectionController::class, 'showById'])->middleware('throttle:120,1');
 
-Route::get('/collections', [CollectionController::class, 'getAllCollections']);
-Route::get('/collections/{id}', [CollectionController::class, 'showById']);
-
-Route::get('/posts', [PostController::class, 'index']);
+Route::get('/posts', [PostController::class, 'index'])->middleware('throttle:120,1');
 
 Route::get('/tags', [TagController::class, 'index'])->middleware('throttle:60,1')->name('api.tags');
 Route::get('/tags/lookup', [TagController::class, 'lookup'])->middleware('throttle:15,1')->name('api.tags.lookup');

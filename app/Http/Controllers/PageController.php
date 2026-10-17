@@ -85,8 +85,13 @@ class PageController extends Controller
 
     public function getPagesByComicId($id)
     {
+        // Pages are the comic's content: a scheduled/unlisted comic must
+        // not leak them to anyone who guesses the id.
+        $comic = Comic::findOrFail($id);
+        abort_unless($comic->isVisibleTo(Auth::user()), 404);
+
         // Fetch the pages related to the comic
-        $pages = Page::where('comic_id', $id)->orderBy('page_number')->get();
+        $pages = $comic->pages()->orderBy('page_number')->get();
 
         // Return the pages as JSON
         return response()->json($pages);

@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ComicController extends Controller
@@ -269,26 +268,39 @@ class ComicController extends Controller
 
     public function getAllComics(Request $request)
     {
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:255',
+            'tag' => 'nullable|string|max:255',
+            'limit' => 'nullable|integer|min:1|max:100',
+        ]);
+
         $query = Comic::query()->published();
 
         // Check if there is a search query
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        if (! empty($validated['search'])) {
+            $search = $validated['search'];
 
-            // Filter by title or author
-            $query->where('title', 'like', '%'.$search.'%')
-                ->orWhere('author', 'like', '%'.$search.'%');
+            // Filter by title or author. Grouped so the OR can never
+            // escape `published()` and expose a scheduled comic.
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%'.$search.'%')
+                    ->orWhere('author', 'like', '%'.$search.'%');
+            });
         }
-        if ($request->filled('tag')) {
-            $tagName = $request->input('tag');
+        if (! empty($validated['tag'])) {
+            $tagName = $validated['tag'];
             $query->whereHas('tags', function ($q) use ($tagName) {
                 $q->where('name', $tagName);
             });
         }
 
-        // ⏳ Optional limit
-        if ($request->has('limit')) {
-            $query->limit((int) $request->input('limit'));
+        // A browse call (no search term) is capped so the payload stays
+        // bounded. Searches are already narrowed by the LIKE filter, and
+        // the upload form's duplicate check needs every title match.
+        if (! empty($validated['limit'])) {
+            $query->limit((int) $validated['limit']);
+        } elseif (empty($validated['search'])) {
+            $query->limit(100);
         }
 
         // Get the results
@@ -384,32 +396,6 @@ class ComicController extends Controller
             'comic_id' => $comic->id,
         ]);
 
-    }
-
-    public function updateMissingSlugs()
-    {
-        // Fetch all comics without a slug
-        $comicsWithoutSlugs = Comic::whereNull('slug')->orWhere('slug', '')->get();
-
-        foreach ($comicsWithoutSlugs as $comic) {
-            // Generate a slug based on the title
-            $slug = Str::slug($comic->title);
-
-            // Check if the slug already exists
-            $originalSlug = $slug;
-            $count = 1;
-
-            while (Comic::where('slug', $slug)->exists()) {
-                $slug = $originalSlug.'-'.$count;
-                $count++;
-            }
-
-            // Update the comic with the new slug
-            $comic->slug = $slug;
-            $comic->save();
-        }
-
-        return response()->json(['message' => 'Slugs atualizados para todos os comics sem slug.']);
     }
 
     public function edit($id)

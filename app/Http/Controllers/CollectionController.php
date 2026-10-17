@@ -140,28 +140,60 @@ class CollectionController extends Controller
 
     public function showById($id)
     {
-        // Retrieve the collection along with its comics
-        $collection = Collection::with('comics')->findOrFail($id);
+        // Retrieve the collection along with its comics. Private
+        // collections (e.g. a user's Favorites) are not exposed by the
+        // public API: for guests this narrows to is_public = true.
+        $query = Collection::with('comics');
+
+        if ($this->ownsColumns()) {
+            $query->where(function ($query) {
+                $query->where('is_public', true);
+                if (auth()->check()) {
+                    $query->orWhere('user_id', auth()->id());
+                }
+            });
+        }
 
         // Return the collection as JSON
-        return response()->json($collection);
+        return response()->json($query->findOrFail($id));
     }
 
     public function getAllCollections(Request $request)
     {
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:255',
+            'limit' => 'nullable|integer|min:1|max:100',
+        ]);
+
         $query = Collection::query();
 
-        // Check if there is a search query
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-
-            // Filter by name or description
-            $query->where('name', 'like', '%'.$search.'%')
-                ->orWhere('description', 'like', '%'.$search.'%');
+        if ($this->ownsColumns()) {
+            // Public collections plus the viewer's own (private included).
+            $query->where(function ($query) {
+                $query->where('is_public', true);
+                if (auth()->check()) {
+                    $query->orWhere('user_id', auth()->id());
+                }
+            });
         }
 
-        // Get the results
-        $collections = $query->with(['comics' => fn ($query) => $query->orderBy('collection_comic.order')])->get(); // Include comics if needed
+        // Check if there is a search query
+        if (! empty($validated['search'])) {
+            $search = $validated['search'];
+
+            // Filter by name or description (grouped OR, see getAllComics).
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%');
+            });
+        }
+
+        // Get the results — capped so an unfiltered call cannot dump the
+        // whole table (with every comic of every collection) in one hit.
+        $collections = $query
+            ->with(['comics' => fn ($query) => $query->orderBy('collection_comic.order')])
+            ->limit((int) ($validated['limit'] ?? 50))
+            ->get();
 
         // Return the collections as a JSON response
         return response()->json($collections);

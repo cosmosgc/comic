@@ -120,4 +120,35 @@ class ComicSlugTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('slug');
     }
+
+    public function test_backfill_command_fills_missing_slugs(): void
+    {
+        // Legacy rows have no slug at all — the old public endpoint that
+        // fixed them is gone, so the console command must.
+        $legacy = Comic::factory()->create(['title' => 'Título Antigo', 'slug' => '']);
+        Comic::factory()->create(['title' => 'Outro', 'slug' => 'titulo-antigo']);
+
+        $this->artisan('comics:backfill-slugs')->assertSuccessful();
+
+        // The base slug is taken, so the command must suffix it.
+        $this->assertSame('titulo-antigo-1', $legacy->fresh()->slug);
+    }
+
+    public function test_backfill_command_dry_run_changes_nothing(): void
+    {
+        $legacy = Comic::factory()->create(['title' => 'Sem Slug', 'slug' => '']);
+
+        $this->artisan('comics:backfill-slugs --dry-run')->assertSuccessful();
+
+        $this->assertSame('', $legacy->fresh()->slug);
+    }
+
+    public function test_backfill_command_reports_when_nothing_is_missing(): void
+    {
+        Comic::factory()->create(['slug' => 'ja-tem-slug']);
+
+        $this->artisan('comics:backfill-slugs')
+            ->expectsOutput('Every comic already has a slug.')
+            ->assertSuccessful();
+    }
 }
