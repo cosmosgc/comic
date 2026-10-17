@@ -147,6 +147,80 @@ class ComicScheduleTest extends TestCase
             ->assertSee('Profile Future ABC');
     }
 
+    public function test_admin_schedules_a_comic_from_the_admin_list(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = Comic::factory()->create([
+            'user_id' => $admin->id,
+            'title' => 'Admin Scheduled One',
+            'published_at' => null,
+        ]);
+
+        $this->actingAs($admin)
+            ->post("/admin/comics/{$comic->id}/schedule", [
+                'published_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+            ])
+            ->assertRedirect(route('admin.comics'))
+            ->assertSessionHas('success');
+
+        $this->assertTrue($comic->fresh()->isScheduled());
+
+        // Hidden from the public index, flagged as "Em breve" in the admin list.
+        Auth::logout();
+        $this->get('/')->assertOk()->assertDontSee('Admin Scheduled One');
+
+        $this->actingAs($admin)->get('/admin/comics')->assertOk()
+            ->assertSee('Admin Scheduled One')
+            ->assertSee('Em breve');
+    }
+
+    public function test_admin_publishes_a_scheduled_comic_right_away(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = Comic::factory()->create([
+            'user_id' => $admin->id,
+            'title' => 'Admin Publish Now',
+            'published_at' => now()->addDays(3),
+        ]);
+
+        $this->actingAs($admin)
+            ->post("/admin/comics/{$comic->id}/schedule", ['published_at' => ''])
+            ->assertRedirect(route('admin.comics'))
+            ->assertSessionHas('success');
+
+        $comic->refresh();
+        $this->assertNull($comic->published_at);
+        $this->assertTrue($comic->isPublished());
+
+        $this->get('/')->assertOk()->assertSee('Admin Publish Now');
+        $this->get('/admin/comics')->assertOk()->assertSee('Publicado');
+    }
+
+    public function test_guest_and_non_admin_cannot_schedule(): void
+    {
+        $comic = Comic::factory()->create(['published_at' => null]);
+        $when = ['published_at' => now()->addDay()->format('Y-m-d\TH:i')];
+
+        $this->post("/admin/comics/{$comic->id}/schedule", $when)->assertRedirect('/login');
+
+        $this->actingAs(User::factory()->create(['admin_level' => 0]))
+            ->post("/admin/comics/{$comic->id}/schedule", $when)->assertRedirect('/');
+
+        $this->assertNull($comic->fresh()->published_at);
+    }
+
+    public function test_invalid_schedule_date_is_rejected(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = Comic::factory()->create(['user_id' => $admin->id, 'published_at' => null]);
+
+        $this->actingAs($admin)
+            ->post("/admin/comics/{$comic->id}/schedule", ['published_at' => 'not-a-date'])
+            ->assertSessionHasErrors('published_at');
+
+        $this->assertNull($comic->fresh()->published_at);
+    }
+
     protected function deleteComicTree(int $comicId): void
     {
         Comic::where('id', $comicId)->delete();

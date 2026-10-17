@@ -52,6 +52,8 @@
                         <th>Autor</th>
                         <th>Slug</th>
                         <th>Criado em</th>
+                        <th>Publicação</th>
+                        <th>Agendar</th>
                         <th>Visualizações</th>
                         <th>Ações</th>
                     </tr>
@@ -64,6 +66,31 @@
                             <td>{{ $comic->author }}</td>
                             <td><code>{{ $comic->slug }}</code></td>
                             <td class="whitespace-nowrap">{{ $comic->created_at }}</td>
+                            <td class="whitespace-nowrap">
+                                @if ($comic->isScheduled())
+                                    <span class="admin-badge admin-badge-warning" title="Ainda não lançado no site">⏳ Em breve</span>
+                                    <div class="mt-1 text-xs opacity-70">lança {{ $comic->published_at->format('d/m/Y H:i') }}</div>
+                                @else
+                                    <span class="admin-badge admin-badge-success">Publicado</span>
+                                @endif
+                            </td>
+                            <td class="whitespace-nowrap">
+                                <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="flex items-center gap-1">
+                                    @csrf
+                                    <input type="datetime-local" name="published_at"
+                                           value="{{ $comic->published_at?->format('Y-m-d\TH:i') }}"
+                                           class="admin-input admin-input-sm"
+                                           aria-label="Data de publicação de {{ $comic->title }}">
+                                    <button type="submit" class="admin-btn admin-btn-sm">Salvar</button>
+                                </form>
+                                @if ($comic->isScheduled())
+                                    <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="mt-1">
+                                        @csrf
+                                        <input type="hidden" name="published_at" value="">
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-success">Publicar agora</button>
+                                    </form>
+                                @endif
+                            </td>
                             <td>{{ $comic->view_count }}</td>
                             <td class="whitespace-nowrap">
                                 <a href="{{ route('comics.edit', $comic->id) }}" class="admin-btn admin-btn-sm">Editar</a>

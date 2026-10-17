@@ -346,6 +346,29 @@ class AdminController extends Controller
     }
 
     /**
+     * Set (or clear) a comic's release date from the admin list. A future
+     * date keeps it off the public site and flags it as "Em breve"; an empty
+     * date publishes it right away.
+     */
+    public function scheduleComic(Request $request, Comic $comic)
+    {
+        $request->validate([
+            'published_at' => 'nullable|date',
+        ]);
+
+        $comic->published_at = $request->filled('published_at')
+            ? $request->date('published_at')
+            : null;
+        $comic->save();
+
+        $message = $comic->isScheduled()
+            ? "Comic \"{$comic->title}\" agendado para {$comic->published_at->format('d/m/Y H:i')} — aparece como \"Em breve\" até lá."
+            : "Comic \"{$comic->title}\" publicado agora.";
+
+        return redirect()->route('admin.comics')->with('success', $message);
+    }
+
+    /**
      * Delete a comic with everything attached: pages, tags/likes pivots,
      * comments and import tracking go via FK cascades; the cover + page
      * files under storage/comics/{id} are removed from disk.

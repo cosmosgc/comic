@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Admin de comics: data de lançamento editável direto na lista (campo `datetime-local`), badge "⏳ Em breve" enquanto o comic não foi publicado e atalho "Publicar agora" (`POST /admin/comics/{comic}/schedule`)
 - **Fórum** (plano em `Docs/forum-plan.md`): área de discussão completa, separada do feed de comics e das rotas do site
 - Fórum — estrutura: seções e quadros em dois níveis (criados pelo admin), tópicos do tipo discussão ou pergunta e respostas com citação, tudo renderizado em Markdown sanitizado (HTML bruto é escapado)
 - Fórum — interação: reações idempotentes (👍😂😮😢), inscrição por tópico com aviso de novos posts, anexos de imagem, marcação de lidos/não lidos, busca (título, corpo, autor e tag), tags por tópico e respostas aceitas (solução) creditando XP a quem respondeu
