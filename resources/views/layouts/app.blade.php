@@ -80,6 +80,8 @@
                         <a href="{{ route('forum.index') }}" role="menuitem" class="dropdown-link">Fórum</a>
                     </x-nav-dropdown>
 
+                    <a href="{{ route('comics.create') }}" class="btn-primary">Publicar</a>
+
                     <!-- User Dropdown -->
                     <div x-data="{ userOpen: false }" class="relative">
                         <button
@@ -111,10 +113,6 @@
                             <a href="{{ route('bookmarks.index') }}" role="menuitem" class="dropdown-link">
                                 Salvos
                             </a>
-                            <a href="{{ route('comics.create') }}" role="menuitem" class="dropdown-link">
-                                Publicar
-                            </a>
-
                             @if (Auth::user()->admin_level >= 1)
                                 <a href="{{ route('admin.dashboard') }}" role="menuitem" class="dropdown-link">
                                     Admin
@@ -148,14 +146,21 @@
                 @endauth
             </div>
 
-            <!-- Mobile Menu Button -->
-            <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Alternar menu" class="rounded-lg p-2 hover:bg-zinc-800 md:hidden">
-                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"
-                     viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-            </button>
+            <!-- Mobile actions -->
+            <div class="flex items-center gap-2 md:hidden">
+                @auth
+                    <a href="{{ route('comics.create') }}" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-500">
+                        Publicar
+                    </a>
+                @endauth
+                <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Alternar menu" class="rounded-lg p-2 hover:bg-zinc-800">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"
+                         viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <!-- Mobile Menu -->
@@ -183,7 +188,6 @@
             <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             @auth
                 <p class="nav-menu-label">Conta</p>
-                <a href="{{ route('comics.create') }}" class="mobile-link">Publicar</a>
                 @if (Auth::user()->admin_level >= 1)
                     <a href="{{ route('admin.dashboard') }}" class="mobile-link">Admin</a>
                 @endif
