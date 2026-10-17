@@ -65,6 +65,13 @@ class GamificationBackfill extends Command
         $this->info("{$verb} {$awarded} XP across those users".($dryRun ? ' (dry run).' : '.'));
         $this->info(($dryRun ? 'Would unlock' : 'Unlocked')." {$badges} badge(s).");
 
+        // Levels are stored snapshots; recompute them all so a retuned
+        // curve takes effect even for users whose XP did not change.
+        if (! $dryRun) {
+            $resynced = Gamification::resyncLevels();
+            $this->info("Recalculated levels for {$resynced} user(s).");
+        }
+
         return self::SUCCESS;
     }
 }

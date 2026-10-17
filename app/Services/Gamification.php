@@ -134,6 +134,39 @@ class Gamification
     }
 
     /**
+     * Recompute the stored `level` column for every user from their
+     * experience and the current curve. The column is a snapshot that
+     * only moves when XP is awarded, so retuning the curve/base leaves
+     * everyone with stale levels until this runs. Idempotent.
+     *
+     * @return int number of users whose level changed
+     */
+    public static function resyncLevels(int $chunk = 500): int
+    {
+        if (! Schema::hasColumn('users', 'level') || ! Schema::hasColumn('users', 'experience')) {
+            return 0;
+        }
+
+        $updated = 0;
+
+        User::query()
+            ->select('id', 'experience', 'level')
+            ->chunkById(max(1, $chunk), function ($users) use (&$updated) {
+                foreach ($users as $user) {
+                    $level = self::levelFor((int) $user->experience);
+                    if ((int) $user->level === $level) {
+                        continue;
+                    }
+                    // Query builder keeps updated_at untouched.
+                    DB::table('users')->where('id', $user->id)->update(['level' => $level]);
+                    $updated++;
+                }
+            });
+
+        return $updated;
+    }
+
+    /**
      * Experience implied by a user's existing content (comics, posts,
      * replies, comments, likes given, collections), using the same exp
      * map as live awarding.

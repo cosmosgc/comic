@@ -285,6 +285,10 @@
             O site roda há anos: isto varre comics, posts, respostas, comentários, curtidas e coleções de cada usuário
             e soma o XP que falta. É idempotente (rodar de novo não duplica) e nunca tira XP.
         </p>
+        <p class="mt-2 text-sm text-zinc-500">
+            Mudou a curva ou a base de XP? Os níveis são gravados por usuário e ficam no valor antigo até ele ganhar XP de novo.
+            Use <strong>Recalcular níveis</strong> para reprocessar todo mundo pela curva atual (o ranking e os selos passam a bater).
+        </p>
         <div class="mt-3 flex flex-wrap gap-3">
             <form method="POST" action="{{ route('admin.gamification.backfill.preview') }}">
                 @csrf
@@ -297,6 +301,13 @@
                 @csrf
                 <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
                     Aplicar recálculo
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.gamification.resync') }}"
+                  onsubmit="return confirm('Recalcular o nível de todos os usuários pela curva atual?');">
+                @csrf
+                <button type="submit" class="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                    Recalcular níveis
                 </button>
             </form>
         </div>

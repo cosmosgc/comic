@@ -97,6 +97,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(func
     Route::post('/gamification/grant', [AdminGamificationController::class, 'grant'])->name('admin.gamification.grant');
     Route::post('/gamification/backfill/preview', [AdminGamificationController::class, 'backfillPreview'])->name('admin.gamification.backfill.preview');
     Route::post('/gamification/backfill', [AdminGamificationController::class, 'backfill'])->name('admin.gamification.backfill');
+    Route::post('/gamification/resync-levels', [AdminGamificationController::class, 'resyncLevels'])->name('admin.gamification.resync');
     Route::get('/gamification/users', [AdminGamificationController::class, 'searchUsers'])->name('admin.gamification.users');
 });
 

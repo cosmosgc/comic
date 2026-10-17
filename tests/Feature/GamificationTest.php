@@ -252,6 +252,44 @@ class GamificationTest extends TestCase
         $this->assertSame(200, (int) config('gamification.exp')['comic.uploaded']);
     }
 
+    public function test_resync_levels_recomputes_the_stored_level(): void
+    {
+        // Default curve is triangular base 100: 300 XP => level 3.
+        $user = User::factory()->create(['experience' => 300, 'level' => 1]);
+
+        $changed = Gamification::resyncLevels();
+
+        $this->assertSame(1, $changed);
+        $this->assertSame(3, (int) $user->fresh()->level);
+    }
+
+    public function test_saving_a_new_curve_resyncs_stored_levels(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $user = User::factory()->create(['experience' => 300, 'level' => 3]);
+
+        $this->actingAs($admin)->post(route('admin.gamification.settings'), [
+            'enabled' => '1',
+            'level_base' => 100,
+            'level_curve' => 'quadratic', // threshold(3) = 400 > 300 => level 2
+            'streak_bonus' => 5,
+        ])->assertRedirect(route('admin.gamification'));
+
+        $this->assertSame('quadratic', config('gamification.level_curve'));
+        $this->assertSame(2, (int) $user->fresh()->level);
+    }
+
+    public function test_admin_can_resync_levels(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $user = User::factory()->create(['experience' => 300, 'level' => 1]);
+
+        $this->actingAs($admin)->post(route('admin.gamification.resync'))
+            ->assertRedirect(route('admin.gamification'));
+
+        $this->assertSame(3, (int) $user->fresh()->level);
+    }
+
     public function test_admin_can_view_gamification_panel(): void
     {
         $admin = User::factory()->create(['admin_level' => 1]);

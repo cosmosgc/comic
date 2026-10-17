@@ -44,7 +44,10 @@ class AdminGamificationController extends Controller
             'metrics' => Gamification::metricOptions(),
             'overridden' => GamificationSetting::overridden(),
             'topUsers' => User::query()->orderByDesc('experience')->orderByDesc('id')
-                ->limit(10)->get(['id', 'name', 'experience', 'level']),
+                ->limit(10)->get(['id', 'name', 'experience', 'level'])
+                // Show the level implied by the current curve, not the
+                // stored snapshot (which lags until a resync/award).
+                ->each(fn (User $user) => $user->setAttribute('level', Gamification::levelFor((int) $user->experience))),
             'totals' => $this->contentTotals(),
         ]);
     }
@@ -118,6 +121,11 @@ class AdminGamificationController extends Controller
             $validated['unique_subject_actions'] ?? []
         ));
 
+        // Snapshot the effective curve before the overlay changes it:
+        // a retuned curve/base invalidates every stored level.
+        $oldBase = (int) config('gamification.level_base', 100);
+        $oldCurve = (string) config('gamification.level_curve', 'triangular');
+
         GamificationSetting::store('enabled', $request->boolean('enabled'));
         GamificationSetting::store('level_base', $validated['level_base']);
         GamificationSetting::store('level_curve', $validated['level_curve']);
@@ -127,8 +135,29 @@ class AdminGamificationController extends Controller
         GamificationSetting::store('badges', $badges);
         GamificationSetting::applyToConfig();
 
+        $message = 'Configurações de gamificação salvas.';
+
+        // Levels are stored snapshots, so a curve/base change would leave
+        // every user on their old number until they earn XP again.
+        if ($oldBase !== (int) $validated['level_base'] || $oldCurve !== (string) $validated['level_curve']) {
+            $resynced = Gamification::resyncLevels();
+            $message .= " Níveis recalculados para {$resynced} usuário(s).";
+        }
+
         return redirect()->route('admin.gamification')
-            ->with('success', 'Configurações de gamificação salvas.');
+            ->with('success', $message);
+    }
+
+    /**
+     * Recompute every stored level from experience with the current
+     * curve (public ranking and chips read the stored column).
+     */
+    public function resyncLevels()
+    {
+        $updated = Gamification::resyncLevels();
+
+        return redirect()->route('admin.gamification')
+            ->with('success', "Níveis recalculados: {$updated} usuário(s) atualizado(s).");
     }
 
     /**
