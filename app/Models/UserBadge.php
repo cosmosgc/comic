@@ -10,6 +10,14 @@ class UserBadge extends Model
     protected $fillable = ['user_id', 'badge', 'awarded_at'];
 
     /**
+     * Expose the catalogue metadata on serialized badges so JSON
+     * consumers (comment API, hover-card) can render them directly.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['label', 'icon', 'description'];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -39,5 +47,20 @@ class UserBadge extends Model
             'metric' => '',
             'threshold' => 0,
         ]);
+    }
+
+    public function getLabelAttribute(): string
+    {
+        return (string) ($this->definition()['label'] ?? $this->badge);
+    }
+
+    public function getIconAttribute(): string
+    {
+        return (string) ($this->definition()['icon'] ?? '🏅');
+    }
+
+    public function getDescriptionAttribute(): string
+    {
+        return (string) ($this->definition()['description'] ?? '');
     }
 }

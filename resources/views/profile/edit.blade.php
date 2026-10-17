@@ -177,6 +177,43 @@
             </div>
         </div>
 
+        <!-- Featured badges -->
+        @if (! empty($badgeDefinitions) && $user->badges->isNotEmpty())
+            <div>
+                <label class="mb-1 block text-sm font-medium text-zinc-300">
+                    Conquistas em destaque <span class="text-zinc-500">(até {{ $showcaseLimit }})</span>
+                </label>
+                <p class="mb-2 text-xs text-zinc-500">
+                    Escolha quais aparecem no topo do seu perfil. Sem seleção, todas as conquistas são exibidas.
+                </p>
+                <div x-data="{ selected: @js(array_values(old('showcase_badges', $user->showcase_badges ?? []))), limit: {{ $showcaseLimit }} }"
+                     class="flex flex-wrap gap-2">
+                    @foreach ($user->badges as $badge)
+                        @php($def = $badge->definition())
+                        <label class="inline-flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 text-xs transition"
+                               :class="selected.includes('{{ $badge->badge }}')
+                                   ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200'
+                                   : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-500'">
+                            <input type="checkbox"
+                                   name="showcase_badges[]"
+                                   value="{{ $badge->badge }}"
+                                   class="sr-only"
+                                   :checked="selected.includes('{{ $badge->badge }}')"
+                                   @change="
+                                       if ($event.target.checked) {
+                                           if (selected.length >= limit) { $event.target.checked = false; return; }
+                                           selected.push('{{ $badge->badge }}');
+                                       } else {
+                                           selected = selected.filter(k => k !== '{{ $badge->badge }}');
+                                       }
+                                   ">
+                            <span>{{ $def['icon'] }}</span> {{ $def['label'] }}
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         <!-- Password -->
         <div>
             <label for="password" class="mb-1 block text-sm font-medium text-zinc-300">

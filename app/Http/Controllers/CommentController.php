@@ -15,7 +15,10 @@ class CommentController extends Controller
     public function index(Request $request, Comic $comic)
     {
         $comments = $comic->comments()
-            ->with('user:id,name,avatar_image_path')
+            ->with([
+                'user' => fn ($query) => $query->select('id', 'name', 'avatar_image_path', 'level'),
+                'user.badges',
+            ])
             ->paginate(10);
 
         if ($request->wantsJson()) {
@@ -40,7 +43,7 @@ class CommentController extends Controller
         ]);
         $comment->user()->associate($request->user());
         $comment->save();
-        $comment->load('user:id,name,avatar_image_path');
+        $comment->load('user:id,name,avatar_image_path,level', 'user.badges');
 
         ActivityLogger::log('comic.commented', [
             'user' => $request->user(),
@@ -72,7 +75,7 @@ class CommentController extends Controller
         $comment->update(['body' => $request->input('body')]);
 
         if ($request->wantsJson()) {
-            return response()->json($comment->fresh('user:id,name,avatar_image_path'));
+            return response()->json($comment->fresh(['user' => fn ($query) => $query->select('id', 'name', 'avatar_image_path', 'level'), 'user.badges']));
         }
 
         return redirect()->back()->with('success', 'Comentário atualizado.');

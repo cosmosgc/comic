@@ -36,6 +36,7 @@
                     {{ $authorName }}
                 </a>
                 <span class="truncate text-zinc-500">{{ $handle }}</span>
+                @include('components.user-level', ['user' => $author])
             @else
                 <span class="truncate font-bold text-zinc-500">{{ $authorName }}</span>
             @endif
@@ -127,6 +128,7 @@
                         btn.classList.toggle('hover:text-rose-500', !liked);
                         btn.querySelector('.like-heart').setAttribute('fill', liked ? 'currentColor' : 'none');
                         btn.querySelector('.like-count').textContent = data.count > 0 ? data.count : '';
+                        if (window.openXpToast) window.openXpToast(data.xp);
                     };
                 </script>
             @endonce

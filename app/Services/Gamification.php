@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserBadge;
+use App\Notifications\GamificationNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,15 +16,20 @@ use Throwable;
 /**
  * Experience, levels, streaks and badges.
  *
- * The single entry point is award(), called from ActivityLogger after
- * an interaction is recorded. Like the logger, it must never break the
- * underlying action, so it degrades gracefully when the gamification
- * columns are missing on a host with lagging migrations.
+ * The live entry point is award(), called from ActivityLogger after an
+ * interaction is recorded. recalculate() retro-fits experience onto
+ * content that predates the activity feed. Like the logger, nothing
+ * here may break the underlying action, so every write degrades
+ * gracefully when the gamification columns are missing on a host with
+ * lagging migrations.
  */
 class Gamification
 {
-    /** @var array<string, int> per-request metric cache, keyed "id:metric" */
+    /** @var array<string, int> per-award metric cache, keyed "id:metric" */
     protected static array $metricCache = [];
+
+    /** @var array<string, mixed>|null result of the most recent award() */
+    protected static ?array $lastAward = null;
 
     /**
      * Grant experience for an action, extend the daily streak and
@@ -72,11 +78,171 @@ class Gamification
 
             $result['exp'] = $gained;
             $result['badges'] = self::awardBadges($user);
+
+            self::afterAward($user, $result);
         } catch (Throwable $e) {
             report($e);
         }
 
         return $result;
+    }
+
+    /**
+     * Recompute a user's experience from the content they own, then add
+     * the shortfall. Idempotent and never subtracts, so running it twice
+     * adds nothing and admin/manual XP is preserved.
+     *
+     * @return array{delta: int, target: int, experience: int, badges: array<int, array{key: string, label: string, icon: string}>}
+     */
+    public static function recalculate(User $user): array
+    {
+        $result = ['delta' => 0, 'target' => 0, 'experience' => (int) $user->experience, 'badges' => []];
+
+        if (! config('gamification.enabled', true) || ! Schema::hasColumn('users', 'experience')) {
+            return $result;
+        }
+
+        self::$metricCache = [];
+
+        try {
+            $target = self::contentTarget($user);
+            $current = (int) $user->experience;
+            $delta = max(0, $target - $current);
+
+            $user->experience = $current + $delta;
+            $user->level = self::levelFor((int) $user->experience);
+            $user->save();
+
+            $result['delta'] = $delta;
+            $result['target'] = $target;
+            $result['experience'] = (int) $user->experience;
+            $result['badges'] = self::awardBadges($user);
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return $result;
+    }
+
+    /**
+     * What experience a user would gain from a full recalculate right
+     * now (read-only), used for the admin preview.
+     */
+    public static function backfillPreview(User $user): int
+    {
+        return max(0, self::contentTarget($user) - (int) $user->experience);
+    }
+
+    /**
+     * Experience implied by a user's existing content (comics, posts,
+     * replies, comments, likes given, collections), using the same exp
+     * map as live awarding.
+     */
+    public static function contentTarget(User $user): int
+    {
+        $exp = config('gamification.exp', []);
+        $value = fn (string $key) => (int) ($exp[$key] ?? 0);
+
+        $comics = $user->comics()->count();
+
+        $posts = Schema::hasTable('posts')
+            ? Post::where('author_id', $user->id)->whereNull('parent_id')->count()
+            : 0;
+
+        $replies = Schema::hasTable('posts') && Schema::hasColumn('posts', 'parent_id')
+            ? Post::where('author_id', $user->id)->whereNotNull('parent_id')->count()
+            : 0;
+
+        $comments = Schema::hasTable('comments')
+            ? Comment::where('user_id', $user->id)->count()
+            : 0;
+
+        $comicLikes = Schema::hasTable('comic_user_likes')
+            ? DB::table('comic_user_likes')->where('user_id', $user->id)->count()
+            : 0;
+
+        $postLikes = Schema::hasTable('post_likes')
+            ? DB::table('post_likes')->where('user_id', $user->id)->count()
+            : 0;
+
+        $collections = Schema::hasColumn('collections', 'user_id')
+            ? $user->collections()->count()
+            : 0;
+
+        return $comics * $value('comic.uploaded')
+            + $posts * $value('post.created')
+            + $replies * $value('post.replied')
+            + $comments * $value('comic.commented')
+            + $comicLikes * $value('comic.liked')
+            + $postLikes * $value('post.liked')
+            + $collections * $value('collection.created');
+    }
+
+    /**
+     * Manual admin grant (may be negative). Never notifies the user.
+     *
+     * @return array{exp: int, before: int, after: int, leveled_up: bool, level: int, badges: array<int, array{key: string, label: string, icon: string}>}
+     */
+    public static function grant(User $user, int $delta): array
+    {
+        $before = (int) $user->experience;
+        $after = max(0, $before + $delta);
+
+        self::$metricCache = [];
+
+        $user->experience = $after;
+        $level = self::levelFor($after);
+        $result = [
+            'exp' => $delta,
+            'before' => $before,
+            'after' => $after,
+            'leveled_up' => $level > (int) $user->level,
+            'level' => $level,
+            'badges' => [],
+        ];
+        $user->level = $level;
+        $user->save();
+
+        if ($delta > 0) {
+            $result['badges'] = self::awardBadges($user);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Manually hand a badge to a user (idempotent).
+     */
+    public static function grantBadge(User $user, string $badge): bool
+    {
+        if (! array_key_exists($badge, config('gamification.badges', [])) || ! Schema::hasTable('user_badges')) {
+            return false;
+        }
+
+        UserBadge::firstOrCreate(
+            ['user_id' => $user->id, 'badge' => $badge],
+            ['awarded_at' => now()]
+        );
+
+        return true;
+    }
+
+    public static function revokeBadge(User $user, string $badge): bool
+    {
+        if (! Schema::hasTable('user_badges')) {
+            return false;
+        }
+
+        return UserBadge::where('user_id', $user->id)->where('badge', $badge)->delete() > 0;
+    }
+
+    /**
+     * The award() from the current request, for controllers that want to
+     * surface it in a JSON response (AJAX like/comment).
+     */
+    public static function lastAward(): ?array
+    {
+        return self::$lastAward;
     }
 
     /**
@@ -106,9 +272,8 @@ class Gamification
 
     public static function levelFor(int $experience): int
     {
-        $base = max(1, (int) config('gamification.level_base', 100));
         $level = 1;
-        while (self::thresholdFor($level + 1, $base) <= $experience) {
+        while (self::thresholdFor($level + 1) <= $experience) {
             $level++;
         }
 
@@ -116,16 +281,58 @@ class Gamification
     }
 
     /**
-     * Total experience required to reach a level (L1 = 0).
+     * Total experience required to reach a level (L1 = 0), per the
+     * configured curve.
      */
-    public static function thresholdFor(int $level, ?int $base = null): int
+    public static function thresholdFor(int $level, ?int $base = null, ?string $curve = null): int
     {
-        $base = $base ?? max(1, (int) config('gamification.level_base', 100));
         if ($level <= 1) {
             return 0;
         }
 
-        return (int) ($base * ($level - 1) * $level / 2);
+        $base = $base ?? max(1, (int) config('gamification.level_base', 100));
+        $curve = $curve ?? (string) config('gamification.level_curve', 'triangular');
+        $n = $level - 1;
+
+        return match ($curve) {
+            'linear' => $base * $n,
+            'quadratic' => $base * $n * $n,
+            'exponential' => $base * ((2 ** min($n, 40)) - 1),
+            default => (int) ($base * $n * ($n + 1) / 2),
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function curveOptions(): array
+    {
+        return [
+            'linear' => 'Linear — custo constante',
+            'triangular' => 'Triangular — crescimento moderado',
+            'quadratic' => 'Quadrática — crescimento forte',
+            'exponential' => 'Exponencial — para jogos longos',
+        ];
+    }
+
+    /**
+     * Preview rows for the admin curve table.
+     *
+     * @return array<int, array{level: int, total: int, needed: int}>
+     */
+    public static function curvePreview(int $levels = 15): array
+    {
+        $rows = [];
+        for ($level = 1; $level <= $levels; $level++) {
+            $total = self::thresholdFor($level);
+            $rows[] = [
+                'level' => $level,
+                'total' => $total,
+                'needed' => $total - self::thresholdFor($level - 1),
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -136,23 +343,9 @@ class Gamification
      */
     public static function awardBadges(User $user): array
     {
-        $definitions = config('gamification.badges', []);
-        if ($definitions === [] || ! Schema::hasTable('user_badges')) {
-            return [];
-        }
-
-        $earned = UserBadge::where('user_id', $user->id)->pluck('badge')->all();
         $newly = [];
 
-        foreach ($definitions as $key => $definition) {
-            if (in_array($key, $earned, true)) {
-                continue;
-            }
-            $threshold = (int) ($definition['threshold'] ?? 0);
-            if (self::metric($user, (string) ($definition['metric'] ?? '')) < $threshold) {
-                continue;
-            }
-
+        foreach (self::pendingBadges($user) as $key => $definition) {
             UserBadge::create([
                 'user_id' => $user->id,
                 'badge' => $key,
@@ -169,9 +362,38 @@ class Gamification
     }
 
     /**
-     * Resolve a badge metric for a user. Cached per request so a single
-     * award() never runs the same count twice. Every table is guarded
-     * because hosts may lag behind the migrations.
+     * Badges the user qualifies for but has not been given yet.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function pendingBadges(User $user): array
+    {
+        $definitions = config('gamification.badges', []);
+        if ($definitions === [] || ! Schema::hasTable('user_badges')) {
+            return [];
+        }
+
+        $earned = UserBadge::where('user_id', $user->id)->pluck('badge')->all();
+        $pending = [];
+
+        foreach ($definitions as $key => $definition) {
+            if (in_array($key, $earned, true)) {
+                continue;
+            }
+            $threshold = (int) ($definition['threshold'] ?? 0);
+            if (self::metric($user, (string) ($definition['metric'] ?? '')) < $threshold) {
+                continue;
+            }
+            $pending[$key] = $definition;
+        }
+
+        return $pending;
+    }
+
+    /**
+     * Resolve a badge metric for a user. Cached per award pass so a
+     * single award() never runs the same count twice. Every table is
+     * guarded because hosts may lag behind the migrations.
      */
     public static function metric(User $user, string $metric): int
     {
@@ -186,12 +408,23 @@ class Gamification
             'current_streak' => (int) $user->current_streak,
             'longest_streak' => max((int) $user->current_streak, (int) $user->longest_streak),
             'comics_count' => $user->comics()->count(),
-            'posts_count' => Schema::hasTable('posts') ? Post::where('author_id', $user->id)->count() : 0,
+            'posts_count' => Schema::hasTable('posts')
+                ? Post::where('author_id', $user->id)->whereNull('parent_id')->count()
+                : 0,
+            'replies_count' => Schema::hasTable('posts') && Schema::hasColumn('posts', 'parent_id')
+                ? Post::where('author_id', $user->id)->whereNotNull('parent_id')->count()
+                : 0,
             'comments_count' => Schema::hasTable('comments') ? Comment::where('user_id', $user->id)->count() : 0,
             'collections_count' => Schema::hasColumn('collections', 'user_id')
                 ? $user->collections()->count()
                 : 0,
             'likes_given' => self::likesGiven($user),
+            'comic_likes_given' => Schema::hasTable('comic_user_likes')
+                ? DB::table('comic_user_likes')->where('user_id', $user->id)->count()
+                : 0,
+            'post_likes_given' => Schema::hasTable('post_likes')
+                ? DB::table('post_likes')->where('user_id', $user->id)->count()
+                : 0,
             'searches_count' => Schema::hasTable('activity_logs')
                 ? ActivityLog::where('user_id', $user->id)
                     ->whereIn('action', ['search.comics', 'search.posts'])
@@ -201,6 +434,28 @@ class Gamification
         };
 
         return self::$metricCache[$cacheKey] = (int) $value;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function metricOptions(): array
+    {
+        return [
+            'comics_count' => 'Comics publicados',
+            'posts_count' => 'Posts criados',
+            'replies_count' => 'Respostas em threads',
+            'comments_count' => 'Comentários em comics',
+            'likes_given' => 'Curtidas dadas (comics + posts)',
+            'comic_likes_given' => 'Comics curtidos',
+            'post_likes_given' => 'Posts curtidos',
+            'collections_count' => 'Coleções criadas',
+            'searches_count' => 'Buscas feitas',
+            'current_streak' => 'Sequência atual (dias)',
+            'longest_streak' => 'Maior sequência (dias)',
+            'level' => 'Nível',
+            'experience' => 'XP total',
+        ];
     }
 
     /**
@@ -223,6 +478,82 @@ class Gamification
         $user->longest_streak = max((int) $user->longest_streak, (int) $user->current_streak);
 
         return (int) config('gamification.streak_bonus', 5) * (int) $user->current_streak;
+    }
+
+    /**
+     * Remember the award for JSON consumers, notify on milestones and
+     * flash the pop animation for the acting user.
+     */
+    protected static function afterAward(User $user, array $result): void
+    {
+        self::$lastAward = $result;
+
+        if ($result['exp'] <= 0 && $result['badges'] === [] && ! $result['leveled_up']) {
+            return;
+        }
+
+        self::notifyMilestones($user, $result);
+        self::flashToast($user, $result);
+    }
+
+    /**
+     * Database notifications for level-ups and badge unlocks. Guarded so
+     * a host without the notifications table keeps working.
+     */
+    protected static function notifyMilestones(User $user, array $result): void
+    {
+        if (! config('gamification.notify', true) || ! Schema::hasTable('notifications')) {
+            return;
+        }
+
+        try {
+            if ($result['leveled_up']) {
+                $user->notify(new GamificationNotification(
+                    'level_up',
+                    'Nível '.$result['level'].' alcançado!',
+                    'Você subiu para o nível '.$result['level'].'. Continue assim!',
+                    route('profile.show'),
+                    '🎉'
+                ));
+            }
+
+            foreach ($result['badges'] as $badge) {
+                $user->notify(new GamificationNotification(
+                    'badge',
+                    'Nova conquista: '.$badge['label'],
+                    'Você desbloqueou a conquista "'.$badge['label'].'".',
+                    route('profile.show'),
+                    $badge['icon']
+                ));
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Accumulate the award into the session so the layout can pop an
+     * XP toast on the next full page render. Only for the acting user.
+     */
+    protected static function flashToast(User $user, array $result): void
+    {
+        if (app()->runningInConsole() || ! auth()->hasUser() || (int) auth()->id() !== (int) $user->id) {
+            return;
+        }
+
+        try {
+            $accumulated = session()->get('gamification_toast', []);
+            $accumulated['exp'] = (int) ($accumulated['exp'] ?? 0) + (int) $result['exp'];
+            $accumulated['leveled_up'] = (bool) ($accumulated['leveled_up'] ?? false) || (bool) $result['leveled_up'];
+            if ($result['leveled_up']) {
+                $accumulated['level'] = (int) $result['level'];
+            }
+            $accumulated['badges'] = array_merge($accumulated['badges'] ?? [], $result['badges']);
+
+            session()->flash('gamification_toast', $accumulated);
+        } catch (Throwable) {
+            // Session unavailable (e.g. some CLI contexts): skip the toast.
+        }
     }
 
     protected static function alreadyPaid(User $user, string $action, Model $subject, ?int $excludeLogId): bool

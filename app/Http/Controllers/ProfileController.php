@@ -139,7 +139,7 @@ class ProfileController extends Controller
         $counts[] = 'likedByUsers';
 
         return $user->likedPosts()
-            ->with(['author', 'referencedPost.author'])
+            ->with(['author.badges', 'referencedPost.author.badges'])
             ->withCount($counts)
             ->orderByPivot('created_at', 'desc')
             ->paginate(10, ['*'], 'likes_page')
@@ -152,8 +152,13 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
+        $user->loadMissing('badges');
 
-        return view('profile.edit', compact('user'));
+        return view('profile.edit', [
+            'user' => $user,
+            'badgeDefinitions' => config('gamification.badges', []),
+            'showcaseLimit' => (int) config('gamification.showcase_limit', 3),
+        ]);
     }
 
     /**
@@ -175,6 +180,8 @@ class ProfileController extends Controller
             'links' => 'nullable|array',
             'links.*' => 'url', // Each link should be valid URL
             'show_liked_posts' => 'nullable|boolean',
+            'showcase_badges' => 'nullable|array',
+            'showcase_badges.*' => 'string|max:50',
         ]);
 
         // Update user data
@@ -221,6 +228,15 @@ class ProfileController extends Controller
         $user->links = $request->input('links') ?: []; // Store links as an array
         $user->show_liked_posts = $request->boolean('show_liked_posts');
 
+        // Featured badges: keep only badges the user actually earned,
+        // most featured first, capped at the configured limit.
+        $earned = $user->badges()->pluck('badge')->all();
+        $showcase = array_values(array_intersect(
+            array_unique($request->input('showcase_badges', [])),
+            $earned
+        ));
+        $user->showcase_badges = array_slice($showcase, 0, (int) config('gamification.showcase_limit', 3)) ?: null;
+
         // Update password if provided
         if ($request->filled('password')) {
             $user->password = Hash::make($request->input('password'));
@@ -237,6 +253,8 @@ class ProfileController extends Controller
     public function card(string $username)
     {
         $user = User::where('name', $username)->firstOrFail();
+        $user->loadMissing('badges');
+        $topBadge = $user->topBadge();
 
         return response()->json([
             'name' => $user->name,
@@ -246,6 +264,9 @@ class ProfileController extends Controller
             'profile_url' => route('profile.public.show.username', ['username' => $user->name]),
             'comics_count' => $user->comics()->visibleTo(Auth::user())->count(),
             'posts_count' => Post::where('author_id', $user->id)->count(),
+            'level' => (int) $user->level,
+            'experience' => (int) $user->experience,
+            'badge' => $topBadge ? ['icon' => $topBadge->icon, 'label' => $topBadge->label] : null,
         ]);
     }
 

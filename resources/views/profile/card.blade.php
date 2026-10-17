@@ -49,13 +49,19 @@
             {{ $user->bio ?? 'Sem bio disponível' }}
         </p>
 
-        @if ($user->relationLoaded('badges') ? $user->badges->isNotEmpty() : $user->badges()->exists())
+        @php($featured = $user->featuredBadges())
+        @if ($featured->isNotEmpty())
+            @php($hasShowcase = is_array($user->showcase_badges) && $user->showcase_badges !== [])
             <div class="mt-5 w-full max-w-md">
                 <h3 class="mb-2 text-sm font-semibold text-zinc-300">
-                    Conquistas ({{ $user->badges->count() }}/{{ count(config('gamification.badges', [])) }})
+                    @if ($hasShowcase)
+                        Destaques ({{ $featured->count() }})
+                    @else
+                        Conquistas ({{ $featured->count() }}/{{ count(config('gamification.badges', [])) }})
+                    @endif
                 </h3>
                 <div class="flex flex-wrap justify-center gap-2">
-                    @foreach ($user->badges as $badge)
+                    @foreach ($featured as $badge)
                         @php($def = $badge->definition())
                         <span title="{{ $def['label'] }} — {{ $def['description'] }}"
                               class="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800/70 px-2.5 py-1 text-xs text-zinc-200">

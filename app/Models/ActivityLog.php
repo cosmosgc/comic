@@ -60,6 +60,7 @@ class ActivityLog extends Model
             'auth.login' => 'Login',
             'auth.logout' => 'Logout',
             'auth.register' => 'Registro',
+            'admin.gift' => 'Recompensa do admin',
         ];
     }
 

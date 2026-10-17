@@ -52,11 +52,25 @@ return [
     |--------------------------------------------------------------------------
     | Level curve
     |--------------------------------------------------------------------------
-    | Each level costs `level_base * level` experience, so the total to
-    | reach level L is level_base * (L-1) * L / 2:
-    |   L2 = 100, L3 = 300, L4 = 600, L5 = 1000 ...
+    | `level_curve` shapes how the cost grows and `level_base` scales it.
+    | Total experience to reach level L (n = L-1):
+    |   linear      → base * n                 (100, 200, 300, 400 …)
+    |   triangular  → base * n * (n+1) / 2     (100, 300, 600, 1000 …)
+    |   quadratic   → base * n²                (100, 400, 900, 1600 …)
+    |   exponential → base * (2ⁿ − 1)          (100, 300, 700, 1500 …)
+    | Editable in Admin → Gamificação, which previews the curve.
     */
     'level_base' => 100,
+
+    'level_curve' => 'triangular',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications & profile showcase
+    |--------------------------------------------------------------------------
+    */
+    'notify' => true,
+    'showcase_limit' => 3,
 
     /*
     |--------------------------------------------------------------------------

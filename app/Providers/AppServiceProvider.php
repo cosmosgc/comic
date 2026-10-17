@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Listeners\LogUserLogin;
 use App\Models\EhImportSetting;
+use App\Models\GamificationSetting;
 use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\Deploy\ProjectVerifier;
+use App\View\Composers\NotificationComposer;
 use App\View\Composers\SidebarComposer;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +56,10 @@ class AppServiceProvider extends ServiceProvider
             SidebarComposer::class
         );
 
+        View::composer('layouts.app', NotificationComposer::class);
+
         $this->overlayImportSettings();
+        $this->overlayGamificationSettings();
     }
 
     /**
@@ -73,6 +78,22 @@ class AppServiceProvider extends ServiceProvider
                     config(["ehimport.{$key}" => EhImportSetting::castValue($key, $rows[$key])]);
                 }
             }
+        } catch (\Throwable) {
+            // Booting (e.g. migrate) without the table: keep file defaults.
+        }
+    }
+
+    /**
+     * Gamification tuning edited in Admin → Gamificação overlays the
+     * file config. Skipped silently on fresh/unmigrated databases.
+     */
+    protected function overlayGamificationSettings(): void
+    {
+        try {
+            if (! Schema::hasTable('gamification_settings')) {
+                return;
+            }
+            GamificationSetting::applyToConfig();
         } catch (\Throwable) {
             // Booting (e.g. migrate) without the table: keep file defaults.
         }

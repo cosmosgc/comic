@@ -34,6 +34,7 @@ class User extends Authenticatable
         'last_active_on',
         'current_streak',
         'longest_streak',
+        'showcase_badges',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_on' => 'date',
+            'showcase_badges' => 'array',
         ];
     }
 
@@ -95,6 +97,37 @@ class User extends Authenticatable
     public function hasBadge(string $badge): bool
     {
         return $this->badges->contains('badge', $badge);
+    }
+
+    /**
+     * Badges the user chose to feature, in the chosen order. Falls back
+     * to every earned badge when nothing is featured.
+     *
+     * @return \Illuminate\Support\Collection<int, UserBadge>
+     */
+    public function featuredBadges(): \Illuminate\Support\Collection
+    {
+        $badges = $this->relationLoaded('badges') ? $this->badges : $this->badges()->get();
+        $selected = is_array($this->showcase_badges) ? $this->showcase_badges : [];
+
+        if ($selected === []) {
+            return $badges->values();
+        }
+
+        $byKey = $badges->keyBy('badge');
+
+        return collect($selected)
+            ->map(fn ($key) => $byKey->get($key))
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * The single badge shown next to the author's name in feeds.
+     */
+    public function topBadge(): ?UserBadge
+    {
+        return $this->featuredBadges()->first();
     }
 
     /**

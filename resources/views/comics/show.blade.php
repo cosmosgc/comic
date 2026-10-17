@@ -264,6 +264,15 @@
             color: #bbb;
             margin-bottom: 4px;
         }
+        .comment-item .meta .lvl-chip {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.25);
+            color: #c7d2fe;
+            font-weight: 700;
+        }
         .comment-item .actions {
             margin-top: 6px;
             display: flex;
@@ -738,6 +747,11 @@ document.addEventListener('keyup', (e) => {
         const mine = AUTH_ID !== null && comment.user_id === AUTH_ID;
         const canEdit = mine || CAN_MODERATE;
         const name = esc(comment.user ? comment.user.name : 'Usuário removido');
+        const lvl = comment.user && comment.user.level ? Number(comment.user.level) : null;
+        const badge = comment.user && Array.isArray(comment.user.badges) && comment.user.badges.length
+            ? comment.user.badges[0] : null;
+        const chips = (lvl && lvl > 1 ? '<span class="lvl-chip">Lv ' + lvl + '</span>' : '') +
+            (badge ? ' <span title="' + esc(badge.label || '') + '">' + esc(badge.icon || '') + '</span>' : '');
         const avatar = URLS.assetBase + '/' + (comment.user && comment.user.avatar_image_path
             ? comment.user.avatar_image_path.replace(/^\/+/, '')
             : 'default-avatar.png');
@@ -748,7 +762,7 @@ document.addEventListener('keyup', (e) => {
             '<div style="display:flex;gap:10px;">' +
             '<img src="' + esc(avatar) + '" alt="" style="width:44px;height:44px;border-radius:50%;flex-shrink:0;object-fit:cover;">' +
             '<div style="flex:1;min-width:0;">' +
-            '<div class="meta"><strong>' + name + '</strong> · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
+            '<div class="meta"><strong>' + name + '</strong>' + chips + ' · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
             '<div class="comment-body"></div>' +
             (canEdit ? '<div class="actions"><button type="button" data-act="edit">Editar</button><button type="button" data-act="delete">Excluir</button></div>' : '') +
             '</div></div>';
@@ -869,6 +883,7 @@ document.addEventListener('keyup', (e) => {
                 document.getElementById('likeCount').textContent = data.count;
                 document.getElementById('likeHeart').textContent = data.liked ? '♥' : '♡';
                 likeBtn.classList.toggle('active', !!data.liked);
+                if (window.openXpToast) window.openXpToast(data.xp);
             } catch (e) {
                 alert('Could not like: ' + e.message);
             }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminGamificationController;
 use App\Http\Controllers\AdminImportController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -12,7 +13,9 @@ use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
@@ -84,6 +87,17 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
 
 Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(function () {
     Route::get('/analytics/referral', [AnalyticsController::class, 'referralAnalytics'])->name('analytics.referral');
+});
+
+// Gamification management (admin). Separate controller so AdminController
+// stays focused on the site's own panels.
+Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::get('/gamification', [AdminGamificationController::class, 'index'])->name('admin.gamification');
+    Route::post('/gamification/settings', [AdminGamificationController::class, 'saveSettings'])->name('admin.gamification.settings');
+    Route::post('/gamification/grant', [AdminGamificationController::class, 'grant'])->name('admin.gamification.grant');
+    Route::post('/gamification/backfill/preview', [AdminGamificationController::class, 'backfillPreview'])->name('admin.gamification.backfill.preview');
+    Route::post('/gamification/backfill', [AdminGamificationController::class, 'backfill'])->name('admin.gamification.backfill');
+    Route::get('/gamification/users', [AdminGamificationController::class, 'searchUsers'])->name('admin.gamification.users');
 });
 
 Route::get('/comics', [ComicController::class, 'index'])->name('comics.index');
@@ -175,9 +189,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+
+    // In-app notifications (level-ups, badge unlocks).
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 });
 Route::get('/profile/id/{id}', [ProfileController::class, 'publicShowById'])->name('profile.public.show.id');
 Route::get('/profile/{username}', [ProfileController::class, 'publicShowByUsername'])->name('profile.public.show.username');
+
+// Public leaderboard (gamification).
+Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard.index');
 
 // ////////////////////////////////////////////////////////////
 // What's new: file-per-PR changelog (changelogs/*.json).

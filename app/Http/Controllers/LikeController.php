@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comic;
 use App\Models\Post;
+use App\Services\Gamification;
 use App\Support\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class LikeController extends Controller
         return response()->json([
             'liked' => $liked,
             'count' => $post->likedByUsers()->count(),
+            'xp' => Gamification::lastAward(),
         ]);
     }
 
@@ -66,6 +68,7 @@ class LikeController extends Controller
         return response()->json([
             'liked' => $liked,
             'count' => $comic->likedByUsers()->count(),
+            'xp' => Gamification::lastAward(),
         ]);
     }
 }

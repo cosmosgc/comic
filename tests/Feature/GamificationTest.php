@@ -159,4 +159,131 @@ class GamificationTest extends TestCase
             ->assertSee('XP')
             ->assertSee('Primeiro Comic');
     }
+
+    public function test_level_curve_is_configurable(): void
+    {
+        config(['gamification.level_base' => 100, 'gamification.level_curve' => 'linear']);
+
+        // Linear: L2 = 100, L3 = 200, L4 = 300.
+        $this->assertSame(0, Gamification::thresholdFor(1));
+        $this->assertSame(100, Gamification::thresholdFor(2));
+        $this->assertSame(200, Gamification::thresholdFor(3));
+        $this->assertSame(3, Gamification::levelFor(200));
+        $this->assertSame(3, Gamification::levelFor(299));
+
+        config(['gamification.level_curve' => 'quadratic']);
+        // Quadratic: L2 = 100, L3 = 400.
+        $this->assertSame(400, Gamification::thresholdFor(3));
+    }
+
+    public function test_recalculate_retrofits_existing_content_and_is_idempotent(): void
+    {
+        $user = User::factory()->create();
+        Comic::factory()->count(2)->create(['user_id' => $user->id]);
+
+        // No activity log: the comic predates the feed.
+        $this->assertSame(0, (int) $user->fresh()->experience);
+
+        $result = Gamification::recalculate($user);
+        $this->assertSame(200, $result['delta']);
+        $this->assertSame(200, (int) $user->fresh()->experience);
+        $this->assertSame(2, (int) $user->fresh()->level);
+
+        // Running again adds nothing.
+        $again = Gamification::recalculate($user->fresh());
+        $this->assertSame(0, $again['delta']);
+        $this->assertSame(200, (int) $user->fresh()->experience);
+    }
+
+    public function test_backfill_command_awards_pre_existing_content(): void
+    {
+        $user = User::factory()->create();
+        Comic::factory()->create(['user_id' => $user->id]);
+
+        $this->artisan('gamification:backfill')->assertSuccessful();
+
+        $this->assertSame(100, (int) $user->fresh()->experience);
+    }
+
+    public function test_level_up_and_badge_unlock_send_notifications(): void
+    {
+        $this->freezeTime();
+        $user = User::factory()->create();
+        $comic = Comic::factory()->create(['user_id' => $user->id]);
+
+        ActivityLogger::log('comic.uploaded', ['user' => $user, 'subject' => $comic]);
+
+        $this->assertDatabaseHas('notifications', ['notifiable_id' => $user->id]);
+        $this->assertGreaterThan(0, $user->fresh()->notifications()->count());
+    }
+
+    public function test_admin_can_grant_experience_and_a_badge(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $target = User::factory()->create(['experience' => 0, 'level' => 1]);
+
+        $this->actingAs($admin)->post(route('admin.gamification.grant'), [
+            'user_id' => $target->id,
+            'exp' => 250,
+            'badge' => 'explorer',
+            'badge_action' => 'grant',
+        ])->assertRedirect(route('admin.gamification'));
+
+        $target->refresh()->load('badges');
+        $this->assertSame(250, (int) $target->experience);
+        $this->assertTrue($target->hasBadge('explorer'));
+    }
+
+    public function test_admin_settings_are_persisted_and_applied(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+
+        $this->actingAs($admin)->post(route('admin.gamification.settings'), [
+            'enabled' => '1',
+            'level_base' => 50,
+            'level_curve' => 'linear',
+            'streak_bonus' => 7,
+            'exp' => ['comic.uploaded' => 200],
+        ])->assertRedirect(route('admin.gamification'));
+
+        $this->assertDatabaseHas('gamification_settings', ['key' => 'level_base', 'value' => '50']);
+        $this->assertSame(50, (int) config('gamification.level_base'));
+        $this->assertSame('linear', config('gamification.level_curve'));
+        $this->assertSame(200, (int) config('gamification.exp')['comic.uploaded']);
+    }
+
+    public function test_admin_can_view_gamification_panel(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+
+        $this->actingAs($admin)->get(route('admin.gamification'))
+            ->assertOk()
+            ->assertSee('Gamificação')
+            ->assertSee('Recalcular');
+    }
+
+    public function test_leaderboard_lists_users_by_experience(): void
+    {
+        $leader = User::factory()->create(['name' => 'Top Player', 'experience' => 900, 'level' => 5]);
+        User::factory()->create(['name' => 'Rookie', 'experience' => 10, 'level' => 1]);
+
+        $this->get('/leaderboard')
+            ->assertOk()
+            ->assertSee('Top Player')
+            ->assertSee('Rookie');
+    }
+
+    public function test_profile_showcase_badges_are_saved(): void
+    {
+        $user = User::factory()->create();
+        Gamification::grantBadge($user, 'newcomer');
+
+        $this->actingAs($user)->post(route('profile.update'), [
+            'name' => $user->name,
+            'email' => $user->email,
+            'showcase_badges' => ['newcomer'],
+        ])->assertRedirect();
+
+        $this->assertSame(['newcomer'], $user->fresh()->showcase_badges);
+    }
 }

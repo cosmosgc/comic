@@ -68,12 +68,15 @@
                 <a href="{{ route('posts.index') }}" class="nav-link">Comunidade</a>
                 <a href="{{ route('comics.index') }}" class="nav-link">Comics</a>
                 <a href="{{ route('changelog.index') }}" class="nav-link">Novidades</a>
+                <a href="{{ route('leaderboard.index') }}" class="nav-link">Ranking</a>
 
                 @auth
                     <a href="{{ route('comics.create') }}" class="nav-link">Publicar</a>
                     @if (Auth::user()->admin_level >= 1)
                         <a href="{{ route('admin.dashboard') }}" class="nav-link">Admin</a>
                     @endif
+
+                    @include('components.notification-bell')
 
                     <!-- User Dropdown -->
                     <div x-data="{ userOpen: false }" class="relative">
@@ -151,6 +154,7 @@
             <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
             <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
+            <a href="{{ route('leaderboard.index') }}" class="mobile-link">Ranking</a>
             @auth
                 <a href="{{ route('comics.create') }}" class="mobile-link">Publicar</a>
                 @if (Auth::user()->admin_level >= 1)
@@ -445,6 +449,10 @@
                     '<img src="' + esc(data.avatar_url) + '" alt="" class="relative z-10 -mt-7 h-14 w-14 rounded-full border-4 border-zinc-900 object-cover">' +
                     '<a href="' + esc(data.profile_url) + '" class="mt-1 block truncate font-bold text-zinc-100 hover:underline">' + esc(data.name) + '</a>' +
                     (data.bio ? '<p class="mt-0.5 line-clamp-2 text-xs text-zinc-400">' + esc(data.bio) + '</p>' : '') +
+                    '<p class="mt-1 text-xs">' +
+                        (data.level ? '<span class="rounded-full bg-indigo-500/20 px-1.5 py-0.5 font-bold text-indigo-300">Nv ' + data.level + '</span>' : '') +
+                        (data.badge ? ' <span title="' + esc(data.badge.label) + '">' + esc(data.badge.icon) + ' ' + esc(data.badge.label) + '</span>' : '') +
+                    '</p>' +
                     '<p class="mt-2 text-xs text-zinc-500">' +
                         '<span class="font-semibold text-zinc-300">' + (data.comics_count ?? 0) + '</span> Comics · ' +
                         '<span class="font-semibold text-zinc-300">' + (data.posts_count ?? 0) + '</span> Posts' +
@@ -523,7 +531,58 @@
     })();
     </script>
 
+    {{-- AJAX XP pop: controllers include the award in JSON responses. --}}
+    <script>
+        window.openXpToast = function (payload) {
+            if (!payload) return;
+            var hasExp = (payload.exp || 0) > 0;
+            if (!hasExp && !payload.leveled_up && !(payload.badges && payload.badges.length)) return;
+
+            var box = document.createElement('div');
+            box.className = 'pointer-events-none fixed bottom-5 right-5 z-[96] w-72 max-w-[calc(100vw-2rem)]';
+            box.style.transition = 'opacity .3s ease, transform .3s ease';
+            box.style.opacity = '0';
+            box.style.transform = 'translateY(1rem)';
+
+            var html = '<div style="border-radius:1rem;border:1px solid rgba(99,102,241,.4);'
+                + 'background:rgba(24,24,27,.97);padding:1rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.6);'
+                + 'color:#e4e4e7;font-family:sans-serif;">';
+            if (hasExp) {
+                html += '<div style="display:flex;align-items:center;gap:.5rem;">'
+                    + '<span style="font-size:1.5rem;">⚡</span><div>'
+                    + '<p style="margin:0;font-weight:700;color:#a5b4fc;">+' + payload.exp + ' XP</p>'
+                    + '<p style="margin:0;font-size:.75rem;color:#a1a1aa;">Experiência ganha!</p></div></div>';
+            }
+            if (payload.leveled_up) {
+                html += '<div style="margin-top:.5rem;border-radius:.5rem;background:rgba(79,70,229,.2);padding:.5rem .75rem;">'
+                    + '<p style="margin:0;font-size:.85rem;font-weight:600;color:#c7d2fe;">🎉 Subiu para o nível '
+                    + payload.level + '!</p></div>';
+            }
+            (payload.badges || []).forEach(function (b) {
+                html += '<div style="margin-top:.5rem;border-radius:.5rem;background:rgba(245,158,11,.15);padding:.5rem .75rem;">'
+                    + '<p style="margin:0;font-size:.75rem;font-weight:600;color:#fde68a;">'
+                    + (b.icon || '🏅') + ' Conquista: ' + (b.label || '') + '</p></div>';
+            });
+            html += '</div>';
+            box.innerHTML = html;
+            document.body.appendChild(box);
+
+            requestAnimationFrame(function () {
+                box.style.opacity = '1';
+                box.style.transform = 'translateY(0)';
+            });
+            setTimeout(function () {
+                box.style.opacity = '0';
+                box.style.transform = 'translateY(.5rem)';
+                setTimeout(function () { box.remove(); }, 300);
+            }, 5200);
+        };
+    </script>
+
 @yield('scripts')
+
+{{-- Gamification XP pop (flashed by App\Services\Gamification). --}}
+@include('components.xp-toast')
 
 </body>
 </html>

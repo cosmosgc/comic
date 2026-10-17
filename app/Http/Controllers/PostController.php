@@ -19,7 +19,7 @@ class PostController extends Controller
         $tab = $validated['tab'] ?? 'latest';
         $query = trim($validated['q'] ?? '');
 
-        $posts = Post::with(['author', 'referencedPost.author'])
+        $posts = Post::with(['author.badges', 'referencedPost.author.badges'])
             ->withCount(['quotes', 'likedByUsers', 'replies']);
 
         if ($query !== '') {
@@ -173,7 +173,7 @@ class PostController extends Controller
             $request->session()->push('viewed_posts', $post->id);
         }
 
-        $post->load(['author', 'referencedPost.author', 'parent.author']);
+        $post->load(['author.badges', 'referencedPost.author.badges', 'parent.author.badges']);
 
         // Counts live here (not only in the feed) so this page works
         // whether or not the likes feature is merged.
@@ -183,7 +183,7 @@ class PostController extends Controller
         }
         $post->loadCount($counts);
 
-        $with = ['author', 'referencedPost.author'];
+        $with = ['author.badges', 'referencedPost.author.badges'];
         $replyCounts = ['quotes', 'replies'];
         if (Schema::hasTable('post_likes')) {
             $replyCounts[] = 'likedByUsers';
