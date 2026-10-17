@@ -42,7 +42,7 @@
                 <div class="min-w-0 flex-1">
                     <p class="flex items-center gap-1 truncate font-semibold text-zinc-100">
                         {{ $user->name }}
-                        @include('components.user-level', ['user' => $user])
+                        @include('components.user-level', ['user' => $user, 'link' => false])
                     </p>
                     <p class="text-xs text-zinc-500">
                         @if ($tab === 'weekly')
