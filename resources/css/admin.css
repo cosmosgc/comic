@@ -168,7 +168,26 @@
         @apply h-5 w-5 shrink-0;
     }
 
-    /* ---------- Logs / misc ---------- */
+    /* ---------- Sidebar nav groups ---------- */
+    .admin-nav-group summary {
+        @apply flex cursor-pointer list-none select-none items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 transition-colors hover:bg-zinc-200/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white;
+    }
+    .admin-nav-group summary::-webkit-details-marker,
+    .admin-nav-group summary::marker {
+        display: none;
+        content: '';
+    }
+    .admin-nav-group-chevron {
+        @apply h-3.5 w-3.5 shrink-0 transition-transform;
+        transform: rotate(0deg);
+    }
+    .admin-nav-group[open] .admin-nav-group-chevron {
+        transform: rotate(90deg);
+    }
+    .admin-nav-group-items {
+        @apply mt-1 ml-3 space-y-1 border-l border-zinc-200 pl-2 dark:border-zinc-800;
+    }
+
     .admin-log {
         @apply max-h-[400px] overflow-y-auto whitespace-pre-wrap rounded-lg bg-zinc-950 p-4 font-mono text-xs leading-relaxed text-zinc-200 dark:border dark:border-zinc-800;
     }
