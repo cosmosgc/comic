@@ -65,20 +65,47 @@
                     </ul>
                 </div>
 
-                <a href="{{ route('posts.index') }}" class="nav-link">Comunidade</a>
-                <a href="{{ route('forum.index') }}" class="nav-link">Fórum</a>
                 <a href="{{ route('comics.index') }}" class="nav-link">Comics</a>
-                <a href="{{ route('changelog.index') }}" class="nav-link">Novidades</a>
-                <a href="{{ route('leaderboard.index') }}" class="nav-link">Ranking</a>
 
                 @auth
-                    <a href="{{ route('bookmarks.index') }}" class="nav-link">Salvos</a>
-                    <a href="{{ route('comics.create') }}" class="nav-link">Publicar</a>
-                    @if (Auth::user()->admin_level >= 1)
-                        <a href="{{ route('admin.dashboard') }}" class="nav-link">Admin</a>
-                    @endif
-
                     @include('components.notification-bell')
+
+                    <!-- Nav menu: hamburger with grouped links, same pattern as the profile dropdown -->
+                    <div x-data="{ menuOpen: false }" class="relative">
+                        <button @click="menuOpen = !menuOpen" :aria-expanded="menuOpen.toString()"
+                                aria-haspopup="menu" aria-controls="site-nav-menu"
+                                class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
+                                aria-label="Menu de navegação">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                            </svg>
+                            Menu
+                        </button>
+
+                        <div x-show="menuOpen" x-transition @click.outside="menuOpen = false"
+                             @keydown.escape.window="menuOpen = false" x-cloak
+                             id="site-nav-menu" role="menu" aria-label="Navegação do site"
+                             class="absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+
+                            <p class="nav-menu-label">Explorar</p>
+                            <a href="{{ route('comics.index') }}" role="menuitem" class="dropdown-link">Comics</a>
+                            <a href="{{ route('leaderboard.index') }}" role="menuitem" class="dropdown-link">Ranking</a>
+                            <a href="{{ route('bookmarks.index') }}" role="menuitem" class="dropdown-link">Salvos</a>
+
+                            <p class="nav-menu-label">Comunidade</p>
+                            <a href="{{ route('posts.index') }}" role="menuitem" class="dropdown-link">Comunidade</a>
+                            <a href="{{ route('forum.index') }}" role="menuitem" class="dropdown-link">Fórum</a>
+                            <a href="{{ route('changelog.index') }}" role="menuitem" class="dropdown-link">Novidades</a>
+
+                            <p class="nav-menu-label">Criar</p>
+                            <a href="{{ route('comics.create') }}" role="menuitem" class="dropdown-link">Publicar</a>
+
+                            @if (Auth::user()->admin_level >= 1)
+                                <p class="nav-menu-label">Painel</p>
+                                <a href="{{ route('admin.dashboard') }}" role="menuitem" class="dropdown-link">Admin</a>
+                            @endif
+                        </div>
+                    </div>
 
                     <!-- User Dropdown -->
                     <div x-data="{ userOpen: false }" class="relative">
@@ -125,6 +152,34 @@
                     </div>
 
                 @else
+                    <!-- Nav menu for guests: same hamburger pattern -->
+                    <div x-data="{ menuOpen: false }" class="relative">
+                        <button @click="menuOpen = !menuOpen" :aria-expanded="menuOpen.toString()"
+                                aria-haspopup="menu" aria-controls="site-nav-menu"
+                                class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
+                                aria-label="Menu de navegação">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+                            </svg>
+                            Menu
+                        </button>
+
+                        <div x-show="menuOpen" x-transition @click.outside="menuOpen = false"
+                             @keydown.escape.window="menuOpen = false" x-cloak
+                             id="site-nav-menu" role="menu" aria-label="Navegação do site"
+                             class="absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+
+                            <p class="nav-menu-label">Explorar</p>
+                            <a href="{{ route('comics.index') }}" role="menuitem" class="dropdown-link">Comics</a>
+                            <a href="{{ route('leaderboard.index') }}" role="menuitem" class="dropdown-link">Ranking</a>
+                            <a href="{{ route('changelog.index') }}" role="menuitem" class="dropdown-link">Novidades</a>
+
+                            <p class="nav-menu-label">Comunidade</p>
+                            <a href="{{ route('posts.index') }}" role="menuitem" class="dropdown-link">Comunidade</a>
+                            <a href="{{ route('forum.index') }}" role="menuitem" class="dropdown-link">Fórum</a>
+                        </div>
+                    </div>
+
                     <a href="{{ route('login') }}" class="btn-primary">Entrar</a>
                     <a href="{{ route('register') }}" class="btn-outline">Cadastrar</a>
                 @endauth
@@ -153,13 +208,18 @@
                     autocomplete="off"
                 >
             </div>
-            <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
-            <a href="{{ route('forum.index') }}" class="mobile-link">Fórum</a>
+            <p class="nav-menu-label">Explorar</p>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
-            <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             <a href="{{ route('leaderboard.index') }}" class="mobile-link">Ranking</a>
             @auth
                 <a href="{{ route('bookmarks.index') }}" class="mobile-link">Salvos</a>
+            @endauth
+            <p class="nav-menu-label">Comunidade</p>
+            <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
+            <a href="{{ route('forum.index') }}" class="mobile-link">Fórum</a>
+            <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
+            @auth
+                <p class="nav-menu-label">Conta</p>
                 <a href="{{ route('comics.create') }}" class="mobile-link">Publicar</a>
                 @if (Auth::user()->admin_level >= 1)
                     <a href="{{ route('admin.dashboard') }}" class="mobile-link">Admin</a>
@@ -170,6 +230,7 @@
                     <button type="submit" class="mobile-link w-full text-left">Sair</button>
                 </form>
             @else
+                <p class="nav-menu-label">Conta</p>
                 <a href="{{ route('login') }}" class="mobile-link">Entrar</a>
                 <a href="{{ route('register') }}" class="mobile-link">Cadastrar</a>
             @endauth
