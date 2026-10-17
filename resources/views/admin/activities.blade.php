@@ -76,7 +76,16 @@
                                     <span class="opacity-50">—</span>
                                 @endif
                             </td>
-                            <td class="whitespace-nowrap"><code>{{ $activity->ip_address ?? '—' }}</code></td>
+                            <td class="whitespace-nowrap">
+                                @if ($activity->ip_address)
+                                    <a href="https://www.whois.com/whois/{{ urlencode($activity->ip_address) }}"
+                                       target="_blank" rel="noopener" title="Ver whois de {{ $activity->ip_address }}" class="hover:underline">
+                                        <code>{{ $activity->ip_address }}</code>
+                                    </a>
+                                @else
+                                    <code>—</code>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>

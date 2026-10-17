@@ -102,7 +102,8 @@ class ActivityLogTest extends TestCase
         $this->actingAs($admin)->get('/admin/activities')
             ->assertOk()
             ->assertSee('Known User')
-            ->assertSee('via IP');
+            ->assertSee('via IP')
+            ->assertSee('https://www.whois.com/whois/10.1.1.1');
     }
 
     public function test_admin_activities_view_shows_visitante_for_unknown_ip(): void
