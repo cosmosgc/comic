@@ -27,7 +27,8 @@ class ComicTransferService
             'description' => $comic->description,
             'slug' => $comic->slug,
             'published_at' => $comic->published_at?->toIso8601String(),
-            'tags' => $comic->tags->pluck('name')->values()->all(),
+            'tags' => $this->tagPayload($comic),
+            'categories' => $this->categoryPayload($comic),
         ]);
 
         if (! $response->ok() || ! is_numeric($response->json('comic_id'))) {
@@ -35,6 +36,51 @@ class ComicTransferService
         }
 
         return (int) $response->json('comic_id');
+    }
+
+    /**
+     * Full "namespace:name" strings whenever the local category declares
+     * namespaces, so the remote resolves (and learns) exactly like an
+     * E-Hentai import instead of guessing by keyword.
+     *
+     * @return array<int, string>
+     */
+    protected function tagPayload(Comic $comic): array
+    {
+        $names = [];
+        foreach ($comic->tags as $tag) {
+            $namespaces = $tag->category?->namespaces ?? [];
+            $names[] = ($namespaces !== [] ? $namespaces[0].':' : '').$tag->name;
+        }
+
+        return $names;
+    }
+
+    /**
+     * Category definitions for exact colors/labels on the remote side
+     * (created only when missing there).
+     *
+     * @return array<string, array{label: string, background: string, border: string, text_color: string, namespaces: array, keywords: array}>
+     */
+    protected function categoryPayload(Comic $comic): array
+    {
+        $categories = [];
+        foreach ($comic->tags as $tag) {
+            $category = $tag->category;
+            if ($category === null || isset($categories[$category->name])) {
+                continue;
+            }
+            $categories[$category->name] = [
+                'label' => $category->label,
+                'background' => $category->background,
+                'border' => $category->border,
+                'text_color' => $category->text_color,
+                'namespaces' => $category->namespaces ?? [],
+                'keywords' => $category->keywords ?? [],
+            ];
+        }
+
+        return $categories;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Models\Tag;
+use App\Models\TagCategory;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class TransferController extends Controller
 {
     /**
      * Create the remote comic shell (metadata + tags, no pages yet).
+     * Categories travel along so missing ones are created with the
+     * sender's colors; existing ones are never touched.
      */
     public function store(Request $request): JsonResponse
     {
@@ -29,7 +32,10 @@ class TransferController extends Controller
             'published_at' => 'nullable|date',
             'tags' => 'nullable|array|max:2000',
             'tags.*' => 'string|max:255',
+            'categories' => 'nullable|array|max:100',
         ]);
+
+        $this->syncCategories(is_array($validated['categories'] ?? null) ? $validated['categories'] : []);
 
         $owner = User::where('admin_level', '>=', 1)->orderBy('id')->first()
             ?? User::orderBy('id')->first();
@@ -59,6 +65,43 @@ class TransferController extends Controller
         $comic->tags()->sync($tagIds);
 
         return response()->json(['comic_id' => $comic->id]);
+    }
+
+    /**
+     * Create categories missing on this side with the sender's exact
+     * attributes (label, colors, namespaces, keywords). Existing
+     * categories are left untouched — local admin edits always win.
+     *
+     * @param  array<string, mixed>  $categories
+     */
+    protected function syncCategories(array $categories): void
+    {
+        $hex = '/^#[0-9a-fA-F]{6}$/';
+
+        foreach ($categories as $name => $attrs) {
+            $name = mb_strtolower(trim((string) $name));
+            if (! is_array($attrs) || preg_match('/^[a-z0-9_-]+$/', $name) !== 1) {
+                continue;
+            }
+            if (TagCategory::where('name', $name)->exists()) {
+                continue;
+            }
+
+            $clean = fn ($list, $max) => array_values(array_unique(array_filter(array_map(
+                fn ($part) => mb_strtolower(trim((string) $part)),
+                array_slice(is_array($list) ? $list : [], 0, $max)
+            ))));
+
+            TagCategory::create([
+                'name' => $name,
+                'label' => mb_substr(trim((string) ($attrs['label'] ?? $name)), 0, 50) ?: $name,
+                'background' => isset($attrs['background']) && preg_match($hex, (string) $attrs['background']) ? $attrs['background'] : '#808080',
+                'border' => isset($attrs['border']) && preg_match($hex, (string) $attrs['border']) ? $attrs['border'] : '#808080',
+                'text_color' => isset($attrs['text_color']) && preg_match($hex, (string) $attrs['text_color']) ? $attrs['text_color'] : '#ffffff',
+                'namespaces' => $clean($attrs['namespaces'] ?? [], 100),
+                'keywords' => $clean($attrs['keywords'] ?? [], 500),
+            ]);
+        }
     }
 
     /**

@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Comic;
 use App\Models\ComicTransfer;
 use App\Models\Tag;
+use App\Models\TagCategory;
 use App\Models\User;
+use App\Services\ComicTransferService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
@@ -38,6 +40,53 @@ class ComicTransferTest extends TestCase
 
         $this->withToken('wrong')->postJson('/api/transfer/comics', ['title' => 'Nope'])
             ->assertUnauthorized();
+    }
+
+    public function test_transfer_api_creates_missing_categories_with_sender_colors(): void
+    {
+        User::factory()->create(['admin_level' => 1]);
+        $existing = TagCategory::create([
+            'name' => 'male', 'label' => 'Male',
+            'background' => '#111111', 'border' => '#222222', 'text_color' => '#333333',
+            'namespaces' => ['male'],
+        ]);
+
+        $created = $this->withToken('test-secret')->postJson('/api/transfer/comics', [
+            'title' => 'Categorized Transfer',
+            'tags' => ['male:dog boy', 'plain tag'],
+            'categories' => [
+                'male' => [
+                    'label' => 'HACKED', 'background' => '#000000', 'border' => 'nope',
+                    'text_color' => '#000000', 'namespaces' => ['male'], 'keywords' => [],
+                ],
+                'newcat' => [
+                    'label' => 'New Cat', 'background' => '#123456', 'border' => '#654321',
+                    'text_color' => '#abcdef', 'namespaces' => ['newcat'], 'keywords' => ['special'],
+                ],
+                'BAD NAME!' => ['label' => 'x'],
+            ],
+        ])->assertOk();
+        $comic = Comic::findOrFail($created->json('comic_id'));
+
+        try {
+            // Existing category untouched (admin edits win).
+            $this->assertSame('#111111', $existing->fresh()->background);
+            // Missing category created with exact sender attributes.
+            $new = TagCategory::where('name', 'newcat')->firstOrFail();
+            $this->assertSame('#123456', $new->background);
+            $this->assertSame(['newcat'], $new->namespaces);
+            $this->assertSame(['special'], $new->keywords);
+            // Invalid names skipped.
+            $this->assertNull(TagCategory::where('name', 'bad name!')->first());
+            // Namespaced tag resolved + learned like an EH import.
+            $tag = Tag::where('name', 'dog boy')->firstOrFail();
+            $this->assertSame('male', $tag->category->name);
+            $this->assertContains('dog boy', $tag->category->learned_keywords);
+            $this->assertTrue($comic->tags->contains($tag));
+        } finally {
+            $comic->delete();
+            $new->delete();
+        }
     }
 
     public function test_transfer_api_creates_pages_and_finalizes(): void
@@ -143,6 +192,32 @@ class ComicTransferTest extends TestCase
             $this->getJson("/api/transfer/comics/{$comic->id}/pages")->assertUnauthorized();
             $this->withToken('test-secret')->getJson("/api/transfer/comics/{$comic->id}/pages")
                 ->assertOk()->assertJson(['pages' => [1, 2]]);
+        } finally {
+            $this->deleteComicTree($comic->id);
+        }
+    }
+
+    public function test_sender_payload_carries_namespaces_and_categories(): void
+    {
+        User::factory()->create(['admin_level' => 1]);
+        TagCategory::create([
+            'name' => 'male', 'label' => 'Male',
+            'background' => '#111111', 'border' => '#222222', 'text_color' => '#333333',
+            'namespaces' => ['male'],
+        ]);
+        $comic = Comic::factory()->create();
+        $comic->tags()->attach(Tag::findOrCreateResolved('male:dog boy')->id);
+
+        Http::fake(['remote.test/*' => Http::response(['comic_id' => 7], 200)]);
+
+        try {
+            $this->assertSame(7, app(ComicTransferService::class)->createRemote($comic->fresh()));
+            Http::assertSent(function ($request) {
+                $data = $request->data();
+
+                return $data['tags'] === ['male:dog boy']
+                    && ($data['categories']['male']['namespaces'] ?? null) === ['male'];
+            });
         } finally {
             $this->deleteComicTree($comic->id);
         }
