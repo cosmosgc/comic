@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comic;
 use App\Models\Page;
+use App\Support\ImageStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,39 +40,15 @@ class PageController extends Controller
         $comic = Comic::findOrFail($comicId);
         $this->authorizeComicAccess($comic);
 
-        // Get uploaded file
-        $file = $request->file('image');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-
-        // Define destination
-        $destinationPath = public_path("storage/comics/{$comic->id}/pages");
-
-        // Ensure directory exists
-        if (! file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
-        }
-
-        // Build filename and check for duplicates
-        $filename = "{$originalName}.{$extension}";
-        $fullPath = "{$destinationPath}/{$filename}";
-
-        if (file_exists($fullPath)) {
-            $hash = substr(md5(now().rand()), 0, 8);
-            $filename = "{$originalName}_{$hash}.{$extension}";
-        }
-
-        // Move the file
-        $file->move($destinationPath, $filename);
+        // Store with a generated name (never the client's) under the
+        // comic's `pages/` folder.
+        $relativePath = ImageStore::putInStorage($request->file('image'), "comics/{$comic->id}/pages");
 
         // Get page number or calculate it
         $inputPageNumber = $request->input('page_number');
         $pageNumber = (is_numeric($inputPageNumber) && (int) $inputPageNumber > 0)
             ? (int) $inputPageNumber
             : $comic->pages()->max('page_number') + 1;
-
-        // Save relative path
-        $relativePath = "comics/{$comic->id}/pages/{$filename}";
 
         // Create Page entry
         Page::create([
@@ -93,34 +70,8 @@ class PageController extends Controller
         $this->authorizeComicAccess($comic);
         $pageNumber = $comic->pages()->count() + 1;
 
-        // Get uploaded file
-        $file = $request->file('image');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension = $file->getClientOriginalExtension();
-
-        // Define destination
-        $destinationPath = public_path("storage/comics/{$comic->id}");
-
-        // Ensure directory exists
-        if (! file_exists($destinationPath)) {
-            mkdir($destinationPath, 0755, true);
-        }
-
-        // Final filename
-        $filename = "{$originalName}.{$extension}";
-        $fullPath = "{$destinationPath}/{$filename}";
-
-        // If file exists, add a hash
-        if (file_exists($fullPath)) {
-            $hash = substr(md5(now().rand()), 0, 8);
-            $filename = "{$originalName}_{$hash}.{$extension}";
-        }
-
-        // Move the file
-        $file->move($destinationPath, $filename);
-
-        // Relative path for storage
-        $relativePath = "comics/{$comic->id}/{$filename}";
+        // Generated name, comic root (same convention as comic uploads).
+        $relativePath = ImageStore::putInStorage($request->file('image'), "comics/{$comic->id}");
 
         // Create page entry
         Page::create([

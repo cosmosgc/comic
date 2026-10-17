@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Support\ImageStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -214,8 +215,8 @@ class ProfileController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8|confirmed',
-            'avatar_image' => 'nullable|image|max:2048', // Limit to 2MB
-            'banner_image' => 'nullable|image|max:4096', // Limit to 4MB
+            'avatar_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048|dimensions:max_width=5000,max_height=5000', // Limit to 2MB
+            'banner_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096|dimensions:max_width=8000,max_height=8000', // Limit to 4MB
             'remove_banner' => 'nullable|boolean',
             'bio' => 'nullable|string',
             'links' => 'nullable|array',
@@ -229,37 +230,17 @@ class ProfileController extends Controller
         $user->name = $request->input('name');
         $user->email = $request->input('email');
 
-        // Handle avatar image upload
+        // Handle avatar image upload (the previous file is replaced,
+        // never left orphaned on disk).
         if ($request->hasFile('avatar_image')) {
-            $directory = public_path('storage/avatars');
-
-            // Ensure the directory exists
-            if (! file_exists($directory)) {
-                mkdir($directory, 0777, true);
-            }
-
-            $avatar = $request->file('avatar_image');
-            $filename = time().'_'.$avatar->getClientOriginalName(); // Generate a unique filename
-            $avatar->move($directory, $filename); // Move the file to the directory
-
-            $user->avatar_image_path = 'storage/avatars/'.$filename; // Store the relative path
+            $this->deleteStoredFile($user->avatar_image_path);
+            $user->avatar_image_path = ImageStore::put($request->file('avatar_image'), 'avatars');
         }
 
         // Handle banner image upload (profile header background)
         if ($request->hasFile('banner_image')) {
-            $directory = public_path('storage/banners');
-
-            if (! file_exists($directory)) {
-                mkdir($directory, 0755, true);
-            }
-
             $this->deleteStoredFile($user->banner_image_path);
-
-            $banner = $request->file('banner_image');
-            $filename = time().'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $banner->getClientOriginalName());
-            $banner->move($directory, $filename);
-
-            $user->banner_image_path = 'storage/banners/'.$filename;
+            $user->banner_image_path = ImageStore::put($request->file('banner_image'), 'banners');
         } elseif ($request->boolean('remove_banner')) {
             $this->deleteStoredFile($user->banner_image_path);
             $user->banner_image_path = null;
@@ -325,12 +306,6 @@ class ProfileController extends Controller
      */
     protected function deleteStoredFile(?string $relativePath): void
     {
-        if ($relativePath === null || $relativePath === '') {
-            return;
-        }
-        $fullPath = public_path('storage/'.ltrim(preg_replace('#^storage/#', '', $relativePath), '/'));
-        if (is_file($fullPath)) {
-            @unlink($fullPath);
-        }
+        ImageStore::delete($relativePath);
     }
 }

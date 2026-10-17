@@ -7,6 +7,7 @@ use App\Models\Page;
 use App\Models\Tag;
 use App\Models\Widget;
 use App\Support\ActivityLogger;
+use App\Support\ImageStore;
 use App\View\Composers\SidebarComposer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -331,67 +332,30 @@ class ComicController extends Controller
             $this->syncTagsFromString($comic, $request->input('tags'));
         }
 
-        // Define the public folder path
-        $comicFolderPath = public_path("storage/comics/{$comic->id}");
-
-        // Check if the folder exists, if not, create it
-        if (! file_exists($comicFolderPath)) {
-            mkdir($comicFolderPath, 0777, true);
-        }
-
+        // Pages may arrive as `folder[]` (directory picker) or `images[]`
+        // (file picker). Names are generated server-side, so both branches
+        // store exactly the same way (putInStorage creates the folder).
         $firstImagePath = null;
+        $pageNumber = 1;
 
-        // Handle image uploads
-        if ($request->hasFile('folder')) {
-            $pageNumber = 1;
-
-            foreach ($request->file('folder') as $file) {
-                if ($file->isValid()) {
-                    $originalFileName = $file->getClientOriginalName();
-                    $filePath = "{$comicFolderPath}/{$originalFileName}";
-
-                    // Move file to the public directory
-                    $file->move($comicFolderPath, $originalFileName);
-
-                    if ($pageNumber === 1) {
-                        $firstImagePath = "comics/{$comic->id}/{$originalFileName}"; // Relative path
-                    }
-
-                    // Create a new Page entry for each image
-                    Page::create([
-                        'comic_id' => $comic->id,
-                        'image_path' => "comics/{$comic->id}/{$originalFileName}", // Store relative path
-                        'page_number' => $pageNumber,
-                    ]);
-
-                    $pageNumber++;
-                }
+        foreach ($request->file('folder') ?? $request->file('images') ?? [] as $file) {
+            if (! $file->isValid()) {
+                continue;
             }
-        } elseif ($request->hasFile('images')) {
-            $pageNumber = 1;
 
-            foreach ($request->file('images') as $file) {
-                if ($file->isValid()) {
-                    $originalFileName = $file->getClientOriginalName();
-                    $filePath = "{$comicFolderPath}/{$originalFileName}";
+            $relativePath = ImageStore::putInStorage($file, "comics/{$comic->id}");
 
-                    // Move file to the public directory
-                    $file->move($comicFolderPath, $originalFileName);
-
-                    if ($pageNumber === 1) {
-                        $firstImagePath = "comics/{$comic->id}/{$originalFileName}"; // Relative path
-                    }
-
-                    // Create a new Page entry for each image
-                    Page::create([
-                        'comic_id' => $comic->id,
-                        'image_path' => "comics/{$comic->id}/{$originalFileName}", // Store relative path
-                        'page_number' => $pageNumber,
-                    ]);
-
-                    $pageNumber++;
-                }
+            if ($pageNumber === 1) {
+                $firstImagePath = $relativePath;
             }
+
+            Page::create([
+                'comic_id' => $comic->id,
+                'image_path' => $relativePath,
+                'page_number' => $pageNumber,
+            ]);
+
+            $pageNumber++;
         }
 
         // Store the first image as the comic cover

@@ -120,7 +120,9 @@ class ComicPackageTest extends TestCase
     {
         $comic = Comic::factory()->create($overrides);
         $dir = public_path("storage/comics/{$comic->id}/pages");
-        mkdir($dir, 0755, true);
+        // ensureDirectoryExists: a leftover folder from another test must
+        // not turn this into a "mkdir(): File exists" error.
+        File::ensureDirectoryExists($dir);
         $bytes = base64_decode('R0lGODlhAQABAIAAAP///////yH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
         for ($n = 1; $n <= $count; $n++) {
             $name = 'page-'.str_pad((string) $n, 4, '0', STR_PAD_LEFT).'.gif';

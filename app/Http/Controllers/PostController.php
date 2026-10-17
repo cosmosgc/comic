@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Hashtag;
 use App\Models\Post;
 use App\Support\ActivityLogger;
+use App\Support\ImageStore;
 use App\Support\SocialNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +88,8 @@ class PostController extends Controller
     {
         $request->validate([
             'text' => 'nullable|string|max:280',
-            'media.*' => 'nullable|image|max:4048',
+            'media' => 'nullable|array|max:4',
+            'media.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4048',
             'referenced_post_id' => 'nullable|exists:posts,id',
             'parent_id' => 'nullable|exists:posts,id',
         ]);
@@ -105,18 +107,14 @@ class PostController extends Controller
         ]);
 
         if ($request->hasFile('media')) {
-            $directory = public_path('storage/posts_media');
-
-            // Ensure the directory exists
-            if (! file_exists($directory)) {
-                mkdir($directory, 0777, true);
-            }
-
             $mediaPaths = [];
             foreach ($request->file('media') as $media) {
-                $filename = time().'_'.$media->getClientOriginalName(); // Generate a unique filename
-                $media->move($directory, $filename); // Move file to the directory
-                $mediaPaths[] = 'storage/posts_media/'.$filename; // Store the relative path
+                if (! $media->isValid()) {
+                    continue;
+                }
+
+                // Generated name + MIME-derived extension (see ImageStore).
+                $mediaPaths[] = ImageStore::put($media, 'posts_media');
             }
 
             // NOTE: assign the array, not a JSON string — the
