@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.forum-layout')
 
 @section('title', 'Tópicos não lidos — Fórum')
 

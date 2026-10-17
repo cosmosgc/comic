@@ -29,6 +29,7 @@ Example:
 
 ### Added
 - **Fórum** (§forum-plan): seções/quadros, tópicos e respostas com Markdown, citações, reações, inscrições, anexos, tópicos não lidos, busca, tags e respostas aceitas (perguntas)
+- Fórum — UI afastada: layout próprio (`forum-layout`) com navbar violeta distinta, banner de "modo fórum" e rota `forum.exit` para voltar ao site normal; scripts compartilhados (hover cards, toggle de seguir, toast de XP) extraídos para `layouts.partials.interactions`
 - Fórum — moderação: denúncias, aprovação de posts, trancar/fixar/mover/aprovar, moderadores por quadro, banimentos (temporários/permanentes) e linha do tempo de auditoria
 - Fórum — admin: painel com gráfico de atividade de 30 dias, CRUD da árvore de categorias e painel de configurações (`forum_settings`) sobreposto ao `config/forum.php`; `ForumSeeder` cria a estrutura padrão (idempotente, rode com `db:seed --class=ForumSeeder`)
 - Fórum — gamificação/notificações: XP por tópico/resposta/reação/resposta aceita, conquistas (`first_thread`, `conversationalist`, `helpful`, `moderator`) e `ForumNotification` no sino existente

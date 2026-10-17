@@ -57,7 +57,10 @@ class AppServiceProvider extends ServiceProvider
             SidebarComposer::class
         );
 
-        View::composer('layouts.app', NotificationComposer::class);
+        View::composer(
+            ['layouts.app', 'layouts.forum-layout'],
+            NotificationComposer::class
+        );
 
         $this->overlayImportSettings();
         $this->overlayGamificationSettings();

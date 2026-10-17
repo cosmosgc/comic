@@ -47,7 +47,6 @@ class ForumController extends Controller
         return view('forum.index', [
             'sections' => $sections,
             'stats' => $stats,
-            'showPanels' => false,
         ]);
     }
 
@@ -97,7 +96,6 @@ class ForumController extends Controller
             'filter' => $filter,
             'tag' => $validated['tag'] ?? null,
             'canStartThread' => Forum::canStartThread($request->user(), $category),
-            'showPanels' => false,
         ]);
     }
 
@@ -159,7 +157,6 @@ class ForumController extends Controller
             'subscribed' => $subscribed,
             'canModerate' => Forum::isModerator($request->user(), $category),
             'isBanned' => Forum::isBanned($request->user(), $category->id),
-            'showPanels' => false,
         ]);
     }
 
@@ -198,7 +195,6 @@ class ForumController extends Controller
         return view('forum.search', [
             'threads' => $threads,
             'query' => $query,
-            'showPanels' => false,
         ]);
     }
 
@@ -218,7 +214,6 @@ class ForumController extends Controller
 
         return view('forum.unread', [
             'threads' => $threads,
-            'showPanels' => false,
         ]);
     }
 

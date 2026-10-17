@@ -229,4 +229,24 @@ class ForumTest extends TestCase
         $response->assertOk();
         $this->assertStringNotContainsString('<script>alert(1)</script>', $response->getContent());
     }
+
+    public function test_forum_uses_the_detached_layout_and_can_exit(): void
+    {
+        // The forum renders its own navbar (the site's comic search is absent)
+        // and always offers a way back to the normal site.
+        $this->get('/forum')
+            ->assertOk()
+            ->assertSee('Voltar ao site')
+            ->assertDontSee('Buscar comics...');
+
+        $this->get('/forum/exit')->assertRedirect(route('comics.index'));
+    }
+
+    public function test_the_forum_exit_route_is_not_shadowed_by_a_category_slug(): void
+    {
+        // A board slug of "exit" must not swallow the exit route.
+        ForumCategory::factory()->board()->create(['slug' => 'exit']);
+
+        $this->get('/forum/exit')->assertRedirect(route('comics.index'));
+    }
 }

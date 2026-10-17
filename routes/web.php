@@ -236,6 +236,10 @@ Route::prefix('forum')->name('forum.')->group(function () {
     Route::get('/', [ForumController::class, 'index'])->name('index');
     Route::get('/search', [ForumController::class, 'search'])->name('search');
     Route::get('/unread', [ForumController::class, 'unread'])->middleware('auth')->name('unread');
+
+    // Leave the detached forum area and return to the normal site.
+    Route::get('/exit', fn () => redirect()->route('comics.index'))->name('exit');
+
     Route::get('/{categorySlug}', [ForumController::class, 'category'])
         ->where('categorySlug', '[A-Za-z0-9\-]+')->name('category');
     Route::get('/{categorySlug}/{threadSlug}', [ForumController::class, 'thread'])
