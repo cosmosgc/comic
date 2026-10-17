@@ -9,24 +9,33 @@
         <div class="admin-card-header">
             <span>Interações dos usuários</span>
         </div>
-        <div class="admin-card-body">
-            <form method="GET" class="flex flex-wrap items-end gap-3">
-                <div>
-                    <label for="action" class="admin-label">Ação</label>
-                    <select name="action" id="action" class="admin-input">
-                        <option value="">Todas</option>
-                        @foreach ($actions as $key => $label)
-                            <option value="{{ $key }}" @selected($activeAction === $key)>{{ $label }}</option>
-                        @endforeach
-                    </select>
+        <div class="admin-card-body space-y-4">
+            <div>
+                <span class="admin-label">Tipo de atividade</span>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.activities', array_filter(['q' => $search ?: null])) }}"
+                       class="admin-toggle {{ $activeAction === null ? 'admin-toggle-active' : '' }}">
+                        Todas
+                    </a>
+                    @foreach ($actions as $key => $label)
+                        <a href="{{ route('admin.activities', array_filter(['action' => $key, 'q' => $search ?: null])) }}"
+                           class="admin-toggle {{ $activeAction === $key ? 'admin-toggle-active' : '' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
                 </div>
+            </div>
+            <form method="GET" class="flex flex-wrap items-end gap-3">
+                @if ($activeAction)
+                    <input type="hidden" name="action" value="{{ $activeAction }}">
+                @endif
                 <div class="min-w-52 flex-1">
                     <label for="q" class="admin-label">Buscar (usuário, texto, URL, IP)</label>
                     <input type="text" name="q" id="q" class="admin-input" value="{{ $search }}" placeholder="ex. naruto, login, 127.0.0.1">
                 </div>
                 <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Filtrar</button>
                 @if ($activeAction || $search !== '')
-                    <a href="{{ route('admin.activities') }}" class="admin-btn admin-btn-sm">Limpar</a>
+                    <a href="{{ route('admin.activities') }}" class="admin-btn admin-btn-sm admin-btn-secondary">Limpar</a>
                 @endif
             </form>
         </div>
