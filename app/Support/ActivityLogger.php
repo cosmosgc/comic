@@ -6,6 +6,8 @@ use App\Models\ActivityLog;
 use App\Models\Collection;
 use App\Models\Comic;
 use App\Models\Comment;
+use App\Models\ForumPost;
+use App\Models\ForumThread;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Gamification;
@@ -30,7 +32,8 @@ class ActivityLogger
      *   description?: ?string,
      *   url?: ?string,
      *   metadata?: ?array<string, mixed>,
-     *   ip?: ?string
+     *   ip?: ?string,
+     *   award?: bool
      * }  $options
      */
     public static function log(string $action, array $options = []): ?ActivityLog
@@ -54,7 +57,9 @@ class ActivityLogger
 
             // Gamification: grant exp/level/badges for this interaction.
             // Isolated so a gamification failure never loses the log.
-            if ($log->user_id !== null) {
+            // Callers that award exp to a *different* user can set
+            // `award => false` and call Gamification::award() themselves.
+            if ($log->user_id !== null && ($options['award'] ?? true)) {
                 try {
                     if ($log->user !== null) {
                         Gamification::award($log->user, $action, $subject instanceof Model ? $subject : null, $log->id);
@@ -102,6 +107,19 @@ class ActivityLogger
             }
             if ($subject instanceof Post) {
                 return route('posts.show', $subject->getKey());
+            }
+            if ($subject instanceof ForumThread) {
+                return $subject->category && $subject->slug
+                    ? route('forum.thread', ['categorySlug' => $subject->category->slug, 'threadSlug' => $subject->slug])
+                    : route('forum.index');
+            }
+            if ($subject instanceof ForumPost) {
+                $thread = $subject->thread;
+                if ($thread && $thread->category && $thread->slug) {
+                    return route('forum.thread', ['categorySlug' => $thread->category->slug, 'threadSlug' => $thread->slug]);
+                }
+
+                return route('forum.index');
             }
             if ($subject instanceof Comment) {
                 return $subject->comic_id

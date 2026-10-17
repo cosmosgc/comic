@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\ActivityLog;
 use App\Models\Comment;
+use App\Models\ForumPost;
+use App\Models\ForumThread;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\UserBadge;
@@ -202,13 +204,31 @@ class Gamification
             ? $user->collections()->count()
             : 0;
 
+        $forumThreads = Schema::hasTable('forum_threads')
+            ? ForumThread::where('user_id', $user->id)->count()
+            : 0;
+
+        $forumReplies = Schema::hasTable('forum_posts')
+            ? ForumPost::where('user_id', $user->id)->where('position', '>', 1)->count()
+            : 0;
+
+        $forumReactions = Schema::hasTable('forum_post_reactions')
+            ? DB::table('forum_post_reactions')->where('user_id', $user->id)->count()
+            : 0;
+
+        $forumSolved = self::forumSolvedCount($user);
+
         return $comics * $value('comic.uploaded')
             + $posts * $value('post.created')
             + $replies * $value('post.replied')
             + $comments * $value('comic.commented')
             + $comicLikes * $value('comic.liked')
             + $postLikes * $value('post.liked')
-            + $collections * $value('collection.created');
+            + $collections * $value('collection.created')
+            + $forumThreads * $value('forum.thread.created')
+            + $forumReplies * $value('forum.post.replied')
+            + $forumReactions * $value('forum.post.reacted')
+            + $forumSolved * $value('forum.thread.solved');
     }
 
     /**
@@ -463,6 +483,16 @@ class Gamification
                     ->whereIn('action', ['search.comics', 'search.posts'])
                     ->count()
                 : 0,
+            'forum_threads_count' => Schema::hasTable('forum_threads')
+                ? ForumThread::where('user_id', $user->id)->count()
+                : 0,
+            'forum_posts_count' => Schema::hasTable('forum_posts')
+                ? ForumPost::where('user_id', $user->id)->count()
+                : 0,
+            'forum_solved_count' => self::forumSolvedCount($user),
+            'forum_moderations_count' => Schema::hasTable('forum_moderators')
+                ? DB::table('forum_moderators')->where('user_id', $user->id)->count()
+                : 0,
             default => 0,
         };
 
@@ -484,6 +514,10 @@ class Gamification
             'post_likes_given' => 'Posts curtidos',
             'collections_count' => 'Coleções criadas',
             'searches_count' => 'Buscas feitas',
+            'forum_threads_count' => 'Tópicos criados',
+            'forum_posts_count' => 'Mensagens no fórum',
+            'forum_solved_count' => 'Respostas aceitas',
+            'forum_moderations_count' => 'Cargos de moderação',
             'current_streak' => 'Sequência atual (dias)',
             'longest_streak' => 'Maior sequência (dias)',
             'level' => 'Nível',
@@ -602,6 +636,22 @@ class Gamification
             ->where('subject_id', $subject->getKey())
             ->when($excludeLogId !== null, fn ($q) => $q->where('id', '!=', $excludeLogId))
             ->exists();
+    }
+
+    /**
+     * Accepted answers authored by the user (post marked solved in a
+     * question thread).
+     */
+    protected static function forumSolvedCount(User $user): int
+    {
+        if (! Schema::hasTable('forum_threads') || ! Schema::hasTable('forum_posts')) {
+            return 0;
+        }
+
+        return ForumPost::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', ForumThread::query()->whereNotNull('solved_post_id')->select('solved_post_id'))
+            ->count();
     }
 
     protected static function likesGiven(User $user): int

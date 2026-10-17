@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\LogUserLogin;
 use App\Models\EhImportSetting;
+use App\Models\ForumSetting;
 use App\Models\GamificationSetting;
 use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
@@ -60,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->overlayImportSettings();
         $this->overlayGamificationSettings();
+        $this->overlayForumSettings();
     }
 
     /**
@@ -102,6 +104,26 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
             GamificationSetting::applyToConfig();
+        } catch (\Throwable) {
+            // Booting (e.g. migrate) without the table: keep file defaults.
+        }
+    }
+
+    /**
+     * Forum tuning edited in Admin → Fórum overlays the file config.
+     * Skipped silently on fresh/unmigrated databases.
+     */
+    protected function overlayForumSettings(): void
+    {
+        if ($this->app->environment('testing')) {
+            return;
+        }
+
+        try {
+            if (! Schema::hasTable('forum_settings')) {
+                return;
+            }
+            ForumSetting::applyToConfig();
         } catch (\Throwable) {
             // Booting (e.g. migrate) without the table: keep file defaults.
         }

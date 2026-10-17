@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminForumController;
 use App\Http\Controllers\AdminGamificationController;
 use App\Http\Controllers\AdminImportController;
 use App\Http\Controllers\AnalyticsController;
@@ -15,6 +16,9 @@ use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\ForumController;
+use App\Http\Controllers\ForumPostController;
+use App\Http\Controllers\ForumThreadController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
@@ -225,3 +229,62 @@ Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leade
 // What's new: file-per-PR changelog (changelogs/*.json).
 Route::get('/changelog', [ChangelogController::class, 'index'])->name('changelog.index');
 Route::get('/changelog/{entry}', [ChangelogController::class, 'show'])->name('changelog.show');
+
+// ////////////////////////////////////////////////////////////
+// Forum: public read, auth to post. Guests may read the boards.
+Route::prefix('forum')->name('forum.')->group(function () {
+    Route::get('/', [ForumController::class, 'index'])->name('index');
+    Route::get('/search', [ForumController::class, 'search'])->name('search');
+    Route::get('/unread', [ForumController::class, 'unread'])->middleware('auth')->name('unread');
+    Route::get('/{categorySlug}', [ForumController::class, 'category'])
+        ->where('categorySlug', '[A-Za-z0-9\-]+')->name('category');
+    Route::get('/{categorySlug}/{threadSlug}', [ForumController::class, 'thread'])
+        ->where('threadSlug', '[A-Za-z0-9\-]+')->name('thread');
+
+    Route::middleware('auth')->group(function () {
+        Route::post('/{categorySlug}', [ForumThreadController::class, 'store'])
+            ->where('categorySlug', '[A-Za-z0-9\-]+')->middleware('throttle:10,1')->name('threads.store');
+
+        Route::post('/threads/{thread}/reply', [ForumPostController::class, 'store'])
+            ->middleware('throttle:30,1')->name('posts.store');
+        Route::put('/posts/{post}', [ForumPostController::class, 'update'])->name('posts.update');
+        Route::delete('/posts/{post}', [ForumPostController::class, 'destroy'])->name('posts.destroy');
+        Route::post('/posts/{post}/react', [ForumPostController::class, 'react'])->name('posts.react');
+        Route::post('/posts/{post}/report', [ForumPostController::class, 'report'])->name('posts.report');
+
+        Route::post('/threads/{thread}/subscribe', [ForumThreadController::class, 'subscribe'])->name('threads.subscribe');
+        Route::post('/threads/{thread}/report', [ForumThreadController::class, 'report'])->name('threads.report');
+        Route::post('/mark-solved/{post}', [ForumThreadController::class, 'solve'])->name('threads.solve');
+
+        // Moderation (authorized by policy: moderator-or-admin).
+        Route::post('/threads/{thread}/pin', [ForumThreadController::class, 'pin'])->name('threads.pin');
+        Route::post('/threads/{thread}/lock', [ForumThreadController::class, 'lock'])->name('threads.lock');
+        Route::post('/threads/{thread}/approve', [ForumThreadController::class, 'approve'])->name('threads.approve');
+        Route::post('/threads/{thread}/move', [ForumThreadController::class, 'move'])->name('threads.move');
+        Route::delete('/threads/{thread}', [ForumThreadController::class, 'destroy'])->name('threads.destroy');
+        Route::post('/posts/{post}/approve', [ForumPostController::class, 'approve'])->name('posts.approve');
+    });
+});
+
+// Admin → Fórum.
+Route::prefix('admin/forum')->name('admin.forum.')->middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::get('/', [AdminForumController::class, 'dashboard'])->name('dashboard');
+    Route::get('/categories', [AdminForumController::class, 'categories'])->name('categories');
+    Route::get('/categories/create', [AdminForumController::class, 'categoryCreate'])->name('categories.create');
+    Route::post('/categories', [AdminForumController::class, 'categoryStore'])->name('categories.store');
+    Route::get('/categories/{id}/edit', [AdminForumController::class, 'categoryEdit'])->name('categories.edit');
+    Route::put('/categories/{id}', [AdminForumController::class, 'categoryUpdate'])->name('categories.update');
+    Route::delete('/categories/{id}', [AdminForumController::class, 'categoryDestroy'])->name('categories.destroy');
+    Route::post('/categories/{id}/toggle', [AdminForumController::class, 'categoryToggle'])->name('categories.toggle');
+    Route::get('/threads', [AdminForumController::class, 'threads'])->name('threads');
+    Route::get('/moderation', [AdminForumController::class, 'moderation'])->name('moderation');
+    Route::post('/moderation/{report}/resolve', [AdminForumController::class, 'resolveReport'])->name('reports.resolve');
+    Route::get('/moderators', [AdminForumController::class, 'moderators'])->name('moderators');
+    Route::post('/moderators', [AdminForumController::class, 'moderatorStore'])->name('moderators.store');
+    Route::delete('/moderators/{id}', [AdminForumController::class, 'moderatorDestroy'])->name('moderators.destroy');
+    Route::get('/bans', [AdminForumController::class, 'bans'])->name('bans');
+    Route::post('/bans', [AdminForumController::class, 'banStore'])->name('bans.store');
+    Route::delete('/bans/{id}', [AdminForumController::class, 'banDestroy'])->name('bans.destroy');
+    Route::get('/settings', [AdminForumController::class, 'settings'])->name('settings');
+    Route::post('/settings', [AdminForumController::class, 'saveSettings'])->name('settings.save');
+});

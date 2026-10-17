@@ -33,6 +33,10 @@ return [
         'collection.added' => 2,
         'search.comics' => 1,
         'search.posts' => 1,
+        'forum.thread.created' => 20,
+        'forum.post.replied' => 8,
+        'forum.post.reacted' => 2,
+        'forum.thread.solved' => 10,
     ],
 
     /*
@@ -46,6 +50,8 @@ return [
         'comic.liked',
         'post.liked',
         'collection.favorited',
+        'forum.post.reacted',
+        'forum.thread.solved',
     ],
 
     /*
@@ -165,6 +171,34 @@ return [
             'icon' => '🎖️',
             'metric' => 'level',
             'threshold' => 10,
+        ],
+        'first_thread' => [
+            'label' => 'Primeiro Tópico',
+            'description' => 'Criou seu primeiro tópico no fórum.',
+            'icon' => '🧵',
+            'metric' => 'forum_threads_count',
+            'threshold' => 1,
+        ],
+        'conversationalist' => [
+            'label' => 'Conversador',
+            'description' => 'Publicou 100 mensagens no fórum.',
+            'icon' => '🗣️',
+            'metric' => 'forum_posts_count',
+            'threshold' => 100,
+        ],
+        'helpful' => [
+            'label' => 'Prestativo',
+            'description' => 'Teve 10 respostas aceitas.',
+            'icon' => '✅',
+            'metric' => 'forum_solved_count',
+            'threshold' => 10,
+        ],
+        'moderator' => [
+            'label' => 'Moderador',
+            'description' => 'Atua na moderação do fórum.',
+            'icon' => '🛡️',
+            'metric' => 'forum_moderations_count',
+            'threshold' => 1,
         ],
         'legendary' => [
             'label' => 'Lendário',

@@ -1,0 +1,128 @@
+@extends('layouts.app')
+
+@section('title', $category->name.' — Fórum')
+
+@section('content')
+<div class="mx-auto min-h-screen max-w-4xl px-4 py-6">
+
+    <nav class="mb-3 text-xs text-zinc-500" aria-label="Trilha">
+        <a href="{{ route('forum.index') }}" class="hover:text-zinc-300">Fórum</a>
+        <span aria-hidden="true"> › </span>
+        <span>{{ $category->name }}</span>
+    </nav>
+
+    <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">{{ $category->icon ? $category->icon.' ' : '' }}{{ $category->name }}</h1>
+            @if ($category->description)
+                <p class="text-sm text-zinc-400">{{ $category->description }}</p>
+            @endif
+        </div>
+        @if ($canStartThread)
+            <button type="button" onclick="document.getElementById('new-thread').classList.toggle('hidden')"
+                    class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-500">
+                Novo tópico
+            </button>
+        @endif
+    </header>
+
+    @if ($canStartThread)
+        <div id="new-thread" class="mb-6 hidden rounded-xl border border-zinc-800 p-4">
+            <form method="POST" action="{{ route('forum.threads.store', ['categorySlug' => $category->slug]) }}" enctype="multipart/form-data" class="space-y-3">
+                @csrf
+                <div>
+                    <label for="thread-title" class="mb-1 block text-xs font-semibold text-zinc-400">Título</label>
+                    <input id="thread-title" name="title" required minlength="3" maxlength="150" value="{{ old('title') }}"
+                           class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <div class="flex-1">
+                        <label for="thread-type" class="mb-1 block text-xs font-semibold text-zinc-400">Tipo</label>
+                        <select id="thread-type" name="type" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none">
+                            <option value="discussion">Discussão</option>
+                            <option value="question">Pergunta</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="thread-tags" class="mb-1 block text-xs font-semibold text-zinc-400">Tags (separadas por vírgula)</label>
+                        <input id="thread-tags" name="tags[]" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none" placeholder="ajuda, teorias">
+                    </div>
+                </div>
+                <div>
+                    <label for="thread-body" class="mb-1 block text-xs font-semibold text-zinc-400">Mensagem (Markdown)</label>
+                    <textarea id="thread-body" name="body" required rows="6" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">{{ old('body') }}</textarea>
+                </div>
+                <div>
+                    <label for="thread-attachments" class="mb-1 block text-xs font-semibold text-zinc-400">Anexos (imagens)</label>
+                    <input id="thread-attachments" type="file" name="attachments[]" accept="image/*" multiple class="block w-full text-xs text-zinc-400">
+                </div>
+                @if ($errors->any())
+                    <p class="text-xs text-rose-400">{{ $errors->first() }}</p>
+                @endif
+                <button type="submit" class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-500">Publicar</button>
+            </form>
+        </div>
+    @elseif (auth()->check() && $category->is_locked)
+        <p class="mb-4 rounded-lg border border-amber-800/50 bg-amber-500/10 px-4 py-2 text-sm text-amber-300">Este quadro está trancado para novos tópicos.</p>
+    @endif
+
+    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
+        @php($sorts = ['latest' => 'Atividade', 'newest' => 'Novos', 'replies' => 'Respostas', 'reactions' => 'Reações', 'unanswered' => 'Sem resposta'])
+        @foreach ($sorts as $key => $label)
+            <a href="{{ route('forum.category', array_filter(['categorySlug' => $category->slug, 'sort' => $key, 'filter' => $filter, 'tag' => $tag])) }}"
+               class="rounded-full px-3 py-1 font-semibold transition {{ $sort === $key ? 'bg-zinc-100 text-zinc-950' : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-900' }}">{{ $label }}</a>
+        @endforeach
+        @auth
+            <a href="{{ route('forum.category', array_filter(['categorySlug' => $category->slug, 'sort' => $sort, 'filter' => 'mine', 'tag' => $tag])) }}"
+               class="rounded-full px-3 py-1 font-semibold transition {{ $filter === 'mine' ? 'bg-zinc-100 text-zinc-950' : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-900' }}">Meus</a>
+        @endauth
+        <a href="{{ route('forum.category', array_filter(['categorySlug' => $category->slug, 'sort' => $sort, 'filter' => 'solved', 'tag' => $tag])) }}"
+           class="rounded-full px-3 py-1 font-semibold transition {{ $filter === 'solved' ? 'bg-zinc-100 text-zinc-950' : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-900' }}">Resolvidos</a>
+    </div>
+
+    <div class="overflow-hidden rounded-xl border border-zinc-800">
+        <div class="divide-y divide-zinc-800">
+            @forelse ($threads as $thread)
+                <div class="flex items-start gap-3 px-4 py-3 transition hover:bg-zinc-900/40">
+                    <img src="{{ $thread->author?->avatar_image_path ? asset($thread->author->avatar_image_path) : asset('default-avatar.png') }}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">
+                    <div class="min-w-0 flex-1">
+                        <a href="{{ route('forum.thread', ['categorySlug' => $category->slug, 'threadSlug' => $thread->slug]) }}"
+                           class="font-semibold hover:underline">
+                            @if ($thread->is_pinned)<span class="mr-1 text-indigo-400" title="Fixado">📌</span>@endif
+                            @if ($thread->is_locked)<span class="mr-1" title="Trancado">🔒</span>@endif
+                            @if ($thread->isSolved())<span class="mr-1" title="Resolvido">✅</span>@endif
+                            {{ $thread->title }}
+                        </a>
+                        <p class="mt-0.5 text-xs text-zinc-400">
+                            por
+                            <a href="{{ route('profile.public.show.id', $thread->user_id) }}" data-hovercard="{{ $thread->author?->name }}" class="font-medium text-zinc-300 hover:underline">{{ $thread->author?->name ?? 'Usuário' }}</a>
+                            · {{ $thread->created_at->diffForHumans() }}
+                            @if ($thread->tags->isNotEmpty())
+                                @foreach ($thread->tags as $tagItem)
+                                    <a href="{{ route('forum.category', ['categorySlug' => $category->slug, 'tag' => $tagItem->slug]) }}" class="ml-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] hover:bg-zinc-700">#{{ $tagItem->name }}</a>
+                                @endforeach
+                            @endif
+                        </p>
+                    </div>
+                    <div class="shrink-0 text-right text-xs text-zinc-400">
+                        <p class="font-bold text-zinc-200">{{ $thread->reply_count }}</p>
+                        <p>respostas</p>
+                        <p class="mt-1">{{ $thread->view_count }} views</p>
+                    </div>
+                    <div class="hidden shrink-0 text-right text-xs text-zinc-400 sm:block">
+                        @if ($thread->lastPoster)
+                            <p class="text-zinc-300">{{ $thread->lastPoster->name }}</p>
+                        @endif
+                        <p>{{ $thread->last_post_at?->diffForHumans() ?? $thread->created_at->diffForHumans() }}</p>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-zinc-500">Nenhum tópico aqui ainda.</div>
+            @endforelse
+        </div>
+    </div>
+
+    <div class="mt-4 flex justify-center">{{ $threads->links() }}</div>
+
+</div>
+@endsection

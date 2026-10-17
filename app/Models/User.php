@@ -194,6 +194,26 @@ class User extends Authenticatable
         return $handle;
     }
 
+    public function forumThreads(): HasMany
+    {
+        return $this->hasMany(ForumThread::class, 'user_id')->latest();
+    }
+
+    public function forumPosts(): HasMany
+    {
+        return $this->hasMany(ForumPost::class, 'user_id')->latest();
+    }
+
+    public function forumSubscriptions(): HasMany
+    {
+        return $this->hasMany(ForumSubscription::class, 'user_id');
+    }
+
+    public function forumModerations(): HasMany
+    {
+        return $this->hasMany(ForumModerator::class, 'user_id');
+    }
+
     public function badges(): HasMany
     {
         return $this->hasMany(UserBadge::class)->orderBy('awarded_at');

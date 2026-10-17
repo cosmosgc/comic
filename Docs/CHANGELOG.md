@@ -28,6 +28,11 @@ Example:
 ## [Unreleased]
 
 ### Added
+- **Fórum** (§forum-plan): seções/quadros, tópicos e respostas com Markdown, citações, reações, inscrições, anexos, tópicos não lidos, busca, tags e respostas aceitas (perguntas)
+- Fórum — moderação: denúncias, aprovação de posts, trancar/fixar/mover/aprovar, moderadores por quadro, banimentos (temporários/permanentes) e linha do tempo de auditoria
+- Fórum — admin: painel com gráfico de atividade de 30 dias, CRUD da árvore de categorias e painel de configurações (`forum_settings`) sobreposto ao `config/forum.php`; `ForumSeeder` cria a estrutura padrão (idempotente, rode com `db:seed --class=ForumSeeder`)
+- Fórum — gamificação/notificações: XP por tópico/resposta/reação/resposta aceita, conquistas (`first_thread`, `conversationalist`, `helpful`, `moderator`) e `ForumNotification` no sino existente
+- Novas migrations (prefixo `forum_`): `forum_categories`, `forum_threads`, `forum_posts`, `forum_post_reactions`, `forum_tags` + `forum_tag_thread`, `forum_attachments`, `forum_subscriptions`, `forum_thread_reads`, `forum_reports`, `forum_bans`, `forum_moderators`, `forum_moderation_log`, `forum_settings`
 - Follows (§3): follow/unfollow button on profiles, hover cards and user lists; "Seguindo" feed tab; follower/following counts and paginated lists
 - User handles (§4): unique `@handle` reserved on register, backfilled for existing accounts, used for profile URLs and reliable mentions
 - Mentions + notifications (§5): `@handle` parsing notifies on mention, reply, quote, post like and new follower — delivered through the existing navbar bell and notifications feed

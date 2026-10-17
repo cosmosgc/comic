@@ -66,6 +66,7 @@
                 </div>
 
                 <a href="{{ route('posts.index') }}" class="nav-link">Comunidade</a>
+                <a href="{{ route('forum.index') }}" class="nav-link">Fórum</a>
                 <a href="{{ route('comics.index') }}" class="nav-link">Comics</a>
                 <a href="{{ route('changelog.index') }}" class="nav-link">Novidades</a>
                 <a href="{{ route('leaderboard.index') }}" class="nav-link">Ranking</a>
@@ -153,6 +154,7 @@
                 >
             </div>
             <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
+            <a href="{{ route('forum.index') }}" class="mobile-link">Fórum</a>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
             <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             <a href="{{ route('leaderboard.index') }}" class="mobile-link">Ranking</a>

@@ -1,8 +1,15 @@
 # Forum — Implementation Plan
 
-> Status: **planning** (not started). New tables are all prefixed `forum_` so
-> they sort together in the database and are easy to spot/manage by hand.
-> Shipped work moves to [CHANGELOG.md](CHANGELOG.md).
+> Status: **shipped** (core through phase 7). New tables are all prefixed
+> `forum_` so they sort together in the database and are easy to spot/manage
+> by hand. Implemented work is summarised in [CHANGELOG.md](CHANGELOG.md).
+>
+> Shipped: migrations + models + factories; policies + FormRequests;
+> public index/board/thread, posting/replies/quotes, reactions,
+> subscriptions, unread tracking, attachments; reports + moderator
+> actions; admin categories/moderation/moderators/bans/settings;
+> notifications + gamification; search, tags and solved answers.
+> Deferred (phase 8): polls, email digests, drag-ordering polish.
 
 ## 1. Goals
 
