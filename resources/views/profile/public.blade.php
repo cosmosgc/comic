@@ -18,17 +18,27 @@
     @endif
 
     <!-- Profile card -->
-    @include('profile.card', ['user' => $user, 'showEdit' => false])
+    @include('profile.card', [
+        'user' => $user,
+        'showEdit' => false,
+        'followsTab' => $followsTab ?? false,
+        'followersCount' => $followersCount ?? 0,
+        'followingCount' => $followingCount ?? 0,
+        'canFollow' => auth()->check() && auth()->id() !== $user->id && ($followsTab ?? false),
+        'isFollowing' => auth()->check() && auth()->id() !== $user->id && ($followsTab ?? false) && auth()->user()->isFollowing($user),
+    ])
 
     @php
         $likesAvailable = !empty($showLikes) && $likedPosts !== null;
         $collectionsAvailable = $collections !== null;
         $requestedTab = request()->input('tab');
-        $activeTab = ($requestedTab === 'likes' && $likesAvailable) || ($requestedTab === 'collections' && $collectionsAvailable)
+        $activeTab = ($requestedTab === 'likes' && $likesAvailable)
+            || ($requestedTab === 'collections' && $collectionsAvailable)
+            || (in_array($requestedTab, ['followers', 'following'], true) && ($followsTab ?? false))
             ? $requestedTab
             : 'comics';
     @endphp
-    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? $likesAvailable, 'collectionsTab' => $collectionsTab ?? false])
+    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? $likesAvailable, 'collectionsTab' => $collectionsTab ?? false, 'followsTab' => $followsTab ?? false, 'followersCount' => $followersCount ?? 0, 'followingCount' => $followingCount ?? 0])
 
     @if ($activeTab === 'likes')
         {{-- Liked posts are private unless the owner opted in --}}
@@ -40,7 +50,7 @@
             @if($likedPosts->count())
                 <div class="mx-auto max-w-xl border-x border-zinc-800">
                     @foreach($likedPosts as $post)
-                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
+                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
                     @endforeach
                 </div>
 
@@ -92,6 +102,16 @@
                     Sem coleções ainda.
                 </p>
             @endif
+        </section>
+    @elseif ($activeTab === 'followers')
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">Seguidores de {{ $user->name }}</h3>
+            @include('profile.user-list', ['users' => $followers, 'emptyMessage' => 'Ninguém segue este usuário ainda.'])
+        </section>
+    @elseif ($activeTab === 'following')
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">{{ $user->name }} segue</h3>
+            @include('profile.user-list', ['users' => $following, 'emptyMessage' => 'Este usuário não segue ninguém ainda.'])
         </section>
     @else
         <!-- Comics -->

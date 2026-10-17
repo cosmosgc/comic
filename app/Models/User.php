@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -21,6 +22,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'handle',
         'email',
         'password',
         'avatar_image_path',
@@ -87,6 +89,109 @@ class User extends Authenticatable
     public function collections(): HasMany
     {
         return $this->hasMany(Collection::class)->latest();
+    }
+
+    /**
+     * Users this account follows.
+     */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'follows',
+            'follower_id',
+            'followed_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Users following this account.
+     */
+    public function followers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'follows',
+            'followed_id',
+            'follower_id'
+        )->withTimestamps();
+    }
+
+    public function bookmarkedPosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Post::class, 'bookmarks')->withTimestamps();
+    }
+
+    /**
+     * The stored handle, falling back to a slug of the name for rows
+     * created before the handle migration, then a guaranteed non-empty id.
+     */
+    public function handleName(): string
+    {
+        $handle = trim((string) ($this->handle ?? ''));
+        if ($handle !== '') {
+            return $handle;
+        }
+
+        $slug = Str::slug((string) $this->name, '');
+
+        return $slug !== '' ? Str::lower($slug) : 'user'.$this->getKey();
+    }
+
+    public function isFollowing(User $user): bool
+    {
+        if ($this->is($user)) {
+            return false;
+        }
+
+        return $this->following()->whereKey($user->getKey())->exists();
+    }
+
+    /**
+     * Resolve an @mention token to a user by handle, or by the name with
+     * spaces removed (the legacy slug-style mention). Case-insensitive.
+     */
+    public static function findByMentionToken(string $token): ?self
+    {
+        $token = ltrim(trim($token), '@');
+        if ($token === '') {
+            return null;
+        }
+
+        return static::query()
+            ->where(function ($query) use ($token) {
+                $query->where('handle', $token)
+                    ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) = ?", [mb_strtolower($token)]);
+            })
+            ->first();
+    }
+
+    /**
+     * A unique ^[a-z0-9_]{3,20}$ handle derived from a display name,
+     * suffixing a counter on collisions. Used on register and when an
+     * admin/backfill needs one without user input.
+     */
+    public static function generateUniqueHandle(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::lower(Str::slug($name, ''));
+        $base = preg_replace('/[^a-z0-9_]/', '', (string) $base) ?: 'user';
+        if (strlen($base) < 3) {
+            $base = str_pad($base, 3, '0');
+        }
+        $base = substr($base, 0, 20);
+
+        $handle = $base;
+        $suffix = 1;
+        while (static::query()
+            ->where('handle', $handle)
+            ->when($ignoreId !== null, fn ($q) => $q->where('id', '!=', $ignoreId))
+            ->exists()) {
+            $suffix++;
+            $tail = (string) $suffix;
+            $handle = substr($base, 0, 20 - strlen($tail)).$tail;
+        }
+
+        return $handle;
     }
 
     public function badges(): HasMany

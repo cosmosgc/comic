@@ -3,6 +3,7 @@
 namespace App\View\Composers;
 
 use App\Models\Comic;
+use App\Models\Hashtag;
 use App\Models\Tag;
 use App\Models\Widget;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,7 @@ class SidebarComposer
         $view->with('tags', $view->offsetExists('tags') ? $view->offsetGet('tags') : self::popularTags());
         $view->with('latestComics', $view->offsetExists('latestComics') ? $view->offsetGet('latestComics') : self::latestUploads());
         $view->with('recommendedComics', $view->offsetExists('recommendedComics') ? $view->offsetGet('recommendedComics') : self::recommended());
+        $view->with('trendingHashtags', $view->offsetExists('trendingHashtags') ? $view->offsetGet('trendingHashtags') : Hashtag::trending());
     }
 
     /**

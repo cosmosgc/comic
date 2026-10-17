@@ -2,11 +2,11 @@
      Deeper chains collapse into a "continue thread" link to the child's page.
      Expects $node (Post), $depth (1 = direct reply), $likedPostIds. --}}
 <div class="{{ $depth > 1 ? 'ml-3 border-l-2 border-zinc-800 pl-2 sm:ml-6 sm:pl-3' : '' }}">
-    @include('posts.post', ['post' => $node, 'likedPostIds' => $likedPostIds ?? []])
+    @include('posts.post', ['post' => $node, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
 
     @if ($depth < 3)
         @foreach ($node->replies as $child)
-            @include('posts.thread-node', ['node' => $child, 'depth' => $depth + 1, 'likedPostIds' => $likedPostIds ?? []])
+            @include('posts.thread-node', ['node' => $child, 'depth' => $depth + 1, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
         @endforeach
     @elseif ($node->replies->isNotEmpty())
         <div class="px-4 py-2">

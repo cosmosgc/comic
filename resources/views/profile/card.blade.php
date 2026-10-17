@@ -92,6 +92,32 @@
             @endif
         </div>
 
+        @php($followsTab = $followsTab ?? false)
+        @if ($followsTab)
+            <div class="mt-4 flex items-center gap-5 text-sm">
+                <a href="{{ request()->url() }}?tab=followers" class="transition hover:underline">
+                    <span class="font-bold text-zinc-100" data-followers-count>{{ $followersCount ?? 0 }}</span>
+                    <span class="text-zinc-500">seguidores</span>
+                </a>
+                <a href="{{ request()->url() }}?tab=following" class="transition hover:underline">
+                    <span class="font-bold text-zinc-100">{{ $followingCount ?? 0 }}</span>
+                    <span class="text-zinc-500">seguindo</span>
+                </a>
+            </div>
+        @endif
+
+        @auth
+            @if ($canFollow ?? false)
+                @php($followingNow = $isFollowing ?? false)
+                <button type="button" data-style="chip"
+                        onclick="toggleFollow('{{ route('users.follow', $user->getKey()) }}', this)"
+                        data-following="{{ $followingNow ? '1' : '0' }}"
+                        class="mt-4 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold transition {{ $followingNow ? 'border border-zinc-700 text-zinc-200 hover:border-rose-700 hover:text-rose-300' : 'bg-indigo-600 text-white hover:bg-indigo-500' }}">
+                    {{ $followingNow ? 'Seguindo' : 'Seguir' }}
+                </button>
+            @endif
+        @endauth
+
         @if (!empty($showEdit))
             <a href="{{ route('profile.edit') }}"
                class="mt-6 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500">

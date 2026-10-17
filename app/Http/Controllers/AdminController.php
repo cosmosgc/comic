@@ -7,6 +7,7 @@ use App\Models\Analytics;
 use App\Models\Comic;
 use App\Models\ComicTransfer;
 use App\Models\Page;
+use App\Models\Report;
 use App\Models\Tag;
 use App\Models\TagCategory;
 use App\Models\User;
@@ -154,6 +155,55 @@ class AdminController extends Controller
             'search' => $search,
             'ipUsers' => ActivityLog::usersForIps($guestIps),
         ]);
+    }
+
+    /**
+     * Moderation queue: post reports awaiting review.
+     */
+    public function reports(Request $request)
+    {
+        $validated = $request->validate([
+            'status' => 'nullable|in:pending,reviewed,dismissed',
+        ]);
+        $status = $validated['status'] ?? 'pending';
+
+        $reports = Report::with(['reporter', 'post.author'])
+            ->where('status', $status)
+            ->latest()
+            ->paginate(25)
+            ->withQueryString();
+
+        $counts = [
+            'pending' => Report::where('status', 'pending')->count(),
+            'reviewed' => Report::where('status', 'reviewed')->count(),
+            'dismissed' => Report::where('status', 'dismissed')->count(),
+        ];
+
+        return view('admin.reports', [
+            'reports' => $reports,
+            'status' => $status,
+            'statuses' => Report::statuses(),
+            'counts' => $counts,
+        ]);
+    }
+
+    /**
+     * Review or dismiss a report (owner-or-admin is enforced by the
+     * admin middleware on the whole group).
+     */
+    public function resolveReport(Request $request, Report $report)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:reviewed,dismissed',
+        ]);
+
+        $report->update([
+            'status' => $validated['status'],
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Denúncia atualizada.');
     }
 
     /**

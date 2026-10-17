@@ -29,6 +29,9 @@ class RegisterController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'handle' => Schema::hasColumn('users', 'handle')
+                ? User::generateUniqueHandle($request->name)
+                : null,
         ]);
 
         // Built-in private Favorites collection (no-op on hosts whose

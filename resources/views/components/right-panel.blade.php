@@ -5,6 +5,26 @@
         @include('components.widget', ['widgets' => $widgets ?? collect(), 'position' => 2])
     </div>
 
+    <!-- Trending hashtags -->
+    @if (($trendingHashtags ?? collect())->isNotEmpty())
+        <div class="px-4 pb-4">
+            <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+                Em alta
+            </h5>
+            <ul class="space-y-2">
+                @foreach ($trendingHashtags as $trendingTag)
+                    <li>
+                        <a href="{{ route('hashtags.show', ['tag' => $trendingTag->tag]) }}"
+                           class="flex items-center justify-between rounded-lg p-1 text-sm transition hover:bg-zinc-800">
+                            <span class="font-medium text-sky-400">#{{ $trendingTag->tag }}</span>
+                            <span class="text-xs text-zinc-500">{{ $trendingTag->recent_count ?? $trendingTag->use_count }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Latest Uploads -->
     <div class="px-4 pb-4">
         <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">

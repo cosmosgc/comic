@@ -71,6 +71,7 @@
                 <a href="{{ route('leaderboard.index') }}" class="nav-link">Ranking</a>
 
                 @auth
+                    <a href="{{ route('bookmarks.index') }}" class="nav-link">Salvos</a>
                     <a href="{{ route('comics.create') }}" class="nav-link">Publicar</a>
                     @if (Auth::user()->admin_level >= 1)
                         <a href="{{ route('admin.dashboard') }}" class="nav-link">Admin</a>
@@ -156,6 +157,7 @@
             <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             <a href="{{ route('leaderboard.index') }}" class="mobile-link">Ranking</a>
             @auth
+                <a href="{{ route('bookmarks.index') }}" class="mobile-link">Salvos</a>
                 <a href="{{ route('comics.create') }}" class="mobile-link">Publicar</a>
                 @if (Auth::user()->admin_level >= 1)
                     <a href="{{ route('admin.dashboard') }}" class="mobile-link">Admin</a>
@@ -457,6 +459,15 @@
                         '<span class="font-semibold text-zinc-300">' + (data.comics_count ?? 0) + '</span> Comics · ' +
                         '<span class="font-semibold text-zinc-300">' + (data.posts_count ?? 0) + '</span> Posts' +
                     '</p>' +
+                    (data.follows_enabled && !data.is_self && data.follow_url
+                        ? '<button type="button" data-style="chip" data-following="' + (data.following ? '1' : '0') + '" ' +
+                          'onclick="toggleFollow(\'' + esc(data.follow_url) + '\', this)" ' +
+                          'class="mt-2 inline-flex items-center rounded-lg px-3 py-1 text-xs font-semibold transition ' +
+                          (data.following
+                              ? 'border border-zinc-700 text-zinc-200 hover:border-rose-700 hover:text-rose-300'
+                              : 'bg-indigo-600 text-white hover:bg-indigo-500') + '">' +
+                          (data.following ? 'Seguindo' : 'Seguir') + '</button>'
+                        : '') +
                 '</div>';
         }
 
@@ -583,6 +594,31 @@
 
 {{-- Gamification XP pop (flashed by App\Services\Gamification). --}}
 @include('components.xp-toast')
+
+    {{-- Follow toggle: used by profiles, the hover card and user lists. --}}
+    <script>
+        window.toggleFollow = function (url, btn) {
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            }).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+                if (!data) return;
+                var on = !!data.following;
+                btn.dataset.following = on ? '1' : '0';
+                if (btn.dataset.style === 'chip') {
+                    btn.textContent = on ? 'Seguindo' : 'Seguir';
+                    btn.classList.toggle('bg-indigo-600', !on);
+                    btn.classList.toggle('text-white', !on);
+                    btn.classList.toggle('border', on);
+                    btn.classList.toggle('border-zinc-700', on);
+                    btn.classList.toggle('text-zinc-200', on);
+                }
+                document.querySelectorAll('[data-followers-count]').forEach(function (el) {
+                    el.textContent = data.followers;
+                });
+            }).catch(function () {});
+        };
+    </script>
 
 </body>
 </html>

@@ -14,6 +14,12 @@
                class="rounded-full px-4 py-1.5 text-sm font-bold transition {{ ($tab ?? 'latest') === 'trending' ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100' }}">
                 Em alta
             </a>
+            @auth
+                <a href="{{ route('posts.index', array_filter(['tab' => 'following', 'q' => $query ?? null])) }}"
+                   class="rounded-full px-4 py-1.5 text-sm font-bold transition {{ ($tab ?? 'latest') === 'following' ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-100' }}">
+                    Seguindo
+                </a>
+            @endauth
         </nav>
         <form method="GET" action="{{ route('posts.index') }}" class="px-4 py-2.5" role="search">
             @if (($tab ?? 'latest') === 'trending')
@@ -65,6 +71,8 @@
                     Nenhum post para “{{ $query }}”.
                 @elseif (($tab ?? 'latest') === 'trending')
                     Nada em alta esta semana ainda.
+                @elseif (($tab ?? 'latest') === 'following')
+                    Você ainda não segue ninguém, ou quem você segue não postou. Explore a <a href="{{ route('posts.index') }}" class="text-sky-500 hover:underline">timeline geral</a>.
                 @else
                     Sem posts ainda. Seja o primeiro!
                 @endif

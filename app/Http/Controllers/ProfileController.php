@@ -19,7 +19,7 @@ class ProfileController extends Controller
     {
         $user = Auth::user(); // Authenticated user
         $user->loadMissing('badges');
-        $tab = in_array($request->input('tab'), ['likes', 'collections'], true)
+        $tab = in_array($request->input('tab'), ['likes', 'collections', 'followers', 'following'], true)
             ? $request->input('tab')
             : 'comics';
 
@@ -36,7 +36,15 @@ class ProfileController extends Controller
             ? $user->collections()->withCount('comics')->latest()->paginate(10, ['*'], 'collections_page')->withQueryString()
             : null;
 
-        return view('profile.show', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'likesTab', 'collectionsTab', 'collections'));
+        [$followsTab, $followers, $following, $followersCount, $followingCount] = $this->followData($user, $tab);
+        $bookmarkedPostIds = Schema::hasTable('bookmarks')
+            ? $user->bookmarkedPosts()->pluck('posts.id')->all()
+            : [];
+
+        return view('profile.show', compact(
+            'user', 'comics', 'likedPosts', 'likedPostIds', 'likesTab', 'collectionsTab', 'collections',
+            'followsTab', 'followers', 'following', 'followersCount', 'followingCount', 'bookmarkedPostIds'
+        ));
     }
 
     public function publicShowById($id)
@@ -54,7 +62,10 @@ class ProfileController extends Controller
     public function publicShowByUsername($username)
     {
         try {
-            $user = User::where('name', $username)->firstOrFail(); // Attempt to fetch user by username
+            // Accept either the stable handle or the legacy display name.
+            $user = User::where('handle', $username)
+                ->orWhere('name', $username)
+                ->firstOrFail();
             $comics = $user->comics()->visibleTo(Auth::user())->paginate(10)->withQueryString(); // Fetch user's comics
 
             return $this->publicProfile($user, $comics);
@@ -71,7 +82,7 @@ class ProfileController extends Controller
     protected function publicProfile(User $user, $comics)
     {
         $user->loadMissing('badges');
-        $tab = in_array(request()->input('tab'), ['likes', 'collections'], true)
+        $tab = in_array(request()->input('tab'), ['likes', 'collections', 'followers', 'following'], true)
             ? request()->input('tab')
             : 'comics';
         $showLikes = (bool) $user->show_liked_posts;
@@ -118,7 +129,37 @@ class ProfileController extends Controller
                 ->all();
         }
 
-        return view('profile.public', compact('user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections', 'likedComicIds'));
+        [$followsTab, $followers, $following, $followersCount, $followingCount] = $this->followData($user, $tab);
+        $bookmarkedPostIds = Auth::check() && Schema::hasTable('bookmarks')
+            ? Auth::user()->bookmarkedPosts()->pluck('posts.id')->all()
+            : [];
+
+        return view('profile.public', compact(
+            'user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections',
+            'likedComicIds', 'followsTab', 'followers', 'following', 'followersCount', 'followingCount', 'bookmarkedPostIds'
+        ));
+    }
+
+    /**
+     * Shared follow data for both profile views: whether the tab is
+     * enabled, the paginated lists when the tab is open, and counts.
+     *
+     * @return array{0: bool, 1: mixed, 2: mixed, 3: int, 4: int}
+     */
+    protected function followData(User $user, string $tab): array
+    {
+        if (! Schema::hasTable('follows')) {
+            return [false, null, null, 0, 0];
+        }
+
+        $followers = $tab === 'followers'
+            ? $user->followers()->latest()->paginate(20, ['*'], 'followers_page')->withQueryString()
+            : null;
+        $following = $tab === 'following'
+            ? $user->following()->latest()->paginate(20, ['*'], 'following_page')->withQueryString()
+            : null;
+
+        return [true, $followers, $following, $user->followers()->count(), $user->following()->count()];
     }
 
     /**
@@ -256,17 +297,26 @@ class ProfileController extends Controller
         $user->loadMissing('badges');
         $topBadge = $user->topBadge();
 
+        $viewer = Auth::user();
+        $followsExist = Schema::hasTable('follows');
+
         return response()->json([
             'name' => $user->name,
+            'handle' => $user->handleName(),
             'bio' => $user->bio,
             'avatar_url' => $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'),
             'banner_url' => $user->banner_image_path ? asset($user->banner_image_path) : null,
-            'profile_url' => route('profile.public.show.username', ['username' => $user->name]),
+            'profile_url' => route('profile.public.show.username', ['username' => $user->handleName()]),
             'comics_count' => $user->comics()->visibleTo(Auth::user())->count(),
             'posts_count' => Post::where('author_id', $user->id)->count(),
             'level' => (int) $user->level,
             'experience' => (int) $user->experience,
             'badge' => $topBadge ? ['icon' => $topBadge->icon, 'label' => $topBadge->label] : null,
+            'follows_enabled' => $followsExist,
+            'follow_url' => $followsExist ? route('users.follow', $user->getKey()) : null,
+            'following' => $followsExist && $viewer && ! $viewer->is($user) && $viewer->isFollowing($user),
+            'is_self' => $viewer && $viewer->is($user),
+            'followers_count' => $followsExist ? $user->followers()->count() : 0,
         ]);
     }
 

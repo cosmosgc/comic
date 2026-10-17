@@ -9,16 +9,20 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComicController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\FollowController;
+use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Middleware\AdminMiddleware;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +87,9 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::get('/changelogs/{id}/edit', 'changelogEdit')->name('admin.changelogs.edit')->where('id', '[A-Za-z0-9\-]+');
     Route::put('/changelogs/{id}', 'changelogUpdate')->name('admin.changelogs.update')->where('id', '[A-Za-z0-9\-]+');
     Route::delete('/changelogs/{id}', 'changelogDestroy')->name('admin.changelogs.destroy')->where('id', '[A-Za-z0-9\-]+');
+
+    Route::get('/reports', 'reports')->name('admin.reports');
+    Route::post('/reports/{report}/resolve', 'resolveReport')->name('admin.reports.resolve');
 });
 
 Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->group(function () {
@@ -172,6 +179,18 @@ Route::put('/posts/{post}', [PostController::class, 'update'])->middleware('auth
 Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like')->middleware('auth');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 // ////////////////////////////////////////////////////////////
+// Social graph: follows, bookmarks and moderation (auth).
+Route::middleware('auth')->group(function () {
+    Route::post('/users/{user}/follow', [FollowController::class, 'toggle'])->name('users.follow');
+    Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'toggle'])->name('posts.bookmark');
+    Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::post('/posts/{post}/report', [ReportController::class, 'store'])->name('posts.report');
+});
+
+// Hashtag timeline (public).
+Route::get('/hashtag/{tag}', [HashtagController::class, 'show'])
+    ->where('tag', '[A-Za-z0-9_]+')
+    ->name('hashtags.show');
 
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);

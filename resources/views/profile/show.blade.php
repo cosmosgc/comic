@@ -16,7 +16,14 @@
     @endif
 
     <!-- Profile card -->
-    @include('profile.card', ['user' => $user, 'showEdit' => true])
+    @include('profile.card', [
+        'user' => $user,
+        'showEdit' => true,
+        'followsTab' => $followsTab ?? false,
+        'followersCount' => $followersCount ?? 0,
+        'followingCount' => $followingCount ?? 0,
+        'canFollow' => false,
+    ])
 
     @php
         $likesAvailable = $likedPosts !== null;
@@ -26,7 +33,7 @@
             ? $requestedTab
             : 'comics';
     @endphp
-    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? true, 'collectionsTab' => $collectionsTab ?? false])
+    @include('profile.tabs', ['activeTab' => $activeTab, 'likesTab' => $likesTab ?? true, 'collectionsTab' => $collectionsTab ?? false, 'followsTab' => $followsTab ?? false, 'followersCount' => $followersCount ?? 0, 'followingCount' => $followingCount ?? 0])
 
     @if ($activeTab === 'likes')
         <!-- Liked posts (always visible to the owner) -->
@@ -34,7 +41,7 @@
             @if ($likedPosts->count())
                 <div class="mx-auto max-w-xl border-x border-zinc-800">
                     @foreach ($likedPosts as $post)
-                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
+                        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
                     @endforeach
                 </div>
 
@@ -83,6 +90,16 @@
                 <p class="text-zinc-500">Você não tem coleções ainda.</p>
             @endif
         </div>
+    @elseif ($activeTab === 'followers')
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">Seguidores</h3>
+            @include('profile.user-list', ['users' => $followers, 'emptyMessage' => 'Ninguém segue você ainda.'])
+        </section>
+    @elseif ($activeTab === 'following')
+        <section>
+            <h3 class="mb-4 text-xl font-semibold">Seguindo</h3>
+            @include('profile.user-list', ['users' => $following, 'emptyMessage' => 'Você ainda não segue ninguém.'])
+        </section>
     @else
         <!-- Comics section -->
         <div>

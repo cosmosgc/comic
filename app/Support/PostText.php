@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -28,7 +29,7 @@ class PostText
             if ($i % 2 === 1) {
                 $out .= self::linkTag($chunk);
             } else {
-                $out .= self::renderMentions($chunk, $mentions);
+                $out .= self::renderInline($chunk, $mentions);
             }
         }
 
@@ -81,11 +82,20 @@ class PostText
         $key = implode("\0", $tokens);
         if (! array_key_exists($key, self::$mentionCache)) {
             $lower = array_map('strtolower', $tokens);
-            $names = User::whereIn('name', $tokens)->pluck('name')->all();
             $resolved = [];
+
+            // Resolve by the stable handle first (preferred, unambiguous).
+            if (Schema::hasColumn('users', 'handle')) {
+                foreach (User::whereIn('handle', $lower)->get(['handle', 'name']) as $user) {
+                    $resolved[strtolower((string) $user->handle)] = $user->name;
+                }
+            }
+
+            $names = User::whereIn('name', $tokens)->pluck('name')->all();
             foreach ($names as $name) {
                 $resolved[strtolower($name)] = $name;
             }
+
             // Handle-style tokens (@johndoe for "John Doe").
             $missing = array_values(array_diff($lower, array_keys($resolved)));
             if ($missing !== []) {
@@ -103,17 +113,26 @@ class PostText
         return self::$mentionCache[$key];
     }
 
-    protected static function renderMentions(string $chunk, array $mentions): string
+    /**
+     * Render @mentions and #hashtags inside a plain-text chunk. The
+     * chunk is already URL-free; everything else is escaped.
+     */
+    protected static function renderInline(string $chunk, array $mentions): string
     {
-        $parts = preg_split('#@([A-Za-z0-9_]+)#', $chunk, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $parts = preg_split('~(@[A-Za-z0-9_]+|#[A-Za-z0-9_]+)~', $chunk, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         $out = '';
         foreach ($parts as $i => $part) {
-            if ($i % 2 === 1) {
-                $name = $mentions[strtolower($part)] ?? null;
-                $out .= $name !== null
-                    ? '<a href="'.e(route('profile.public.show.username', ['username' => $name])).'" data-hovercard="'.e($name).'" class="text-sky-500 hover:underline">@'.e($name).'</a>'
-                    : '@'.e($part);
+            if ($i % 2 === 1 && $part !== '') {
+                if ($part[0] === '@') {
+                    $name = $mentions[strtolower(substr($part, 1))] ?? null;
+                    $out .= $name !== null
+                        ? '<a href="'.e(route('profile.public.show.username', ['username' => $name])).'" data-hovercard="'.e($name).'" class="text-sky-500 hover:underline">@'.e($name).'</a>'
+                        : e($part);
+                } else {
+                    $tag = substr($part, 1);
+                    $out .= '<a href="'.e(route('hashtags.show', ['tag' => strtolower($tag)])).'" class="text-sky-500 hover:underline">#'.e($tag).'</a>';
+                }
             } else {
                 $out .= e($part);
             }

@@ -28,6 +28,12 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Follows: follow/unfollow buttons on profiles, hover cards and user lists, plus a "Seguindo" feed tab and follower/following counts and lists
+- User handles: unique `@handle` reserved on register, backfilled for existing accounts, used for profile URLs and reliable mentions
+- In-app social notifications (mentions, replies, quotes, likes, new followers) delivered through the existing bell
+- Bookmarks: per-post save button and a private "Salvos" page
+- Hashtags: `#tag` parsing, a `/hashtag/{tag}` timeline, and a "Em alta" trending widget in the sidebar
+- Moderation: report a post from its action bar and review reports in a new admin "Denúncias" queue
 - Admin Migrations panel: migration files vs. database comparison with one-click `migrate --force` (no console needed)
 - Admin Deploy panel + `deploy:host` artisan command: incremental FTPS code sync with project verification gate, dry-run, cancel, vendor opt-in, and quick/full modes
 - Upload page: live per-image sizes, totals, and remove-before-send list

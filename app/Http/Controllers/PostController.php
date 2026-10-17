@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Hashtag;
 use App\Models\Post;
 use App\Support\ActivityLogger;
+use App\Support\SocialNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +16,7 @@ class PostController extends Controller
     {
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
-            'tab' => 'nullable|in:latest,trending',
+            'tab' => 'nullable|in:latest,trending,following',
         ]);
         $tab = $validated['tab'] ?? 'latest';
         $query = trim($validated['q'] ?? '');
@@ -29,7 +31,16 @@ class PostController extends Controller
             });
         }
 
-        if ($tab === 'trending') {
+        if ($tab === 'following') {
+            $followingIds = [];
+            if ($request->user() && Schema::hasTable('follows')) {
+                $followingIds = DB::table('follows')
+                    ->where('follower_id', $request->user()->id)
+                    ->pluck('followed_id')
+                    ->all();
+            }
+            $posts->whereIn('posts.author_id', $followingIds)->latest();
+        } elseif ($tab === 'trending') {
             // Engagement velocity: likes + 2x replies over the last 7 days.
             $posts->where('posts.created_at', '>=', now()->subDays(7))
                 ->orderByRaw('(liked_by_users_count + replies_count * 2) DESC')
@@ -63,7 +74,13 @@ class PostController extends Controller
             ? $request->user()->likedPosts()->pluck('posts.id')->all()
             : [];
 
-        return view('posts.index', compact('posts', 'likedPostIds', 'tab', 'query'));
+        // Bookmarks are private: only the viewer's own saved posts.
+        $bookmarkedPostIds = [];
+        if ($request->user() && Schema::hasTable('bookmarks')) {
+            $bookmarkedPostIds = $request->user()->bookmarkedPosts()->pluck('posts.id')->all();
+        }
+
+        return view('posts.index', compact('posts', 'likedPostIds', 'bookmarkedPostIds', 'tab', 'query'));
     }
 
     public function store(Request $request)
@@ -122,6 +139,11 @@ class PostController extends Controller
             'ip' => $request->ip(),
         ]);
 
+        // Parse #hashtags for the timeline + trending, then fan out
+        // @mention / reply / quote notifications through the bell.
+        Hashtag::syncForPost($post, $post->text);
+        SocialNotifier::postCreated($post);
+
         if ($post->parent_id) {
             return redirect()->route('posts.show', $post->parent_id);
         }
@@ -157,6 +179,7 @@ class PostController extends Controller
         ]);
 
         $post->update(['text' => $validated['text'] ?? null]);
+        Hashtag::syncForPost($post, $post->text);
 
         return redirect()->route('posts.show', $post)->with('success', 'Post atualizado.');
     }
@@ -226,6 +249,11 @@ class PostController extends Controller
                 ->all();
         }
 
-        return view('posts.show', compact('post', 'replies', 'ancestors', 'likedPostIds'));
+        $bookmarkedPostIds = [];
+        if ($request->user() && Schema::hasTable('bookmarks')) {
+            $bookmarkedPostIds = $request->user()->bookmarkedPosts()->pluck('posts.id')->all();
+        }
+
+        return view('posts.show', compact('post', 'replies', 'ancestors', 'likedPostIds', 'bookmarkedPostIds'));
     }
 }

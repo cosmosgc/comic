@@ -44,6 +44,21 @@ class Post extends Model
         return $this->belongsToMany(User::class, 'post_likes')->withTimestamps();
     }
 
+    public function bookmarkedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'bookmarks')->withTimestamps();
+    }
+
+    public function hashtags(): BelongsToMany
+    {
+        return $this->belongsToMany(Hashtag::class, 'hashtag_post')->withTimestamps();
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
+    }
+
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Post::class, 'parent_id');

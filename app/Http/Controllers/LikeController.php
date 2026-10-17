@@ -6,6 +6,7 @@ use App\Models\Comic;
 use App\Models\Post;
 use App\Services\Gamification;
 use App\Support\ActivityLogger;
+use App\Support\SocialNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -34,6 +35,10 @@ class LikeController extends Controller
             'metadata' => ['post_id' => $post->id, 'liked' => $liked],
             'ip' => $request->ip(),
         ]);
+
+        if ($liked) {
+            SocialNotifier::postLiked($post, $user);
+        }
 
         return response()->json([
             'liked' => $liked,

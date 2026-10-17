@@ -16,13 +16,13 @@
     {{-- Ancestor chain, oldest first --}}
     @foreach ($ancestors as $ancestor)
         <div class="border-b border-zinc-800 opacity-80">
-            @include('posts.post', ['post' => $ancestor, 'likedPostIds' => $likedPostIds ?? []])
+            @include('posts.post', ['post' => $ancestor, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
         </div>
     @endforeach
 
     {{-- Main post --}}
     <div class="border-b border-zinc-800">
-        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? []])
+        @include('posts.post', ['post' => $post, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
     </div>
 
     {{-- Reply composer (same hidden-field pattern as quotes) --}}
@@ -99,7 +99,7 @@
     </div>
     <div>
         @forelse ($replies as $reply)
-            @include('posts.thread-node', ['node' => $reply, 'depth' => 1, 'likedPostIds' => $likedPostIds ?? []])
+            @include('posts.thread-node', ['node' => $reply, 'depth' => 1, 'likedPostIds' => $likedPostIds ?? [], 'bookmarkedPostIds' => $bookmarkedPostIds ?? []])
         @empty
             <div class="p-8 text-center text-zinc-500">
                 Sem respostas ainda. Seja o primeiro!

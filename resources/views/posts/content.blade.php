@@ -1,7 +1,8 @@
 @php
     $author = $post->author;
     $authorName = $author?->name ?? 'Usuário removido';
-    $handle = $author ? '@' . Str::slug($author->name, '') : '@desconhecido';
+    $handle = $author ? '@' . $author->handleName() : '@desconhecido';
+    $authorUrl = $author ? route('profile.public.show.username', ['username' => $author->handleName()]) : null;
     $avatar = $author?->avatar_image_path
         ? asset($author->avatar_image_path)
         : asset('default-avatar.png');
@@ -15,7 +16,7 @@
     {{-- Avatar --}}
     <div class="shrink-0">
         @if ($author)
-            <a href="{{ route('profile.public.show.username', ['username' => $author->name]) }}"
+            <a href="{{ $authorUrl }}"
                data-hovercard="{{ $author->name }}">
                 <img src="{{ $avatar }}" alt="{{ $authorName }} avatar"
                      class="h-10 w-10 rounded-full border border-zinc-800 object-cover hover:opacity-80">
@@ -30,7 +31,7 @@
         {{-- Header: Name @handle · time --}}
         <div class="flex items-center gap-1 text-sm">
             @if ($author)
-                <a href="{{ route('profile.public.show.username', ['username' => $author->name]) }}"
+                <a href="{{ $authorUrl }}"
                    data-hovercard="{{ $author->name }}"
                    class="truncate font-bold text-zinc-100 hover:underline">
                     {{ $authorName }}
@@ -130,6 +131,28 @@
                         btn.querySelector('.like-count').textContent = data.count > 0 ? data.count : '';
                         if (window.openXpToast) window.openXpToast(data.xp);
                     };
+                    window.togglePostBookmark = async function (url, btn) {
+                        let res;
+                        try {
+                            res = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                },
+                            });
+                        } catch (e) {
+                            return;
+                        }
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const on = !!data.bookmarked;
+                        btn.dataset.bookmarked = on ? '1' : '0';
+                        btn.classList.toggle('text-amber-400', on);
+                        btn.classList.toggle('hover:text-amber-400', !on);
+                        const icon = btn.querySelector('.bookmark-icon');
+                        if (icon) icon.setAttribute('fill', on ? 'currentColor' : 'none');
+                    };
                 </script>
             @endonce
             @auth
@@ -154,6 +177,22 @@
                     </span>
                     <span>{{ $likeCount > 0 ? $likeCount : '' }}</span>
                 </span>
+            @endauth
+
+            {{-- Bookmark: private, saved for later (auth only) --}}
+            @auth
+                @php($isBookmarked = in_array($post->id, $bookmarkedPostIds ?? []))
+                <button type="button"
+                        onclick="togglePostBookmark('{{ route('posts.bookmark', $post) }}', this)"
+                        title="Salvar"
+                        data-bookmarked="{{ $isBookmarked ? '1' : '0' }}"
+                        class="group flex items-center gap-1 text-xs transition {{ $isBookmarked ? 'text-amber-400' : 'hover:text-amber-400' }}">
+                    <span class="rounded-full p-2 transition group-hover:bg-amber-500/10">
+                        <svg class="h-[18px] w-[18px] bookmark-icon" fill="{{ $isBookmarked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"/>
+                        </svg>
+                    </span>
+                </button>
             @endauth
 
             {{-- Reply: prefills the composer (id lets thread pages target the node) --}}
@@ -230,6 +269,39 @@
                     </span>
                 </a>
             @endif
+
+            {{-- Report: anyone but the author --}}
+            @auth
+                @if (! auth()->user()->is($author))
+                    <div x-data="{ reportOpen: false }" class="relative">
+                        <button type="button" @click="reportOpen = !reportOpen" title="Denunciar"
+                                class="group flex items-center gap-1 text-xs transition hover:text-rose-400">
+                            <span class="rounded-full p-2 transition group-hover:bg-rose-500/10">
+                                <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18M3 4.5h13l-2.25 3.75L16 12H3"/>
+                                </svg>
+                            </span>
+                        </button>
+                        <div x-show="reportOpen" @click.outside="reportOpen = false" x-cloak
+                             class="absolute bottom-9 right-0 z-30 w-60 rounded-xl border border-zinc-700 bg-zinc-900 p-3 shadow-2xl">
+                            <form method="POST" action="{{ route('posts.report', $post) }}">
+                                @csrf
+                                <label class="mb-1 block text-xs text-zinc-400">Motivo</label>
+                                <select name="reason" class="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm">
+                                    @foreach (\App\Models\Report::reasons() as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <textarea name="details" rows="2" maxlength="1000" placeholder="Detalhes (opcional)"
+                                          class="mb-2 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm"></textarea>
+                                <button type="submit" class="w-full rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-500">
+                                    Denunciar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+            @endauth
         </div>
     </div>
 </div>
