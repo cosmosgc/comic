@@ -35,18 +35,26 @@
 </head>
 <body class="min-h-screen bg-zinc-100 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
 
-<div x-data="{ navOpen: false }">
+<div x-data="{ sidebarOpen: false }">
+    <!-- Mobile overlay -->
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" x-cloak
+         class="fixed inset-0 z-30 bg-black/50 lg:hidden"></div>
 
-    <!-- Nav panel: hamburger dropdown from the header, same pattern as the profile menu -->
-    <aside x-show="navOpen" x-transition @click.outside="navOpen = false" @keydown.escape.window="navOpen = false"
-           x-cloak id="admin-nav-menu"
-           class="fixed left-3 top-[4.5rem] z-40 max-h-[calc(100vh-5.5rem)] w-80 overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-900"
-           aria-label="Menu de navegação do painel">
-        <a href="{{ route('admin.dashboard') }}" class="block border-b border-zinc-200 px-4 py-3 text-sm font-bold tracking-wide dark:border-zinc-800">
-            Painel Admin
-        </a>
+    <!-- Sidebar -->
+    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+           class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-zinc-200 bg-white transition-transform duration-200 dark:border-zinc-800 dark:bg-zinc-900 lg:translate-x-0">
+        <div class="flex h-16 items-center justify-between border-b border-zinc-200 px-4 dark:border-zinc-800">
+            <a href="{{ route('admin.dashboard') }}" class="text-base font-bold tracking-wide">
+                Painel Admin
+            </a>
+            <button @click="sidebarOpen = false" class="rounded-lg p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Fechar menu">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
 
-        <nav class="space-y-1 p-2" aria-label="Navegação do painel">
+        <nav class="flex-1 space-y-1 overflow-y-auto p-3">
             <a href="{{ route('admin.dashboard') }}" class="admin-nav-link {{ request()->routeIs('admin.dashboard') ? 'admin-nav-link-active' : '' }}">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
                 Painel
@@ -145,13 +153,11 @@
     </aside>
 
     <!-- Main column -->
-    <div>
+    <div class="lg:pl-64">
         <header class="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
             <div class="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center gap-3">
-                    <button @click="navOpen = !navOpen" :aria-expanded="navOpen.toString()"
-                            aria-controls="admin-nav-menu" aria-haspopup="true"
-                            class="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Abrir menu de navegação">
+                    <button @click="sidebarOpen = true" class="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Abrir menu">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                         </svg>
