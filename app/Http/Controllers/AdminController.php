@@ -156,6 +156,134 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Report dashboard for the activity feed: trends, breakdowns and
+     * "fun" stats (popular searches, most active users, peak hours,
+     * most-liked comics). Ranged like the analytics dashboard.
+     */
+    public function activityReport(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+        $startDate = $validated['start_date'] ?? Carbon::now()->subDays(29)->toDateString();
+        $endDate = $validated['end_date'] ?? Carbon::now()->toDateString();
+
+        $range = fn ($query) => $query
+            ->whereDate('created_at', '>=', $startDate)
+            ->whereDate('created_at', '<=', $endDate);
+
+        // -- headline numbers ------------------------------------------
+        $total = $range(ActivityLog::query())->count();
+        $uniqueUsers = $range(ActivityLog::query())->whereNotNull('user_id')->distinct()->count('user_id');
+        $guestCount = $range(ActivityLog::query())->whereNull('user_id')->count();
+        $loginCount = $range(ActivityLog::query())->where('action', 'auth.login')->count();
+
+        // Same-length window immediately before, for the trend badge.
+        $days = max(1, Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1);
+        $prevTotal = ActivityLog::query()
+            ->whereDate('created_at', '>=', Carbon::parse($startDate)->subDays($days)->toDateString())
+            ->whereDate('created_at', '<', $startDate)
+            ->count();
+        $trend = $prevTotal > 0
+            ? (int) round((($total - $prevTotal) / $prevTotal) * 100)
+            : null;
+
+        // -- per-day series (portable DATE() works on MySQL + SQLite) --
+        $perDay = $range(ActivityLog::query())
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('count', 'date');
+
+        $dailyLabels = [];
+        $dailyCounts = [];
+        for ($cursor = Carbon::parse($startDate); $cursor->lte(Carbon::parse($endDate)); $cursor->addDay()) {
+            $key = $cursor->toDateString();
+            $dailyLabels[] = $cursor->format('d/m');
+            $dailyCounts[] = (int) ($perDay[$key] ?? 0);
+        }
+
+        // -- breakdown by action ---------------------------------------
+        $byAction = $range(ActivityLog::query())
+            ->selectRaw('action, COUNT(*) as count')
+            ->groupBy('action')
+            ->orderByDesc('count')
+            ->get();
+        $actionLabels = $byAction->map(fn ($row) => ActivityLog::actions()[$row->action] ?? $row->action)->all();
+        $actionCounts = $byAction->pluck('count')->map(fn ($c) => (int) $c)->all();
+
+        // -- most active users -----------------------------------------
+        $topUsers = $range(ActivityLog::query())
+            ->whereNotNull('user_id')
+            ->with('user:id,name')
+            ->selectRaw('user_id, COUNT(*) as count')
+            ->groupBy('user_id')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+
+        // -- popular searches (aggregate search terms in PHP) ----------
+        $searchRows = $range(ActivityLog::query())
+            ->whereIn('action', ['search.comics', 'search.posts'])
+            ->latest()
+            ->limit(3000)
+            ->get(['metadata']);
+        $terms = [];
+        foreach ($searchRows as $row) {
+            $meta = $row->metadata ?? [];
+            $term = $meta['search'] ?? $meta['q'] ?? null;
+            if (is_string($term) && trim($term) !== '') {
+                $term = mb_strtolower(trim($term));
+                $terms[$term] = ($terms[$term] ?? 0) + 1;
+            }
+        }
+        arsort($terms);
+        $popularSearches = array_slice($terms, 0, 15, true);
+
+        // -- most-liked comics -----------------------------------------
+        $topLiked = $range(ActivityLog::query())
+            ->where('action', 'comic.liked')
+            ->whereNotNull('subject_id')
+            ->selectRaw('subject_id, COUNT(*) as count')
+            ->groupBy('subject_id')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+        $likedComics = Comic::whereIn('id', $topLiked->pluck('subject_id'))
+            ->get(['id', 'title', 'slug'])
+            ->keyBy('id');
+
+        // -- peak hours (computed in PHP for MySQL/SQLite parity) ------
+        $hourRows = $range(ActivityLog::query())->latest()->limit(5000)->get(['created_at']);
+        $byHour = array_fill(0, 24, 0);
+        foreach ($hourRows as $row) {
+            if ($row->created_at !== null) {
+                $byHour[(int) $row->created_at->format('G')]++;
+            }
+        }
+
+        return view('admin.activity-report', [
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'total' => $total,
+            'uniqueUsers' => $uniqueUsers,
+            'guestCount' => $guestCount,
+            'loginCount' => $loginCount,
+            'trend' => $trend,
+            'dailyLabels' => $dailyLabels,
+            'dailyCounts' => $dailyCounts,
+            'actionLabels' => $actionLabels,
+            'actionCounts' => $actionCounts,
+            'topUsers' => $topUsers,
+            'popularSearches' => $popularSearches,
+            'topLiked' => $topLiked,
+            'likedComics' => $likedComics,
+            'byHour' => $byHour,
+        ]);
+    }
+
     public function comics()
     {
         $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')->get();

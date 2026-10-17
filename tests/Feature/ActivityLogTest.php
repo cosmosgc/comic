@@ -129,4 +129,40 @@ class ActivityLogTest extends TestCase
         $this->actingAs(User::factory()->create(['admin_level' => 0]))
             ->get('/admin/activities')->assertRedirect('/');
     }
+
+    public function test_admin_report_shows_stats_and_popular_searches(): void
+    {
+        $admin = $this->makeAdmin();
+        $user = User::factory()->create();
+
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'search.comics',
+            'description' => 'Buscou comics por "naruto"',
+            'metadata' => ['search' => 'naruto', 'results' => 3],
+            'ip_address' => '10.0.0.5',
+        ]);
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'search.comics',
+            'description' => 'Buscou comics por "naruto"',
+            'metadata' => ['search' => 'naruto', 'results' => 1],
+            'ip_address' => '10.0.0.5',
+        ]);
+
+        $this->actingAs($admin)->get('/admin/activities/report')
+            ->assertOk()
+            ->assertSee('Atividade por dia')
+            ->assertSee('Buscas mais populares')
+            ->assertSee('naruto')
+            ->assertSee('2×');
+    }
+
+    public function test_non_admin_cannot_view_activity_report(): void
+    {
+        $this->get('/admin/activities/report')->assertRedirect('/login');
+
+        $this->actingAs(User::factory()->create(['admin_level' => 0]))
+            ->get('/admin/activities/report')->assertRedirect('/');
+    }
 }

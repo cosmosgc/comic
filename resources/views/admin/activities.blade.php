@@ -8,6 +8,7 @@
     <div class="admin-card">
         <div class="admin-card-header">
             <span>Interações dos usuários</span>
+            <a href="{{ route('admin.activities.report') }}" class="admin-btn admin-btn-secondary admin-btn-sm">Relatório →</a>
         </div>
         <div class="admin-card-body space-y-4">
             <div>
