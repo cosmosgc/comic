@@ -18,9 +18,15 @@ class LoginController extends Controller
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
+            'remember' => 'nullable|boolean',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // Keep only the real credential columns: passing "remember"
+        // through would add it as a where clause and never match.
+        if (Auth::attempt(
+            ['email' => $credentials['email'], 'password' => $credentials['password']],
+            $request->boolean('remember')
+        )) {
             $request->session()->regenerate();
 
             return redirect()->intended('/');

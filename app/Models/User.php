@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\Gamification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,6 +29,11 @@ class User extends Authenticatable
         'links',
         'admin_level',
         'show_liked_posts',
+        'experience',
+        'level',
+        'last_active_on',
+        'current_streak',
+        'longest_streak',
     ];
 
     /**
@@ -42,6 +48,7 @@ class User extends Authenticatable
             'show_liked_posts' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_active_on' => 'date',
         ];
     }
 
@@ -78,5 +85,25 @@ class User extends Authenticatable
     public function collections(): HasMany
     {
         return $this->hasMany(Collection::class)->latest();
+    }
+
+    public function badges(): HasMany
+    {
+        return $this->hasMany(UserBadge::class)->orderBy('awarded_at');
+    }
+
+    public function hasBadge(string $badge): bool
+    {
+        return $this->badges->contains('badge', $badge);
+    }
+
+    /**
+     * Level/experience snapshot for the profile UI.
+     *
+     * @return array{level: int, exp: int, into_level: int, needed: int, remaining: int, percent: int, next_level: int}
+     */
+    public function levelProgress(): array
+    {
+        return Gamification::progress($this);
     }
 }

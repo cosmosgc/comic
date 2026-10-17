@@ -8,6 +8,7 @@ use App\Models\Comic;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\Gamification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Throwable;
@@ -38,7 +39,7 @@ class ActivityLogger
             $subject = $options['subject'] ?? null;
             $url = $options['url'] ?? ($subject instanceof Model ? self::urlFor($subject) : null);
 
-            return ActivityLog::create([
+            $log = ActivityLog::create([
                 'user_id' => self::userId($options['user'] ?? null),
                 'action' => mb_substr($action, 0, 50),
                 'subject_type' => $subject instanceof Model ? $subject->getMorphClass() : null,
@@ -50,6 +51,20 @@ class ActivityLogger
                 'metadata' => $options['metadata'] ?? null,
                 'ip_address' => $options['ip'] ?? request()->ip(),
             ]);
+
+            // Gamification: grant exp/level/badges for this interaction.
+            // Isolated so a gamification failure never loses the log.
+            if ($log->user_id !== null) {
+                try {
+                    if ($log->user !== null) {
+                        Gamification::award($log->user, $action, $subject instanceof Model ? $subject : null, $log->id);
+                    }
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            }
+
+            return $log;
         } catch (Throwable $e) {
             report($e);
 

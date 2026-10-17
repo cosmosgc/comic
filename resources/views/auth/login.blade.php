@@ -67,6 +67,17 @@
                 >
             </div>
 
+            <!-- Remember me -->
+            <label class="flex items-center gap-2 text-sm text-zinc-400">
+                <input
+                    type="checkbox"
+                    name="remember"
+                    value="1"
+                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-500 focus:ring-indigo-500/40"
+                >
+                Manter-me conectado
+            </label>
+
             <!-- Submit -->
             <button
                 type="submit"

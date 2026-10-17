@@ -18,6 +18,7 @@ class ProfileController extends Controller
     public function show(Request $request)
     {
         $user = Auth::user(); // Authenticated user
+        $user->loadMissing('badges');
         $tab = in_array($request->input('tab'), ['likes', 'collections'], true)
             ? $request->input('tab')
             : 'comics';
@@ -69,6 +70,7 @@ class ProfileController extends Controller
      */
     protected function publicProfile(User $user, $comics)
     {
+        $user->loadMissing('badges');
         $tab = in_array(request()->input('tab'), ['likes', 'collections'], true)
             ? request()->input('tab')
             : 'comics';

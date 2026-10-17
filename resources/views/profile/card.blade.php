@@ -20,9 +20,51 @@
 
         <h2 class="mt-3 text-xl font-semibold">{{ $user->name }}</h2>
 
+        @php($progress = $user->levelProgress())
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span class="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
+                Nível {{ $progress['level'] }}
+            </span>
+            <span class="rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300">
+                {{ number_format($progress['exp']) }} XP
+            </span>
+            @if ((int) $user->current_streak > 0)
+                <span class="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300"
+                      title="Sequência de dias ativos — recorde: {{ $user->longest_streak }} dias">
+                    🔥 {{ $user->current_streak }} dia(s)
+                </span>
+            @endif
+        </div>
+
+        <div class="mt-3 w-full max-w-md">
+            <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div class="h-full rounded-full bg-indigo-500" style="width: {{ $progress['percent'] }}%"></div>
+            </div>
+            <p class="mt-1 text-xs text-zinc-500">
+                {{ $progress['into_level'] }}/{{ $progress['needed'] }} XP — faltam {{ number_format($progress['remaining']) }} para o nível {{ $progress['next_level'] }}
+            </p>
+        </div>
+
         <p class="mt-2 max-w-xl text-sm text-zinc-400">
             {{ $user->bio ?? 'Sem bio disponível' }}
         </p>
+
+        @if ($user->relationLoaded('badges') ? $user->badges->isNotEmpty() : $user->badges()->exists())
+            <div class="mt-5 w-full max-w-md">
+                <h3 class="mb-2 text-sm font-semibold text-zinc-300">
+                    Conquistas ({{ $user->badges->count() }}/{{ count(config('gamification.badges', [])) }})
+                </h3>
+                <div class="flex flex-wrap justify-center gap-2">
+                    @foreach ($user->badges as $badge)
+                        @php($def = $badge->definition())
+                        <span title="{{ $def['label'] }} — {{ $def['description'] }}"
+                              class="inline-flex items-center gap-1 rounded-full border border-zinc-700 bg-zinc-800/70 px-2.5 py-1 text-xs text-zinc-200">
+                            <span>{{ $def['icon'] }}</span> {{ $def['label'] }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         {{-- Links --}}
         <div class="mt-4 w-full max-w-md">
