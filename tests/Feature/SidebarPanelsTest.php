@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Comic;
 use App\Models\Tag;
+use App\Models\TagCategory;
 use App\Models\User;
 use App\View\Composers\SidebarComposer;
 use Tests\TestCase;
@@ -84,6 +85,40 @@ class SidebarPanelsTest extends TestCase
         }
 
         $this->assertContains($top->id, $seen);
+    }
+
+    public function test_popular_tags_hide_tags_from_hidden_categories(): void
+    {
+        $hiddenCategory = TagCategory::create([
+            'name' => 'hidden-'.uniqid(),
+            'label' => 'Hidden',
+            'background' => '#123456',
+            'border' => '#123456',
+            'text_color' => '#ffffff',
+            'is_visible' => false,
+        ]);
+        $visibleCategory = TagCategory::create([
+            'name' => 'visible-'.uniqid(),
+            'label' => 'Visible',
+            'background' => '#654321',
+            'border' => '#654321',
+            'text_color' => '#ffffff',
+            'is_visible' => true,
+        ]);
+
+        $hiddenTag = Tag::create(['name' => 'hidden-'.uniqid(), 'category_id' => $hiddenCategory->id]);
+        $visibleTag = Tag::create(['name' => 'visible-'.uniqid(), 'category_id' => $visibleCategory->id]);
+        $untagged = Tag::create(['name' => 'plain-'.uniqid()]);
+
+        foreach ([$hiddenTag, $visibleTag, $untagged] as $tag) {
+            Comic::factory()->create()->tags()->attach($tag->id);
+        }
+
+        $ids = SidebarComposer::popularTags(50)->pluck('id');
+
+        $this->assertNotContains($hiddenTag->id, $ids);
+        $this->assertContains($visibleTag->id, $ids);
+        $this->assertContains($untagged->id, $ids);
     }
 
     public function test_index_renders_all_three_panels(): void

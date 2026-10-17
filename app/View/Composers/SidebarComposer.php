@@ -57,11 +57,23 @@ class SidebarComposer
             $query->selectSub($likesSub, 'likes_sum');
         }
 
+        // Hidden categories never surface in the sidebar; their tags stay
+        // stored and searchable. Skipped on hosts whose migrations lag
+        // (no is_visible column yet).
+        if (Schema::hasColumn('tag_categories', 'is_visible')) {
+            $query->where(function ($inner) {
+                $inner->whereNull('tags.category_id')
+                    ->orWhereHas('category', fn ($c) => $c->where('is_visible', true));
+            });
+        }
+
         $candidates = $query
             ->orderByDesc($hasLikes ? 'likes_sum' : 'comics_count')
             ->orderBy('name')
-            ->limit(max($limit * 2, $limit))
-            ->get();
+            ->limit(max($limit * 3, $limit))
+            ->get()
+            ->filter(fn ($tag) => $tag->displayCategory?->is_visible ?? true)
+            ->values();
 
         if ($candidates->isEmpty()) {
             return $candidates;
