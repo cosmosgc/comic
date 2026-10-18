@@ -1,7 +1,7 @@
 <div
     data-comic-card="{{ $comic->id }}"
     data-page-count="{{ $comic->pageCount() }}"
-    class="group relative flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow transition duration-300 hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-xl hover:shadow-indigo-950/40 sm:p-4"
+    class="group relative flex min-w-0 flex-col overflow-hidden break-words rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow transition duration-300 hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-xl hover:shadow-indigo-950/40 sm:p-4"
 >
 
     @php

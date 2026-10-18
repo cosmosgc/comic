@@ -3,7 +3,7 @@
 @section('title', $changelog['title'])
 
 @section('content')
-<div class="mx-auto max-w-3xl px-4 py-6">
+<div class="mx-auto max-w-3xl">
 
     <a href="{{ route('changelog.index') }}"
        class="mb-4 inline-block text-sm font-semibold text-indigo-400 transition hover:text-indigo-300">

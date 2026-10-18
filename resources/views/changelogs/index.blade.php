@@ -3,7 +3,7 @@
 @section('title', "Novidades")
 
 @section('content')
-<div class="mx-auto max-w-3xl px-4 py-6">
+<div class="mx-auto max-w-3xl">
 
     <h1 class="mb-1 text-2xl font-bold">Novidades</h1>
     <p class="mb-6 text-sm text-zinc-400">Mudanças do site, um post por atualização.</p>

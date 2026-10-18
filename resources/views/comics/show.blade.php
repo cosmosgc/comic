@@ -95,7 +95,7 @@
                 padding: 6px 9px;
             }
             .back-to-top-button {
-                left: 84px;
+                left: 94px;
             }
             .comments-fab {
                 bottom: 16px;
@@ -144,15 +144,12 @@
         }
         .back-to-top-button {
             position: fixed;
-            background-color: #444;
+            top: 10px;
+            left: 110px;
             color: white;
             border: none;
-            
-            top: 10px;
-            left: 100px;
             background-color: rgba(50, 50, 50, 0.8);
             padding: 6px 12px;
-            margin-left: 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
@@ -163,8 +160,12 @@
             background-color: #666;
         }
 
-        .magnified {
-            width: 100vw;
+        /* `img.magnified` (not `.magnified`) so this beats the
+           `.comic-container img { max-width: 820px }` cap above: same
+           specificity, declared later, so the full-width zoom applies. */
+        img.magnified {
+            width: 100%;
+            max-width: 100%;
             height: auto;
             max-height: none;
             object-fit: contain;
@@ -296,12 +297,17 @@
         .dropdown-panel {
             position: absolute;
             bottom: calc(100% + 6px);
-            left: 50%;
-            transform: translateX(-50%);
+            /* Anchored to the button's right edge. A centred panel
+               (left:50% + translateX(-50%)) sticks out of the viewport on
+               narrow screens and scrolls the whole page sideways. */
+            left: auto;
+            right: 0;
+            width: max-content;
+            min-width: 220px;
+            max-width: min(320px, calc(100vw - 24px));
             background-color: #2a2a2a;
             border: 1px solid #555;
             border-radius: 8px;
-            min-width: 220px;
             max-height: 260px;
             overflow-y: auto;
             z-index: 2001;

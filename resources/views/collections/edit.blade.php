@@ -3,7 +3,7 @@
 @section('title', 'Editar coleção')
 
 @section('content')
-<div class="mx-auto max-w-4xl px-4 py-6">
+<div class="mx-auto max-w-4xl">
 
     <div class="mb-6 flex items-center gap-4">
         <a href="{{ route('collections.show', $collection) }}"

@@ -3,7 +3,7 @@
 @section('title', 'Publicar comic')
 
 @section('content')
-<div class="mx-auto max-w-4xl px-4 py-6">
+<div class="mx-auto max-w-4xl">
 
     <h1 class="mb-6 text-2xl font-bold">Publicar comic</h1>
 
@@ -178,7 +178,7 @@
                 <p id="summary-limits" class="text-xs text-zinc-400"></p>
             </div>
             <p id="summary-warning" class="mt-1 hidden text-sm text-red-400"></p>
-            <div class="mt-3 max-h-56 overflow-y-auto">
+            <div class="mt-3 max-h-56 overflow-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="text-zinc-400">
                         <tr>

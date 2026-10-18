@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6">
+<div class="mx-auto max-w-7xl">
     <h2 class="text-xl font-semibold">Resultados para: <strong>{{ $searchTerm }}</strong></h2>
     @if($tagTerm)
         <div class="mb-4 mt-2">

@@ -42,8 +42,8 @@
                 </span>
             </a>
 
-            {{-- Desktop nav --}}
-            <div class="hidden items-center gap-1 md:flex">
+            {{-- Desktop nav (from lg: below that the row does not fit) --}}
+            <div class="hidden items-center gap-1 lg:flex">
                 <a href="{{ route('forum.index') }}"
                    class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('forum.index') ? 'bg-violet-600/20 text-violet-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
                     Início
@@ -61,7 +61,7 @@
             </div>
 
             {{-- Right cluster --}}
-            <div class="hidden items-center gap-2 md:flex">
+            <div class="hidden items-center gap-2 lg:flex">
                 <a href="{{ route('forum.exit') }}" class="btn-outline">← Voltar ao site</a>
 
                 @auth
@@ -96,7 +96,7 @@
 
             {{-- Mobile toggle --}}
             <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="forum-mobile-menu" aria-label="Alternar menu"
-                    class="rounded-lg p-2 hover:bg-zinc-800 md:hidden">
+                    class="rounded-lg p-2 hover:bg-zinc-800 lg:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
@@ -104,7 +104,7 @@
         </div>
 
         {{-- Mobile menu --}}
-        <div x-show="open" id="forum-mobile-menu" x-cloak class="space-y-1 py-4 md:hidden">
+        <div x-show="open" id="forum-mobile-menu" x-cloak class="space-y-1 py-4 lg:hidden">
             <a href="{{ route('forum.index') }}" class="mobile-link">Início</a>
             <a href="{{ route('forum.search') }}" class="mobile-link">Buscar</a>
             @auth

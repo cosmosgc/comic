@@ -3,7 +3,7 @@
 @section('title', 'Coleções')
 
 @section('content')
-<div class="mx-auto max-w-4xl px-4 py-6">
+<div class="mx-auto max-w-4xl">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 class="text-2xl font-bold">Coleções</h1>
         @auth

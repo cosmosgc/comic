@@ -3,7 +3,7 @@
 @section('title', 'Recuperar senha')
 
 @section('content')
-<div class="flex min-h-[80vh] items-center justify-center px-4 py-10">
+<div class="flex min-h-[80vh] items-center justify-center py-10">
     <div class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
         <h1 class="mb-6 text-center text-2xl font-bold tracking-tight">Recuperar senha</h1>
 

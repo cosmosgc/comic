@@ -3,7 +3,7 @@
 @section('title', 'Criar coleção')
 
 @section('content')
-<div class="mx-auto max-w-2xl px-4 py-6">
+<div class="mx-auto max-w-2xl">
     <h1 class="mb-6 text-2xl font-bold">Criar coleção</h1>
 
     @if(session('success'))

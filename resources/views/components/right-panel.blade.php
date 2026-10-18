@@ -1,4 +1,5 @@
-<aside class="hidden md:block md:w-64 shrink-0 border-l border-zinc-800 bg-zinc-900">
+{{-- Content only: the page layout owns this panel's width, visibility and
+     scroll behaviour. --}}
 
     <!-- Widgets -->
     <div class="p-4">
@@ -96,5 +97,3 @@
             </ul>
         @endif
     </div>
-
-</aside>

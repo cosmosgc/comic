@@ -3,7 +3,7 @@
 @section('title', $collection->name)
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6">
+<div class="mx-auto max-w-7xl">
 
     @if (session('success'))
         <div class="mb-6 rounded-lg border border-green-700 bg-green-900/40 px-4 py-3 text-green-200">

@@ -39,11 +39,11 @@
                 {{ config('app.site_title') }}
             </a>
 
-            <!-- Desktop Nav -->
-            <div class="hidden items-center gap-6 md:flex">
+            <!-- Desktop Nav (from lg: below that the row does not fit) -->
+            <div class="hidden items-center gap-4 lg:flex xl:gap-6">
 
                 <!-- Search -->
-                <div class="relative w-72">
+                <div class="relative w-56 xl:w-72">
                     <label for="comic-search" class="sr-only">Buscar comics</label>
                     <input
                         id="comic-search"
@@ -90,7 +90,7 @@
                             class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm"
                             aria-label="Menu da conta">
 
-                            <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
+                            <span class="hidden max-w-28 truncate xl:inline">{{ Auth::user()->name }}</span>
 
                             <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                 <path fill-rule="evenodd"
@@ -146,7 +146,7 @@
             </div>
 
             <!-- Mobile actions -->
-            <div class="flex items-center gap-2 md:hidden">
+            <div class="flex items-center gap-2 lg:hidden">
                 @auth
                     <a href="{{ route('comics.create') }}" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-500">
                         Publicar
@@ -163,7 +163,7 @@
         </div>
 
         <!-- Mobile Menu -->
-        <div x-show="open" id="mobile-menu" x-cloak class="space-y-1 py-4 md:hidden">
+        <div x-show="open" id="mobile-menu" x-cloak class="space-y-1 py-4 lg:hidden">
             <div class="relative px-1 pb-2">
                 <label for="comic-search-mobile" class="sr-only">Buscar comics</label>
                 <input
@@ -205,26 +205,30 @@
 </nav>
 
 <!-- PAGE LAYOUT -->
-<div class="mx-auto">
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-12">
+{{-- Same width and horizontal padding as the navbar/footer, so the page never
+     runs wider than the site chrome. The side panels are fixed-width flex
+     items, so `min-w-0` on <main> is what keeps wide content (grids, tables,
+     code blocks) from stretching the column and scrolling the whole page. --}}
+<div class="mx-auto flex w-full max-w-7xl items-start gap-6 px-4 py-6">
 
-        @if(isset($showPanels) && $showPanels)
-            <aside class="md:col-span-2" aria-label="Sidebar left">
-                @include('components.left-panel')
-            </aside>
-        @endif
+    @if($showPanels ?? false)
+        <aside class="sticky top-20 hidden max-h-[calc(100vh-6rem)] w-64 shrink-0 overflow-y-auto rounded-xl bg-zinc-900/50 p-1 panel-scroll lg:block"
+               aria-label="Painel lateral">
+            @include('components.left-panel')
+        </aside>
+    @endif
 
-        <main id="main-content" class="{{ isset($showPanels) && $showPanels ? 'md:col-span-8' : 'md:col-span-12' }}">
-            @yield('content')
-        </main>
+    <main id="main-content" class="min-w-0 flex-1">
+        @yield('content')
+    </main>
 
-        @if(isset($showPanels) && $showPanels)
-            <aside class="md:col-span-2" aria-label="Sidebar right">
-                @include('components.right-panel')
-            </aside>
-        @endif
+    @if($showPanels ?? false)
+        <aside class="sticky top-20 hidden max-h-[calc(100vh-6rem)] w-64 shrink-0 overflow-y-auto rounded-xl bg-zinc-900/50 p-1 panel-scroll xl:block"
+               aria-label="Painel lateral">
+            @include('components.right-panel')
+        </aside>
+    @endif
 
-    </div>
 </div>
 
 <footer class="mt-12 border-t border-zinc-800">

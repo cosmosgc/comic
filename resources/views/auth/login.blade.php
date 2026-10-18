@@ -5,7 +5,6 @@
 @section('content')
 
 <!-- Background canvas -->
-<!-- Background canvas -->
 <canvas
     id="canvas"
     class="fixed inset-0 z-0 block"></canvas>
@@ -24,7 +23,7 @@
 </svg>
 
 
-<div class="relative z-10 flex min-h-screen items-center justify-center px-4">
+<div class="relative z-10 flex min-h-screen items-center justify-center">
     <div
         class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
 
@@ -113,9 +112,11 @@
         height: 100%;
     }
 
+    /* 100% of the fixed containing block (the viewport, scrollbar excluded).
+       100vw would include the vertical scrollbar and push the page sideways. */
     #canvas {
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         background-color: #272c31;
         display: block;
     }

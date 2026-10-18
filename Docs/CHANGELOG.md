@@ -59,8 +59,12 @@ Example:
 
 ### Changed
 - Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
+- Navbar e painéis laterais reorganizados: menu completo só a partir de 1024px (abaixo disso vira o botão de hambúrguer, que antes aparecia só até 768px), busca adaptável e painéis laterais dentro do mesmo container centralizado do topo/rodapé, fixos ao rolar com rolagem própria
 
 ### Fixed
+- Rolagem horizontal da página em telas médias: a navbar completa não cabia abaixo de ~1024px e os painéis de largura fixa ficavam presos dentro das colunas de 2/12 da grade
+- Zoom da página no leitor: agora amplia até a largura da coluna (antes continuava limitado a 820px pelo `max-width` do container e estourava 100vw em telas pequenas)
+- CSS morto/duplicado: `nav-link`, `admin-alert-info` e `admin-toggle-count` sem uso, componente `side-panel` nunca renderizado, estilos duplicados no leitor (`background-color` repetido, `100vw` na tela de login) e `px-4 py-6` repetido nas views que já recebem o container do layout
 - `config/database.php` no longer fatals with `Class "Pdo\Mysql" not found` on PHP < 8.4 (SSL CA key resolved per version)
 - `PageController@store` redirected to non-existent `comics.show` route (now `comics.showById`) — single-page adds 500'd after saving
 - Migration table listing scoped to the project database (previously listed every DB on shared MySQL servers) and tolerant of Laravel 11 vs 12 schema shapes

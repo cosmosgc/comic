@@ -3,7 +3,7 @@
 @section('title', 'Perfil de ' . $user->name)
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6">
+<div class="mx-auto max-w-7xl">
 
     <!-- Page title -->
     <h1 class="mb-6 text-2xl font-bold">
