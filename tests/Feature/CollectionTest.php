@@ -307,6 +307,52 @@ class CollectionTest extends TestCase
         $this->get("/collections/{$collection->id}")->assertOk();
     }
 
+    public function test_bogus_comic_ids_are_rejected_on_collection_store(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/collections', [
+                'name' => 'Bogus',
+                'is_public' => true,
+                'comics' => [999999],
+            ])
+            ->assertSessionHasErrors('comics.0');
+
+        $this->assertDatabaseMissing('collections', ['name' => 'Bogus']);
+    }
+
+    public function test_bogus_comic_ids_do_not_half_update_a_collection(): void
+    {
+        $user = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Original', 'user_id' => $user->id, 'is_public' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->put("/collections/{$collection->id}", [
+                'name' => 'Renomeada',
+                'is_public' => true,
+                'comics' => [999999],
+            ])
+            ->assertSessionHasErrors('comics.0');
+
+        // The rename must not have been written before the comics failed.
+        $this->assertSame('Original', $collection->fresh()->name);
+    }
+
+    public function test_adding_a_bogus_comic_to_a_collection_404s(): void
+    {
+        $user = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Mine', 'user_id' => $user->id, 'is_public' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->post("/collections/{$collection->id}/comics/999999")
+            ->assertNotFound();
+    }
+
     public function test_attach_covers_primes_every_cover_in_two_queries(): void
     {
         $user = User::factory()->create();

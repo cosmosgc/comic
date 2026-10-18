@@ -208,26 +208,29 @@ class CollectionController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:1000',
             'is_public' => 'nullable|boolean',
+            // Validated before the collection is created, so a bogus
+            // comic id can never leave an empty collection behind.
+            'comics' => 'nullable|array',
+            'comics.*' => 'integer|exists:comics,id',
         ]);
 
-        $attributes = $request->only('name', 'description');
+        $attributes = [
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ];
         if ($this->ownsColumns()) {
             $attributes['user_id'] = $request->user()->id;
             $attributes['is_public'] = $request->boolean('is_public', true);
         }
         $collection = Collection::create($attributes);
 
-        // Attach comics if any are selected (ids must exist).
-        if ($request->filled('comics')) {
-            $validatedComics = $request->validate([
-                'comics' => 'array',
-                'comics.*' => 'integer|exists:comics,id',
-            ]);
-            $collection->comics()->attach($validatedComics['comics']);
+        // Attach comics if any are selected (ids validated above).
+        if (! empty($validated['comics'])) {
+            $collection->comics()->attach($validated['comics']);
         }
 
         ActivityLogger::log('collection.created', [
@@ -259,13 +262,20 @@ class CollectionController extends Controller
     {
         $this->authorizeCollectionWrite($collection);
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:1000',
             'is_public' => 'nullable|boolean',
+            // Validated before the update, so a bogus comic id cannot
+            // leave the collection half-updated.
+            'comics' => 'nullable|array',
+            'comics.*' => 'integer|exists:comics,id',
         ]);
 
-        $attributes = $request->only('name', 'description');
+        $attributes = [
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ];
         if ($this->ownsColumns()) {
             // Unchecked checkbox submits nothing, which means private.
             // (Create defaults to public instead — see store().)
@@ -276,11 +286,7 @@ class CollectionController extends Controller
         // Sync comics only when the picker submitted (an absent key means
         // "untouched" — syncing null would wipe the whole collection).
         if ($request->has('comics')) {
-            $validatedSync = $request->validate([
-                'comics' => 'array',
-                'comics.*' => 'integer|exists:comics,id',
-            ]);
-            $collection->comics()->sync($validatedSync['comics'] ?? []);
+            $collection->comics()->sync($validated['comics'] ?? []);
         }
 
         return redirect()->route('collections.edit', $collection)->with('success', 'Coleção atualizada com sucesso.');

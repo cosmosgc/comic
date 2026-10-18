@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Comic;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class ComicAuthorizationTest extends TestCase
@@ -123,6 +124,48 @@ class ComicAuthorizationTest extends TestCase
             ->assertOk();
 
         $this->assertSame(1, $foreignPage->fresh()->page_number);
+    }
+
+    public function test_non_owner_cannot_add_pages(): void
+    {
+        $owner = User::factory()->create();
+        $intruder = User::factory()->create(['admin_level' => 0]);
+        $comic = Comic::factory()->create(['user_id' => $owner->id]);
+
+        // issues.md #14: the page-store path was the last unauthenticated
+        // mutation of a comic's content.
+        $this->actingAs($intruder)
+            ->post("/comics/{$comic->id}/pages", ['image' => UploadedFile::fake()->image('page.jpg')])
+            ->assertForbidden();
+
+        $this->assertSame(0, $comic->pages()->count());
+    }
+
+    public function test_guest_cannot_add_pages(): void
+    {
+        $comic = Comic::factory()->create();
+
+        $this->post("/comics/{$comic->id}/pages", ['image' => UploadedFile::fake()->image('page.jpg')])
+            ->assertRedirect('/login');
+
+        $this->assertSame(0, $comic->pages()->count());
+    }
+
+    public function test_owner_can_add_pages(): void
+    {
+        $owner = User::factory()->create();
+        $comic = Comic::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($owner)
+            ->post("/comics/{$comic->id}/pages", ['image' => UploadedFile::fake()->image('page.jpg', 30, 30)])
+            ->assertRedirect(route('comics.showById', $comic->id));
+
+        $page = $comic->pages()->firstOrFail();
+        $this->assertFileExists(public_path('storage/'.$page->image_path));
+
+        @unlink(public_path('storage/'.$page->image_path));
+        @rmdir(public_path("storage/comics/{$comic->id}/pages"));
+        @rmdir(public_path("storage/comics/{$comic->id}"));
     }
 
     public function test_non_admin_cannot_access_widgets(): void
