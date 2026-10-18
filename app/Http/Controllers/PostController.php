@@ -225,7 +225,11 @@ class PostController extends Controller
             'replies.replies.replies:id,parent_id',
         ]);
 
-        // Ancestor chain, oldest first (depth-guarded against corrupt data).
+        // Ancestor chain, oldest first. Depth-guarded (corrupt data) and
+        // deliberately one primary-key lookup per level, capped at 20:
+        // MySQL 5.7 hosts cannot use a recursive CTE, and each ancestor
+        // renders the full post partial, so batching by id would still
+        // cost one query per level.
         $ancestors = collect();
         $cursor = $post->parent;
         while ($cursor && $ancestors->count() < 20) {

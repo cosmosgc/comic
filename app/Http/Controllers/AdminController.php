@@ -101,7 +101,9 @@ class AdminController extends Controller
 
     public function analytics()
     {
-        $analytics = Analytics::latest()->paginate(1000); // Show recent events
+        // 100 rows per page: the table renders client-side (DataTables),
+        // so paginating 1000 events at once was pure render cost.
+        $analytics = Analytics::latest()->paginate(100);
 
         return view('admin.analytics', compact('analytics'));
     }
@@ -336,7 +338,10 @@ class AdminController extends Controller
 
     public function comics()
     {
-        $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')->get();
+        // Only the columns the table renders: the admin list would
+        // otherwise hydrate every comic with all of its text columns.
+        $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
+            ->get(['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count']);
 
         return view('admin.comics', [
             'comics' => $comics,
@@ -552,7 +557,10 @@ class AdminController extends Controller
 
     public function users()
     {
-        $users = User::all(); // Fetch all users
+        // Column list instead of the whole table: the list shows five
+        // columns, so hydrating password hashes/bio/link JSON for every
+        // account was pure waste.
+        $users = User::all(['id', 'name', 'email', 'admin_level', 'created_at']);
 
         return view('admin.users', compact('users'));
     }

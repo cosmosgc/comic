@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Post;
 use App\Models\User;
 use App\Support\ImageStore;
@@ -36,6 +37,11 @@ class ProfileController extends Controller
         $collections = ($tab === 'collections' && $collectionsTab)
             ? $user->collections()->withCount('comics')->latest()->paginate(10, ['*'], 'collections_page')->withQueryString()
             : null;
+
+        if ($collections !== null) {
+            // Two queries for the whole page instead of one per card.
+            Collection::attachCovers($collections->getCollection());
+        }
 
         [$followsTab, $followers, $following, $followersCount, $followingCount] = $this->followData($user, $tab);
         $bookmarkedPostIds = Schema::hasTable('bookmarks')
@@ -100,6 +106,8 @@ class ProfileController extends Controller
                 $query->where('is_public', true);
             }
             $collections = $query->paginate(10, ['*'], 'collections_page')->withQueryString();
+            // Two queries for the whole page instead of one per card.
+            Collection::attachCovers($collections->getCollection());
         }
 
         $likedPostIds = [];

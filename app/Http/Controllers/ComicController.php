@@ -66,7 +66,7 @@ class ComicController extends Controller
             ->take(20)
             ->pluck('id');
 
-        // Now get top 5 from those 20 by view_count
+        // Now get top 5 from those 20 by view_count.
         $topComics = Comic::published()->withCount($counts)
             ->whereIn('id', $lastTwentyIds)
             ->orderBy('view_count', 'desc')
@@ -88,10 +88,10 @@ class ComicController extends Controller
 
     public function show($id)
     {
-        $comic = Comic::findOrFail($id);
-        abort_unless($comic->isVisibleTo(Auth::user()), 404);
-
-        return view('comics.show', compact('comic'));
+        // Legacy entry point kept for old links: the reader is
+        // showById()/showBySlug(), which also attach the engagement data
+        // (so the view never falls back to unfiltered collections).
+        return $this->showById($id);
     }
 
     /**
@@ -109,12 +109,21 @@ class ComicController extends Controller
             && Schema::hasTable('comic_user_likes')
             && $comic->likedByUsers()->where('user_id', Auth::id())->exists();
 
-        $collections = $comic->collections;
         if (Schema::hasColumn('collections', 'is_public')) {
-            // Private collections stay invisible unless owned by the viewer.
-            $collections = $collections->filter(
-                fn ($collection) => $collection->is_public || $collection->isOwnedBy(Auth::user())
-            )->values();
+            // Private collections stay invisible unless owned by the
+            // viewer. Filtered in SQL (not in PHP) so the reader does not
+            // hydrate every collection that references the comic.
+            $viewer = Auth::user();
+            $collections = $comic->collections()
+                ->where(function ($inner) use ($viewer) {
+                    $inner->where('collections.is_public', true);
+                    if ($viewer !== null) {
+                        $inner->orWhere('collections.user_id', $viewer->id);
+                    }
+                })
+                ->get();
+        } else {
+            $collections = $comic->collections;
         }
 
         $myCollections = Auth::check() && Schema::hasColumn('collections', 'user_id')

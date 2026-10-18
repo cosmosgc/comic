@@ -27,7 +27,13 @@
                             <td>{{ $user->id }}</td>
                             <td class="font-medium">{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
-                            <td>{{ $user->role }}</td>
+                            <td>
+                                @if ((int) $user->admin_level >= 1)
+                                    <span class="admin-badge admin-badge-success">Admin</span>
+                                @else
+                                    <span class="admin-badge">Usuário</span>
+                                @endif
+                            </td>
                             <td class="whitespace-nowrap">{{ $user->created_at }}</td>
                             <td class="whitespace-nowrap">
                                 <a href="{{ route('admin.users.edit', $user->id) }}" class="admin-btn admin-btn-primary admin-btn-sm">Editar</a>

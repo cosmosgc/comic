@@ -192,6 +192,22 @@ class ComicEngagementTest extends TestCase
         $this->get('/comics?sort=bogus')->assertOk();
     }
 
+    public function test_index_top_comics_are_ranked_by_views_within_the_latest_twenty(): void
+    {
+        $comics = collect();
+        for ($index = 0; $index < 21; $index++) {
+            $comics->push(Comic::factory()->create([
+                'created_at' => now()->subDays($index),
+                'view_count' => $index === 20 ? 10000 : $index + 1,
+            ]));
+        }
+
+        $expectedIds = $comics->slice(15, 5)->reverse()->pluck('id')->all();
+
+        $this->get('/comics')->assertOk()
+            ->assertViewHas('topComics', fn ($topComics) => $topComics->pluck('id')->all() === $expectedIds);
+    }
+
     public function test_cards_show_collection_counts(): void
     {
         $user = User::factory()->create();

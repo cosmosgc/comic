@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Collection;
 use App\Models\Comic;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CollectionTest extends TestCase
@@ -304,6 +305,76 @@ class CollectionTest extends TestCase
         ]);
 
         $this->get("/collections/{$collection->id}")->assertOk();
+    }
+
+    public function test_attach_covers_primes_every_cover_in_two_queries(): void
+    {
+        $user = User::factory()->create();
+        $collections = collect();
+        $expected = [];
+
+        foreach (range(1, 3) as $i) {
+            $collection = Collection::create([
+                'name' => "Cover {$i}", 'user_id' => $user->id, 'is_public' => true,
+            ]);
+            $first = Comic::factory()->create(['image_path' => "covers/{$i}-first.jpg"]);
+            $second = Comic::factory()->create(['image_path' => "covers/{$i}-second.jpg"]);
+            // Attach out of order: the cover must honour the pivot order.
+            $collection->comics()->attach([$second->id => ['order' => 2], $first->id => ['order' => 1]]);
+
+            $collections->push($collection);
+            $expected[$collection->id] = $first->id;
+        }
+
+        $queries = 0;
+        DB::listen(function () use (&$queries) {
+            $queries++;
+        });
+
+        Collection::attachCovers($collections);
+
+        // One query for the pivot rows, one for the cover comics.
+        $this->assertSame(2, $queries);
+
+        foreach ($collections as $collection) {
+            $this->assertSame($expected[$collection->id], $collection->coverComic()?->id);
+        }
+
+        // Reading the primed covers must not hit the database at all.
+        $this->assertSame(2, $queries);
+    }
+
+    public function test_reader_hides_private_collections_from_other_users(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $comic = Comic::factory()->create();
+
+        $public = Collection::create(['name' => 'ColecaoPublica', 'user_id' => $owner->id, 'is_public' => true]);
+        $private = Collection::create(['name' => 'ColecaoPrivada', 'user_id' => $owner->id, 'is_public' => false]);
+        $own = Collection::create(['name' => 'MinhaPropria', 'user_id' => $viewer->id, 'is_public' => false]);
+
+        foreach ([$public, $private, $own] as $collection) {
+            $collection->comics()->attach($comic->id);
+        }
+
+        // The signed-in viewer sees public collections and their own
+        // private one — never somebody else's private collection.
+        $this->actingAs($viewer)
+            ->get("/comics/{$comic->slug}")
+            ->assertOk()
+            ->assertSee('ColecaoPublica')
+            ->assertSee('MinhaPropria')
+            ->assertDontSee('ColecaoPrivada');
+
+        // A guest sees the public collection only.
+        auth()->logout();
+
+        $this->get("/comics/{$comic->slug}")
+            ->assertOk()
+            ->assertSee('ColecaoPublica')
+            ->assertDontSee('ColecaoPrivada')
+            ->assertDontSee('MinhaPropria');
     }
 
     public function test_sort_order_requires_owner(): void

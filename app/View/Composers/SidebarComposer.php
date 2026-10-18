@@ -15,17 +15,48 @@ class SidebarComposer
 
     public const SIDEBAR_COMICS_LIMIT = 5;
 
+    /** Request attribute holding the sidebar data computed so far. */
+    protected const CACHE_KEY = 'sidebar_panel_data';
+
     /**
      * Share sidebar data with the panel partials so every page
      * using the panels gets real content instead of placeholders.
+     *
+     * Both panels (left and right) are composed separately, and the
+     * panels are used on every page, so the data is computed once and
+     * memoized on the current request — a page without controller
+     * provided values would otherwise run the whole sidebar query set
+     * twice. Values already provided by the controller still win.
      */
     public function compose(View $view): void
     {
-        $view->with('widgets', $view->offsetExists('widgets') ? $view->offsetGet('widgets') : Widget::all());
-        $view->with('tags', $view->offsetExists('tags') ? $view->offsetGet('tags') : self::popularTags());
-        $view->with('latestComics', $view->offsetExists('latestComics') ? $view->offsetGet('latestComics') : self::latestUploads());
-        $view->with('recommendedComics', $view->offsetExists('recommendedComics') ? $view->offsetGet('recommendedComics') : self::recommended());
-        $view->with('trendingHashtags', $view->offsetExists('trendingHashtags') ? $view->offsetGet('trendingHashtags') : Hashtag::trending());
+        $request = request();
+        $shared = $request->attributes->get(self::CACHE_KEY) ?? [];
+
+        foreach (['widgets', 'tags', 'latestComics', 'recommendedComics', 'trendingHashtags'] as $key) {
+            if ($view->offsetExists($key)) {
+                continue;
+            }
+
+            $shared[$key] ??= $this->resolve($key);
+            $view->with($key, $shared[$key]);
+        }
+
+        $request->attributes->set(self::CACHE_KEY, $shared);
+    }
+
+    /**
+     * Sidebar data for one key (see compose()).
+     */
+    protected function resolve(string $key)
+    {
+        return match ($key) {
+            'widgets' => Widget::all(),
+            'tags' => self::popularTags(),
+            'latestComics' => self::latestUploads(),
+            'recommendedComics' => self::recommended(),
+            'trendingHashtags' => Hashtag::trending(),
+        };
     }
 
     /**

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 
 class Collection extends Model
 {
@@ -62,11 +63,59 @@ class Collection extends Model
     public function coverComic(): ?Comic
     {
         if (! $this->coverLoaded) {
-            $this->coverCache = $this->orderedComics()->first();
+            // A caller that already eager-loaded the comics must not
+            // trigger an extra query per card.
+            $this->coverCache = $this->relationLoaded('comics')
+                ? $this->comics->first()
+                : $this->orderedComics()->first();
             $this->coverLoaded = true;
         }
 
         return $this->coverCache;
+    }
+
+    /**
+     * Set the cover directly (used by attachCovers()).
+     */
+    public function setCoverComic(?Comic $comic): self
+    {
+        $this->coverCache = $comic;
+        $this->coverLoaded = true;
+
+        return $this;
+    }
+
+    /**
+     * Prime coverComic() for a list of collections with two queries for
+     * the whole page (pivot rows, then the covers) instead of one query
+     * per card — the profile/likes collection tabs render 10 cards.
+     *
+     * @param  iterable<int, Collection>  $collections
+     */
+    public static function attachCovers(iterable $collections): void
+    {
+        $collections = collect($collections);
+        $ids = $collections->pluck('id')->filter()->unique()->values()->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        $coverIds = DB::table('collection_comic')
+            ->whereIn('collection_id', $ids)
+            ->orderBy('order')
+            ->orderBy('comic_id')
+            ->get(['collection_id', 'comic_id'])
+            ->groupBy('collection_id')
+            ->map(fn ($rows) => (int) $rows->first()->comic_id);
+
+        $covers = Comic::whereIn('id', $coverIds->unique()->values()->all())
+            ->get()
+            ->keyBy('id');
+
+        foreach ($collections as $collection) {
+            $collection->setCoverComic($covers->get($coverIds->get((int) $collection->id)));
+        }
     }
 
     public function user(): BelongsTo
