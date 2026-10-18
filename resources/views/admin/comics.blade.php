@@ -44,28 +44,34 @@
             <span>Todos os comics</span>
         </div>
         <div class="admin-table-wrap">
-            <table id="comicsTable" class="admin-table">
+            <table id="comicsTable" class="admin-table admin-table-compact table-fixed">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th>Autor</th>
-                        <th>Slug</th>
-                        <th>Criado em</th>
-                        <th>Publicação</th>
-                        <th>Agendar</th>
-                        <th>Visualizações</th>
-                        <th>Ações</th>
+                        <th class="w-[4%]">ID</th>
+                        <th class="w-[14%]">Nome</th>
+                        <th class="w-[9%]">Autor</th>
+                        <th class="w-[14%]">Slug</th>
+                        <th class="w-[8%]">Criado em</th>
+                        <th class="w-[12%]">Publicação</th>
+                        <th class="w-[17%]">Agendar</th>
+                        <th class="w-[6%]">Views</th>
+                        <th class="w-[16%]">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($comics as $comic)
                         <tr>
                             <td>{{ $comic->id }}</td>
-                            <td class="font-medium">{{ $comic->title }}</td>
+                            <td>
+                                <a href="{{ route('comics.showBySlug', $comic->slug) }}"
+                                   class="block max-w-full truncate font-medium text-indigo-600 hover:underline dark:text-indigo-300"
+                                   title="{{ $comic->title }}">{{ $comic->title }}</a>
+                            </td>
                             <td>{{ $comic->author }}</td>
-                            <td><code>{{ $comic->slug }}</code></td>
-                            <td class="whitespace-nowrap">{{ $comic->created_at }}</td>
+                            <td><code class="block max-w-full truncate" title="{{ $comic->slug }}">{{ $comic->slug }}</code></td>
+                            <td class="whitespace-nowrap" data-order="{{ $comic->created_at?->timestamp }}" title="{{ $comic->created_at }}">
+                                {{ $comic->created_at?->format('d/m/Y') }}
+                            </td>
                             <td class="whitespace-nowrap">
                                 @if ($comic->isScheduled())
                                     <span class="admin-badge admin-badge-warning" title="Ainda não lançado no site">⏳ Em breve</span>
@@ -88,14 +94,14 @@
                                     </button>
                                 </form>
                             </td>
-                            <td class="whitespace-nowrap">
-                                <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="flex items-center gap-1">
+                            <td>
+                                <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="flex flex-wrap items-center gap-1">
                                     @csrf
                                     <input type="datetime-local" name="published_at"
                                            value="{{ $comic->published_at?->format('Y-m-d\TH:i') }}"
-                                           class="admin-input admin-input-sm"
+                                           class="admin-input admin-input-sm min-w-0 max-w-full"
                                            aria-label="Data de publicação de {{ $comic->title }}">
-                                    <button type="submit" class="admin-btn admin-btn-sm">Salvar</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm w-full">Salvar</button>
                                 </form>
                                 @if ($comic->isScheduled())
                                     <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="mt-1">
@@ -106,27 +112,29 @@
                                 @endif
                             </td>
                             <td>{{ $comic->view_count }}</td>
-                            <td class="whitespace-nowrap">
-                                <a href="{{ route('comics.edit', $comic->id) }}" class="admin-btn admin-btn-sm">Editar</a>
-                                <a href="{{ route('admin.comics.package', $comic) }}" class="admin-btn admin-btn-sm">Exportar</a>
-                                @if ($transferConfigured ?? false)
-                                    @if ($comic->transfer?->isDone() && $comic->transfer->remote_view_url)
-                                        <a href="{{ $comic->transfer->remote_view_url }}" target="_blank" rel="noopener" class="admin-btn admin-btn-sm" title="Comic {{ $comic->transfer->remote_comic_id }} no remoto">✓ No remoto ↗</a>
-                                    @else
-                                        <button type="button" data-transfer="{{ $comic->id }}"
-                                                data-transfer-url="{{ route('admin.comics.transfer', $comic) }}"
-                                                class="admin-btn admin-btn-success admin-btn-sm">
-                                            {{ $comic->transfer ? 'Continuar envio ('.min($comic->transfer->next_page - 1, $comic->transfer->total_pages).'/'.$comic->transfer->total_pages.')' : 'Enviar p/ remoto' }}
-                                        </button>
+                            <td>
+                                <div class="grid grid-cols-2 items-start gap-1">
+                                    <a href="{{ route('comics.edit', $comic->id) }}" class="admin-btn admin-btn-sm w-full">Editar</a>
+                                    <a href="{{ route('admin.comics.package', $comic) }}" class="admin-btn admin-btn-sm w-full">Exportar</a>
+                                    @if ($transferConfigured ?? false)
+                                        @if ($comic->transfer?->isDone() && $comic->transfer->remote_view_url)
+                                            <a href="{{ $comic->transfer->remote_view_url }}" target="_blank" rel="noopener" class="admin-btn admin-btn-sm w-full whitespace-normal" title="Comic {{ $comic->transfer->remote_comic_id }} no remoto">✓ No remoto ↗</a>
+                                        @else
+                                            <button type="button" data-transfer="{{ $comic->id }}"
+                                                    data-transfer-url="{{ route('admin.comics.transfer', $comic) }}"
+                                                    class="admin-btn admin-btn-success admin-btn-sm w-full whitespace-normal">
+                                                {{ $comic->transfer ? 'Continuar envio ('.min($comic->transfer->next_page - 1, $comic->transfer->total_pages).'/'.$comic->transfer->total_pages.')' : 'Enviar p/ remoto' }}
+                                            </button>
+                                        @endif
                                     @endif
-                                @endif
-                                <form action="{{ route('admin.comics.destroy', $comic) }}" method="POST" class="inline-block"
-                                      onsubmit="return confirm('Excluir &quot;{{ $comic->title }}&quot; com todas as páginas e arquivos? Isso não pode ser desfeito.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Excluir</button>
-                                </form>
-                                <span data-transfer-status="{{ $comic->id }}" class="ml-1 text-xs opacity-70"></span>
+                                    <form action="{{ route('admin.comics.destroy', $comic) }}" method="POST" class="w-full"
+                                          onsubmit="return confirm('Excluir &quot;{{ $comic->title }}&quot; com todas as páginas e arquivos? Isso não pode ser desfeito.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger w-full">Excluir</button>
+                                    </form>
+                                    <span data-transfer-status="{{ $comic->id }}" class="col-span-2 text-xs opacity-70"></span>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -141,6 +149,7 @@
         // Deferred module: jQuery/DataTables come from resources/js/admin.js.
         $(document).ready(function() {
             $('#comicsTable').DataTable({
+                "autoWidth": false,
                 "order": [[4, "desc"]] // Order by Created At (5th column, index 4) in descending order
             });
         });
