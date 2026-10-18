@@ -169,7 +169,7 @@ class SidebarComposer
         $pool = Comic::query()->published()
             ->withCount($counts)
             ->orderByDesc('liked_by_users_count')
-            ->orderByDesc('created_at')
+            ->orderByReleaseDate()
             ->limit(20)
             ->get()
             ->filter(fn ($comic) => (int) ($comic->liked_by_users_count ?? 0) >= $threshold)

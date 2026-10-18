@@ -57,6 +57,9 @@ Example:
 - Sequential single-file comic uploads with in-browser image optimization (survives small nginx `client_max_body_size` caps)
 - FTP Deploy skips user content (`public/storage/`) and never deletes remotely
 
+### Changed
+- Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
+
 ### Fixed
 - `config/database.php` no longer fatals with `Class "Pdo\Mysql" not found` on PHP < 8.4 (SSL CA key resolved per version)
 - `PageController@store` redirected to non-existent `comics.show` route (now `comics.showById`) — single-page adds 500'd after saving

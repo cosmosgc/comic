@@ -138,6 +138,25 @@ class Comic extends Model
     }
 
     /**
+     * Public timeline order: when the comic went live (`published_at` when
+     * set, upload time otherwise), so a comic scheduled weeks ago lands on
+     * top the day it releases instead of sitting in upload order. The id
+     * tie-break keeps pagination stable when two releases collide.
+     */
+    public function scopeOrderByReleaseDate(Builder $query, string $direction = 'desc'): Builder
+    {
+        $direction = $direction === 'asc' ? 'asc' : 'desc';
+
+        // Hosts without the scheduling column keep upload order.
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return $query->orderBy('comics.created_at', $direction)->orderBy('comics.id', $direction);
+        }
+
+        return $query->orderByRaw("COALESCE(comics.published_at, comics.created_at) {$direction}")
+            ->orderBy('comics.id', $direction);
+    }
+
+    /**
      * Default schedule for the next comic: one day after the latest
      * scheduled one, or tomorrow when the queue is empty. Drives the
      * prefilled date in the admin import (and anywhere else that

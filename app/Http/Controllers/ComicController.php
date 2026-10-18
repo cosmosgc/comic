@@ -60,9 +60,11 @@ class ComicController extends Controller
             $query->where('is_exclusive', true);
         }
         if ($sort === 'liked') {
-            $query->orderByDesc('liked_by_users_count')->orderByDesc('created_at');
+            // Most liked first, but the tie (and the plain "recentes" tab)
+            // follows the release date, not the upload date.
+            $query->orderByDesc('liked_by_users_count')->orderByReleaseDate();
         } else {
-            $query->orderByDesc('created_at');
+            $query->orderByReleaseDate();
         }
         $comics = $query->paginate(10)->withQueryString();
         $likedComicIds = Auth::check() && Schema::hasTable('comic_user_likes')
@@ -72,8 +74,9 @@ class ComicController extends Controller
         $layout = $request->cookie('comics_layout') === 'list' ? 'list' : 'grid';
         $widgets = Widget::all();
         $showPanels = true;
-        // Get IDs of the last 20 published comics posted
-        $lastTwentyIds = Comic::published()->orderBy('created_at', 'desc')
+        // Get IDs of the last 20 comics by release date (the pool the
+        // "most viewed" panel ranks).
+        $lastTwentyIds = Comic::published()->orderByReleaseDate()
             ->take(20)
             ->pluck('id');
 
@@ -243,7 +246,9 @@ class ComicController extends Controller
         if (Schema::hasTable('comic_user_likes')) {
             $searchCounts[] = 'likedByUsers';
         }
-        $comics = $query->withCount($searchCounts)->paginate(10);
+        // Same timeline order as the home list, so results do not come
+        // back in raw insertion order.
+        $comics = $query->orderByReleaseDate()->withCount($searchCounts)->paginate(10);
         $likedComicIds = Auth::check() && Schema::hasTable('comic_user_likes')
             ? DB::table('comic_user_likes')->where('user_id', Auth::id())->pluck('comic_id')->all()
             : [];
