@@ -652,6 +652,65 @@ class AdminController extends Controller
     }
 
     /**
+     * Clear the cached artifacts that survive an FTP deploy.
+     *
+     * Bootstrap files under storage/framework are host-owned (never uploaded),
+     * so a deploy that removes or swaps a package can leave a compiled view
+     * calling a class that no longer exists — the site 500s until the cache is
+     * cleared. That normally needs console access, which this panel replaces.
+     */
+    public function clearCaches(Request $request)
+    {
+        /** @var list<string> $commands */
+        $commands = ['view:clear', 'config:clear', 'route:clear', 'cache:clear', 'event:clear'];
+
+        $viewsPath = (string) config('view.compiled');
+        $viewsBefore = $this->countCompiledViews($viewsPath);
+
+        $output = [];
+        $failed = [];
+
+        foreach ($commands as $command) {
+            try {
+                $exitCode = Artisan::call($command);
+                $output[] = '$ php artisan '.$command.'   (exit '.$exitCode.')';
+                $output[] = trim(Artisan::output()) ?: '(sem saída)';
+
+                if ($exitCode !== 0) {
+                    $failed[] = $command;
+                }
+            } catch (\Throwable $e) {
+                $failed[] = $command;
+                $output[] = '$ php artisan '.$command.'   FALHOU: '.$e->getMessage();
+            }
+        }
+
+        $viewsAfter = $this->countCompiledViews($viewsPath);
+        array_unshift($output, 'Views compiladas: '.$viewsBefore.' → '.$viewsAfter);
+
+        $redirect = redirect()->route('admin.migrations')
+            ->with('cache_output', implode("\n", $output));
+
+        if ($failed !== []) {
+            return $redirect->with('error', 'Falhou: '.implode(', ', $failed));
+        }
+
+        return $redirect->with('success', 'Caches limpos. Views compiladas: '.$viewsBefore.' → '.$viewsAfter.'.');
+    }
+
+    /**
+     * Count the compiled Blade files still on disk.
+     */
+    protected function countCompiledViews(string $path): int
+    {
+        if ($path === '' || ! File::isDirectory($path)) {
+            return 0;
+        }
+
+        return count(File::glob($path.'/*') ?: []);
+    }
+
+    /**
      * Show the FTP deploy panel (push code to the host without console).
      * Deploys are meant to run from a local/staging copy of this panel.
      */

@@ -68,6 +68,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
 
     Route::get('/migrations', 'migrations')->name('admin.migrations');
     Route::post('/migrations/run', 'runMigrations')->name('admin.migrations.run');
+    Route::post('/caches/clear', 'clearCaches')->name('admin.caches.clear');
     Route::get('/import', [AdminImportController::class, 'show'])->name('admin.import');
     Route::post('/import/preview', [AdminImportController::class, 'preview'])->name('admin.import.preview');
     Route::post('/import', [AdminImportController::class, 'store'])->name('admin.import.store');

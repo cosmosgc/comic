@@ -20,6 +20,16 @@
             </div>
         </div>
     @endif
+    @if (session('cache_output'))
+        <div class="admin-card mb-6">
+            <div class="admin-card-header">
+                <span>Última limpeza de cache</span>
+            </div>
+            <div class="admin-card-body">
+                <pre class="admin-log">{{ session('cache_output') }}</pre>
+            </div>
+        </div>
+    @endif
 
     {{-- Status overview --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -89,6 +99,32 @@
             @else
                 <p class="admin-muted mb-0">Banco em dia — nada para rodar.</p>
             @endif
+        </div>
+    </div>
+
+    {{-- Clear caches (no console needed) --}}
+    <div class="admin-card mt-6">
+        <div class="admin-card-header">
+            <span>Limpar caches</span>
+        </div>
+        <div class="admin-card-body">
+            <p class="admin-muted mb-3">
+                Roda <code class="admin-code">view:clear</code>, <code class="admin-code">config:clear</code>,
+                <code class="admin-code">route:clear</code>, <code class="admin-code">cache:clear</code> e
+                <code class="admin-code">event:clear</code> no servidor por este painel. Sem SSH.
+            </p>
+            <p class="admin-muted mb-3">
+                Use depois de um deploy que remova ou troque pacote: as views compiladas ficam no servidor (nunca são
+                enviadas no deploy) e continuam chamando as classes antigas — o site responde 500 até serem limpas.
+            </p>
+            <p class="admin-muted mb-3">
+                Não apaga os manifests de pacotes e serviços (<code class="admin-code">bootstrap/cache/packages.php</code>,
+                <code class="admin-code">services.php</code>), que são mantidos como estão no servidor.
+            </p>
+            <form method="POST" action="{{ route('admin.caches.clear') }}" onsubmit="return confirm('Limpar os caches do servidor (views compiladas, config, rotas, cache e eventos)?')">
+                @csrf
+                <button type="submit" class="admin-btn admin-btn-primary">Limpar caches</button>
+            </form>
         </div>
     </div>
 

@@ -16,7 +16,7 @@ class AdminPanelAuthorizationTest extends TestCase
     protected const GET_PANELS = ['/admin/migrations', '/admin/deploy', '/admin/import'];
 
     /** Endpoints that write to the database or the remote host. */
-    protected const WRITE_PANELS = ['/admin/migrations/run', '/admin/deploy/run', '/admin/import', '/admin/import/preview'];
+    protected const WRITE_PANELS = ['/admin/migrations/run', '/admin/caches/clear', '/admin/deploy/run', '/admin/import', '/admin/import/preview'];
 
     protected function setUp(): void
     {

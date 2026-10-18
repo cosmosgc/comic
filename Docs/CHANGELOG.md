@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Manutenção no painel (Admin → Migrações): botão **Limpar caches**, que roda `view:clear`, `config:clear`, `route:clear`, `cache:clear` e `event:clear` no servidor sem SSH — é o que destrava o erro 500 depois de um deploy que remove um pacote, quando as views compiladas do host continuam chamando as classes antigas (os manifests de pacotes/serviços são preservados)
 - Gamificação: XP por interação (upload, post, resposta, comentário, curtida, coleção, busca, login) com aviso em tela, níveis por curva configurável, conquistas, sequência diária com bônus, notificações de nível/conquista, vitrine no perfil e página pública de **Ranking**
 - Menu do site reorganizado: links agrupados em **Explorar** (Comics, Ranking, Novidades) e **Comunidade** (Comunidade, Fórum), botão **Publicar** sempre visível e um único ☰ no celular com grupos
 - Entradas do changelog público (`changelogs/*.json`) para fórum, rede social (seguir/@usuário/salvos/hashtags), gamificação e o novo menu
