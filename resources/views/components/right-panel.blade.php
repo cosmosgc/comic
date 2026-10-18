@@ -38,8 +38,9 @@
         @else
             <ul class="space-y-3">
                 @foreach ($latestComics as $latest)
+                    @php($latestLocked = $latest->isLockedFor(auth()->user()))
                     <li>
-                        <a href="{{ route('comics.showBySlug', ['slug' => $latest->slug]) }}"
+                        <a href="{{ $latestLocked ? route('login') : route('comics.showBySlug', ['slug' => $latest->slug]) }}"
                            class="flex items-center gap-2 rounded-lg p-1 transition hover:bg-zinc-800">
                             @if ($latest->image_path)
                                 <img src="{{ asset('storage/'.$latest->image_path) }}"
@@ -47,7 +48,7 @@
                                      class="h-12 w-9 shrink-0 rounded object-cover">
                             @endif
                             <span class="min-w-0">
-                                <span class="block truncate text-sm font-medium text-zinc-200">{{ $latest->title }}</span>
+                                <span class="block truncate text-sm font-medium text-zinc-200">{{ $latestLocked ? '🔒 ' : '' }}{{ $latest->title }}</span>
                                 <span class="block text-xs text-zinc-500">{{ $latest->created_at?->diffForHumans() }}</span>
                             </span>
                         </a>
@@ -70,8 +71,9 @@
         @else
             <ul class="space-y-3">
                 @foreach ($recommendedComics as $recommended)
+                    @php($recommendedLocked = $recommended->isLockedFor(auth()->user()))
                     <li>
-                        <a href="{{ route('comics.showBySlug', ['slug' => $recommended->slug]) }}"
+                        <a href="{{ $recommendedLocked ? route('login') : route('comics.showBySlug', ['slug' => $recommended->slug]) }}"
                            class="flex items-center gap-2 rounded-lg p-1 transition hover:bg-zinc-800">
                             @if ($recommended->image_path)
                                 <img src="{{ asset('storage/'.$recommended->image_path) }}"
@@ -79,7 +81,7 @@
                                      class="h-12 w-9 shrink-0 rounded object-cover">
                             @endif
                             <span class="min-w-0">
-                                <span class="block truncate text-sm font-medium text-zinc-200">{{ $recommended->title }}</span>
+                                <span class="block truncate text-sm font-medium text-zinc-200">{{ $recommendedLocked ? '🔒 ' : '' }}{{ $recommended->title }}</span>
                                 <span class="block text-xs text-zinc-500">
                                     @if (($recommended->liked_by_users_count ?? 0) > 0)
                                         ♥ {{ $recommended->liked_by_users_count }} curtidas

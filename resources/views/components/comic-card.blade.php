@@ -4,6 +4,14 @@
     class="group relative flex flex-col rounded-xl border border-zinc-800 bg-zinc-900 p-3 shadow transition duration-300 hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-xl hover:shadow-indigo-950/40 sm:p-4"
 >
 
+    @php
+        // Exclusive comics stay in the grid for guests, but as locked
+        // teasers: the card links to the login form instead of a reader
+        // that would answer 404.
+        $locked = $comic->isLockedFor(auth()->user());
+        $comicUrl = $locked ? route('login') : route('comics.showBySlug', ['slug' => $comic->slug]);
+    @endphp
+
     <!-- Uploader -->
     <div class="mb-3 flex items-center gap-2 text-sm">
         <a href="{{ route('profile.public.show.username', ['username' => $comic->user->name]) }}"
@@ -22,16 +30,31 @@
     </div>
 
     <!-- Comic Cover -->
-    <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}"
+    <a href="{{ $comicUrl }}"
        title="{{ $comic->title }}"
        class="block">
 
-        <img
-            src="{{ asset('storage/' . $comic->image_path) }}"
-            alt="{{ $comic->title }} cover"
-            loading="lazy"
-            class="mb-3 aspect-[3/4] w-full rounded-lg object-cover transition duration-300 group-hover:scale-[1.02]"
-        >
+        <div class="relative mb-3 overflow-hidden rounded-lg">
+            <img
+                src="{{ asset('storage/' . $comic->image_path) }}"
+                alt="{{ $comic->title }} cover"
+                loading="lazy"
+                class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            >
+
+            <x-comic-ribbons :comic="$comic" variant="overlay" />
+
+            @if ($locked)
+                <span class="absolute inset-0 z-30 flex flex-col items-center justify-center gap-1 bg-zinc-950/70 text-center">
+                    <svg class="h-6 w-6 text-fuchsia-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 00-9 0v3m-.75 0h10.5a1.5 1.5 0 011.5 1.5v6a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5v-6a1.5 1.5 0 011.5-1.5z"/>
+                    </svg>
+                    <span class="px-2 text-[11px] font-bold uppercase tracking-wide text-fuchsia-200">
+                        Entre para ler
+                    </span>
+                </span>
+            @endif
+        </div>
 
         <h2 class="mb-1 text-lg font-semibold leading-tight hover:text-indigo-400">
             {{ Str::limit($comic->title, 35) }}
@@ -71,17 +94,19 @@
 
     @endif
 
-    <!-- Reading progress (cookie-based, painted by JS; 0% doubles as length indicator) -->
-    <div class="mt-3" data-reading-progress>
-        <div class="mb-1 flex items-center justify-between text-[11px] font-medium">
-            <span data-reading-label class="text-zinc-400"></span>
-            <span data-reading-pct class="text-zinc-500"></span>
+    @if (! $locked)
+        <!-- Reading progress (cookie-based, painted by JS; 0% doubles as length indicator) -->
+        <div class="mt-3" data-reading-progress>
+            <div class="mb-1 flex items-center justify-between text-[11px] font-medium">
+                <span data-reading-label class="text-zinc-400"></span>
+                <span data-reading-pct class="text-zinc-500"></span>
+            </div>
+            <div class="h-1 overflow-hidden rounded-full bg-zinc-800" role="progressbar"
+                 aria-label="Progresso de leitura de {{ $comic->title }}" aria-valuemin="0" aria-valuemax="100" data-reading-bar>
+                <div data-reading-fill class="h-full rounded-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
         </div>
-        <div class="h-1 overflow-hidden rounded-full bg-zinc-800" role="progressbar"
-             aria-label="Progresso de leitura de {{ $comic->title }}" aria-valuemin="0" aria-valuemax="100" data-reading-bar>
-            <div data-reading-fill class="h-full rounded-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
-        </div>
-    </div>
+    @endif
 
     <!-- Engagement: likes + comments (counts degrade to 0 without migrations) -->
     @php
@@ -113,7 +138,7 @@
                 <span>{{ $cardLikeCount > 0 ? $cardLikeCount : '' }}</span>
             </span>
         @endauth
-        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}" title="Comentários" aria-label="Comentários em {{ $comic->title }}" class="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-lg transition hover:text-sky-400 active:bg-zinc-800">
+        <a href="{{ $comicUrl }}" title="Comentários" aria-label="Comentários em {{ $comic->title }}" class="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-lg transition hover:text-sky-400 active:bg-zinc-800">
             <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h8m-8 0a8 8 0 108-8m-8 8V4m0 8l-4-4m4 4l4-4"/>
             </svg>
@@ -127,20 +152,34 @@
         </span>
     </div>
 
-    <!-- Share -->
-    <div class="mt-4 flex justify-center">
-        <button
-            type="button"
-            onclick="copyToClipboard(this)"
-            data-link="{{ url('https://t.me/iv?url=' . (route('comics.showBySlug', ['slug' => $comic->slug])) . '&rhash=7dbb018f868695') }}"
-            class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white
-                   transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
-            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21.9 4.6L2.7 12.1c-.8.3-.8 1.4.1 1.6l4.7 1.5 1.8 5.6c.3.8 1.3.9 1.8.2l2.6-3.1 4.9 3.6c.6.4 1.5.1 1.7-.6l2.6-14.6c.2-.9-.6-1.7-1 0zM8.4 13.3l9.5-6.2c.2-.1.4.2.2.3l-7.9 7.2-.3 3-1.5-4.3z"/>
-            </svg>
-            <span>Compartilhar</span>
-        </button>
-    </div>
+    @if ($locked)
+        <!-- Locked teaser: the share link would dead-end on the login wall -->
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <a href="{{ route('login') }}"
+               class="inline-flex items-center gap-2 rounded-lg bg-fuchsia-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-fuchsia-500">
+                Entrar para ler
+            </a>
+            <a href="{{ route('register') }}"
+               class="inline-flex items-center gap-2 rounded-lg border border-fuchsia-500/40 px-3 py-2 text-sm font-semibold text-fuchsia-200 transition hover:bg-fuchsia-500/10">
+                Criar conta
+            </a>
+        </div>
+    @else
+        <!-- Share -->
+        <div class="mt-4 flex justify-center">
+            <button
+                type="button"
+                onclick="copyToClipboard(this)"
+                data-link="{{ url('https://t.me/iv?url=' . (route('comics.showBySlug', ['slug' => $comic->slug])) . '&rhash=7dbb018f868695') }}"
+                class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white
+                       transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21.9 4.6L2.7 12.1c-.8.3-.8 1.4.1 1.6l4.7 1.5 1.8 5.6c.3.8 1.3.9 1.8.2l2.6-3.1 4.9 3.6c.6.4 1.5.1 1.7-.6l2.6-14.6c.2-.9-.6-1.7-1 0zM8.4 13.3l9.5-6.2c.2-.1.4.2.2.3l-7.9 7.2-.3 3-1.5-4.3z"/>
+                </svg>
+                <span>Compartilhar</span>
+            </button>
+        </div>
+    @endif
 
 </div>
 @once

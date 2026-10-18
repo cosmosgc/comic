@@ -25,7 +25,11 @@
     <section>
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-bold">
-                Comics
+                @if (($filter ?? null) === 'exclusivo')
+                    🔒 Exclusivos
+                @else
+                    Comics
+                @endif
             </h1>
 
             <div class="flex items-center gap-2">
@@ -40,6 +44,13 @@
                               {{ ($sort ?? 'latest') === 'liked' ? 'bg-indigo-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
                         Mais curtidos
                     </a>
+                    @auth
+                        <a href="{{ route('comics.index', ['filter' => 'exclusivo']) }}"
+                           class="rounded-full px-3 py-1.5 transition
+                                  {{ ($filter ?? null) === 'exclusivo' ? 'bg-fuchsia-600 text-white' : 'text-zinc-400 hover:text-zinc-100' }}">
+                            🔒 Exclusivos
+                        </a>
+                    @endauth
                 </div>
 
                 <div class="flex items-center gap-1" role="group" aria-label="Layout dos comics">
@@ -64,6 +75,19 @@
                 </div>
             </div>
         </div>
+
+        @if (($filter ?? null) === 'exclusivo')
+            <div class="mb-6 rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/10 px-4 py-3 text-sm text-fuchsia-100">
+                @auth
+                    🔒 Conteúdos exclusivos para membros: quem não está logado vê o card bloqueado, sem abrir as páginas.
+                @else
+                    🔒 Estes comics são <strong>exclusivos para membros</strong>. Entre ou crie uma conta para ler:
+                    <a href="{{ route('login') }}" class="font-semibold underline">entrar</a>
+                    ·
+                    <a href="{{ route('register') }}" class="font-semibold underline">criar conta</a>.
+                @endauth
+            </div>
+        @endif
 
         @if (($layout ?? 'grid') === 'list')
             <div class="flex flex-col gap-4" data-comics-layout-root="list">

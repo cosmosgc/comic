@@ -55,9 +55,10 @@
 
             <ul class="space-y-1">
                 @foreach ($topComics as $rank => $comic)
+                    @php($topLocked = $comic->isLockedFor(auth()->user()))
                     <li>
-                        <a href="{{ route('comics.showBySlug', ['slug' => $comic->slug]) }}"
-                           title="{{ $comic->title }}"
+                        <a href="{{ $topLocked ? route('login') : route('comics.showBySlug', ['slug' => $comic->slug]) }}"
+                           title="{{ $topLocked ? 'Entre para ler: '.$comic->title : $comic->title }}"
                            class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition hover:bg-zinc-800">
                             <span class="w-5 shrink-0 text-center text-sm font-bold text-zinc-500">
                                 {{ $rank + 1 }}
@@ -68,7 +69,7 @@
                                  class="h-16 w-12 shrink-0 rounded object-cover">
                             <span class="min-w-0 flex-1">
                                 <span class="block truncate text-sm font-medium text-zinc-200">
-                                    {{ $comic->title }}
+                                    @if ($topLocked) 🔒 @endif{{ $comic->title }}
                                 </span>
                                 <span class="mt-0.5 block text-xs text-zinc-500">
                                     👁 {{ $comic->view_count }}

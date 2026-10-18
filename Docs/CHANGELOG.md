@@ -28,6 +28,8 @@ Example:
 ## [Unreleased]
 
 ### Added
+- Comics **exclusivos para membros** (marca-se na edição do comic ou na lista do admin; visitante vê o card com cadeado e cai no login) e **pré-estreia de uma semana**: membros leem os agendados até 7 dias antes do lançamento
+- Selos nos cards: **Novo** (últimos 7 dias), **Em breve** (agendado) e **Exclusivo**, mais a aba **Exclusivos** na home para membros; os admins passam a ver todo o agendamento nas listas do site
 - Manutenção no painel (Admin → Migrações): botão **Limpar caches**, que roda `view:clear`, `config:clear`, `route:clear`, `cache:clear` e `event:clear` no servidor sem SSH — é o que destrava o erro 500 depois de um deploy que remove um pacote, quando as views compiladas do host continuam chamando as classes antigas (os manifests de pacotes/serviços são preservados)
 - Gamificação: XP por interação (upload, post, resposta, comentário, curtida, coleção, busca, login) com aviso em tela, níveis por curva configurável, conquistas, sequência diária com bônus, notificações de nível/conquista, vitrine no perfil e página pública de **Ranking**
 - Menu do site reorganizado: links agrupados em **Explorar** (Comics, Ranking, Novidades) e **Comunidade** (Comunidade, Fórum), botão **Publicar** sempre visível e um único ☰ no celular com grupos

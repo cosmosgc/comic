@@ -366,9 +366,24 @@
 
 <div class="comic-header">
     <h1>{{ $comic->title }}</h1>
-    @if ($comic->isScheduled())
+    @php
+        // Only whoever may open the comic gets here: the owner/admin
+        // previewing the queue, or a member inside the early access week.
+        $viewerIsOwnerOrAdmin = auth()->check()
+            && ((int) auth()->id() === (int) $comic->user_id || (int) auth()->user()->admin_level >= 1);
+    @endphp
+    @if ($comic->isExclusive())
+        <p style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#701a75;color:#f5d0fe;font-size:0.85em;">
+            🔒 Exclusivo para membros
+        </p>
+    @endif
+    @if ($comic->isScheduled() && $viewerIsOwnerOrAdmin)
         <p style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#78350a;color:#fde68a;font-size:0.85em;">
             ⏳ Agendado para {{ $comic->published_at->format('d/m/Y H:i') }} — visível só para você e admins
+        </p>
+    @elseif ($comic->isScheduled())
+        <p style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#0c4a6e;color:#bae6fd;font-size:0.85em;">
+            ⏳ Pré-estreia para membros - liberação pública em {{ $comic->published_at->format('d/m/Y H:i') }}
         </p>
     @endif
     <div class="comic-meta">

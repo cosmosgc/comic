@@ -44,13 +44,15 @@ class ComicExclusivityTest extends TestCase
             ->assertSee('Only Members XYZ');
     }
 
-    public function test_exclusive_comic_stays_in_the_list_for_guests_as_a_locked_teaser(): void
+    public function test_guest_sees_a_locked_teaser_that_points_at_the_login_form(): void
     {
-        $comic = Comic::factory()->create(['title' => 'Teaser Here XYZ', 'is_exclusive' => true]);
+        $comic = Comic::factory()->create(['title' => 'Locked Teaser XYZ', 'is_exclusive' => true]);
 
-        // Guests are the growth target: the card shows up (locked) instead
-        // of vanishing from the catalogue.
-        $this->get('/')->assertOk()->assertSee('data-comic-card="'.$comic->id.'"', false);
+        $this->get('/')->assertOk()
+            ->assertSee('data-comic-card="'.$comic->id.'"', false)
+            ->assertSee('Entre para ler')
+            // The members' listing tab is not advertised to guests.
+            ->assertDontSee('Exclusivos');
     }
 
     public function test_member_reads_a_comic_scheduled_within_the_week_that_guests_cannot(): void
@@ -139,5 +141,33 @@ class ComicExclusivityTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertFalse($comic->fresh()->isExclusive());
+    }
+
+    public function test_cards_label_new_releases_exclusives_and_early_access(): void
+    {
+        Comic::factory()->create(['title' => 'Fresh XYZ', 'is_exclusive' => true]);
+        Comic::factory()->create(['title' => 'Soon Ribbon XYZ', 'published_at' => now()->addDays(3)]);
+
+        $owner = User::factory()->create();
+        $far = Comic::factory()->create([
+            'user_id' => $owner->id,
+            'title' => 'Far Ribbon XYZ',
+            'published_at' => now()->addDays(30),
+        ]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('Novo')
+            ->assertSee('Exclusivo');
+
+        // A member gets the last week before release and a tab to browse
+        // the exclusives; the far comic stays out of their list.
+        $this->actingAs(User::factory()->create(['admin_level' => 0]))
+            ->get('/')->assertOk()
+            ->assertSee('Pré-estreia')
+            ->assertSee('Exclusivos')
+            ->assertDontSee('data-comic-card="'.$far->id.'"', false);
+
+        // ...while the owner of a comic further out sees it as "Em breve".
+        $this->actingAs($owner)->get('/')->assertOk()->assertSee('Em breve');
     }
 }
