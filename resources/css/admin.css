@@ -201,35 +201,42 @@
         @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300;
     }
 
-    /* ---------- DataTables (dark-aware, replaces DataTables default CSS) ---------- */
-    .dataTables_wrapper {
+    /* ---------- DataTables 3 (dark-aware, replaces DataTables default CSS) ---------- */
+    /* v3 renamed the wrapper/control classes (dataTables_wrapper →
+       dt-container, paginate_button → dt-paging-button, and the search/length
+       wrappers became dt-search/dt-length inside dt-layout-row). */
+    .dt-container {
         @apply text-sm;
     }
-    .dataTables_wrapper .dataTables_length label,
-    .dataTables_wrapper .dataTables_filter label {
+    .dt-container .dt-length label,
+    .dt-container .dt-search label {
         @apply flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400;
     }
-    .dataTables_wrapper .dataTables_length select,
-    .dataTables_wrapper .dataTables_filter input {
+    .dt-container .dt-length select,
+    .dt-container .dt-search input {
         @apply rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100;
     }
-    .dataTables_wrapper .dataTables_info {
+    .dt-container .dt-info {
         @apply pt-3 text-xs text-zinc-500 dark:text-zinc-400;
     }
-    .dataTables_wrapper .dataTables_paginate {
+    .dt-container .dt-paging {
         @apply pt-3;
     }
-    .dataTables_wrapper .dataTables_paginate .paginate_button {
-        @apply mx-0.5 cursor-pointer rounded-lg border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300;
+    .dt-container .dt-paging .dt-paging-button {
+        @apply mx-0.5 cursor-pointer rounded-lg border border-zinc-200 bg-transparent px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300;
     }
-    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    .dt-container .dt-paging .dt-paging-button:hover:not(.disabled) {
         @apply bg-zinc-100 dark:bg-zinc-800;
     }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    .dt-container .dt-paging .dt-paging-button.current,
+    .dt-container .dt-paging .dt-paging-button.current:hover {
         @apply border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-600;
     }
-    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    .dt-container .dt-paging .dt-paging-button.disabled {
         @apply cursor-not-allowed opacity-40;
+    }
+    .dt-container .dt-paging .ellipsis {
+        @apply px-2 text-zinc-500 dark:text-zinc-400;
     }
 }
 

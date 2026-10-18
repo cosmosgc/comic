@@ -15,8 +15,8 @@
 @endsection
 
 @section('scripts')
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
+    <script type="module">
+        // Deferred module: d3 comes from resources/js/admin.js.
         const treeData = {!! $treeData !!};
         const isDark = document.documentElement.classList.contains('dark');
 

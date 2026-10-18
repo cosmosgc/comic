@@ -29,9 +29,8 @@
         }
     </script>
 
-    @vite(['resources/css/admin.css'])
+    @vite(['resources/css/admin.css', 'resources/js/admin.js'])
     @yield('styles')
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="min-h-screen bg-zinc-100 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
 
@@ -203,11 +202,10 @@
     </div>
 </div>
 
-<!-- Scripts (kept global: DataTables + Chart.js power the per-page scripts) -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<!-- Scripts: jQuery + DataTables + Chart.js + d3 + Alpine come from
+     resources/js/admin.js (Vite build), which exposes them as globals and
+     runs before DOMContentLoaded. Per-page blocks below must therefore wait
+     for DOMContentLoaded instead of touching those globals while parsing. -->
 @yield('scripts')
 </body>
 </html>

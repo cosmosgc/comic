@@ -12,7 +12,6 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @yield('styles')
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
 <body class="min-h-screen bg-zinc-950 text-zinc-100">

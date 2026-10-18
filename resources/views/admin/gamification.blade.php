@@ -338,7 +338,9 @@
 @endsection
 
 @section('scripts')
-<script>
+<script type="module">
+    // Deferred module: Chart.js comes from resources/js/admin.js.
+    // Alpine evaluates x-data in the global scope, so keep it attached.
     function gamificationGrant(badges) {
         return {
             query: '',
@@ -367,6 +369,8 @@
     }
 
     // ---- Level curve chart (Chart.js, loaded globally by the admin layout) ----
+    window.gamificationGrant = gamificationGrant;
+
     (function () {
         const canvas = document.getElementById('curveChart');
         if (!canvas || typeof Chart === 'undefined') return;

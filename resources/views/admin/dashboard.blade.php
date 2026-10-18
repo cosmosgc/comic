@@ -50,7 +50,8 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script type="module">
+        // Deferred module: Chart.js comes from resources/js/admin.js.
         const rawData = {
             daily: {
                 labels: [

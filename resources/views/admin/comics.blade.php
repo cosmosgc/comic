@@ -123,7 +123,8 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script type="module">
+        // Deferred module: jQuery/DataTables come from resources/js/admin.js.
         $(document).ready(function() {
             $('#comicsTable').DataTable({
                 "order": [[4, "desc"]] // Order by Created At (5th column, index 4) in descending order

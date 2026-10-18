@@ -125,7 +125,8 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script type="module">
+        // Deferred module: Chart.js comes from resources/js/admin.js.
         const reportData = {
             daily: {
                 labels: @json($dailyLabels),

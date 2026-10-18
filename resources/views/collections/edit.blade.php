@@ -168,8 +168,8 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<script>
+<script type="module">
+// Sortable is bundled by resources/js/app.js (deferred module, runs first).
 (function () {
     const el = document.getElementById('sortable');
     if (!el || typeof Sortable === 'undefined') return;

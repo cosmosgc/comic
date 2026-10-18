@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
 <aside class="hidden md:block md:w-64 shrink-0 border-r border-zinc-800 bg-zinc-900">
 
     <!-- Widgets -->
@@ -27,7 +25,9 @@
                            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-zinc-300
                                   transition hover:bg-zinc-800 hover:text-white">
 
-                            <i class="fa-solid fa-tag" @if ($tag->displayCategory) style="color: {{ $tag->displayCategory->text_color }}" @else style="color: #71717a;" @endif></i>
+                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" @if ($tag->displayCategory) style="color: {{ $tag->displayCategory->text_color }}" @else style="color: #71717a;" @endif>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z"/>
+                            </svg>
                             <span class="min-w-0 flex-1 truncate" @if ($tag->displayCategory) style="color: {{ $tag->displayCategory->text_color }}" @endif>{{ $tag->name }}</span>
 
                             @if (isset($tag->likes_sum) && (int) $tag->likes_sum > 0)

@@ -219,12 +219,10 @@
 
 
 @section('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-<script>
-    const deletePageBaseUrl = "{{ url('page') }}"; // This will give http://localhost:3000/comic/public/page
-</script>
+<script type="module">
+    // Sortable is bundled by resources/js/app.js (deferred module, runs first).
+    const deletePageBaseUrl = "{{ url('page') }}";
 
-<script>
     // Initialize Sortable.js on the pages list
     var sortable = new Sortable(document.getElementById('sortable'), {
         animation: 150,

@@ -52,7 +52,8 @@
 @endsection
 
 @section('scripts')
-    <script>
+    <script type="module">
+        // Deferred module: jQuery/DataTables come from resources/js/admin.js.
         $(document).ready(function() {
             $('#usersTable').DataTable();
         });
