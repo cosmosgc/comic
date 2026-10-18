@@ -26,6 +26,7 @@ class ComicScheduleTest extends TestCase
         Comic::factory()->create(['title' => 'Visible Now XYZ', 'published_at' => null]);
         Comic::factory()->create(['title' => 'Future Hidden XYZ', 'published_at' => now()->addDay()]);
 
+        // Guests get no early access (ComicExclusivityTest covers members).
         $this->get('/')->assertOk()
             ->assertSee('Visible Now XYZ')
             ->assertDontSee('Future Hidden XYZ');
@@ -46,7 +47,9 @@ class ComicScheduleTest extends TestCase
     public function test_stranger_gets_404_but_owner_and_admin_can_preview(): void
     {
         $owner = User::factory()->create();
-        $comic = Comic::factory()->create(['user_id' => $owner->id, 'published_at' => now()->addDay()]);
+        // Beyond the members' early access window: signed-in strangers have
+        // no business here, only the owner and admins preview the queue.
+        $comic = Comic::factory()->create(['user_id' => $owner->id, 'published_at' => now()->addDays(30)]);
 
         $this->actingAs(User::factory()->create(['admin_level' => 0]))
             ->get("/comics/id/{$comic->id}")->assertNotFound();
@@ -70,7 +73,9 @@ class ComicScheduleTest extends TestCase
     {
         $owner = User::factory()->create();
         $comic = Comic::factory()->create(['user_id' => $owner->id, 'published_at' => null]);
-        $future = now()->addDays(2)->format('Y-m-d\TH:i');
+        // Out of the members' early access window, so the stranger check
+        // below keeps its meaning.
+        $future = now()->addDays(30)->format('Y-m-d\TH:i');
 
         $this->actingAs($owner)
             ->put("/comics/{$comic->id}/update", ['title' => $comic->title, 'published_at' => $future])

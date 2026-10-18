@@ -73,6 +73,20 @@
                                 @else
                                     <span class="admin-badge admin-badge-success">Publicado</span>
                                 @endif
+                                @if ($comic->isExclusive())
+                                    <div class="mt-1">
+                                        <span class="admin-badge admin-badge-info" title="Só membros logados leem; visitantes veem o card bloqueado">🔒 Exclusivo</span>
+                                    </div>
+                                @endif
+                                <form method="POST" action="{{ route('admin.comics.exclusive', $comic) }}" class="mt-1">
+                                    @csrf
+                                    <input type="hidden" name="is_exclusive" value="{{ $comic->isExclusive() ? 0 : 1 }}">
+                                    <button type="submit"
+                                            class="admin-btn admin-btn-sm {{ $comic->isExclusive() ? 'admin-btn-warning' : '' }}"
+                                            title="{{ $comic->isExclusive() ? 'Voltar a público: qualquer visitante lê' : 'Só membros logados leem; visitantes veem o card bloqueado' }}">
+                                        {{ $comic->isExclusive() ? 'Tornar público' : 'Tornar exclusivo' }}
+                                    </button>
+                                </form>
                             </td>
                             <td class="whitespace-nowrap">
                                 <form method="POST" action="{{ route('admin.comics.schedule', $comic) }}" class="flex items-center gap-1">

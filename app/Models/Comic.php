@@ -21,6 +21,12 @@ class Comic extends Model
     // Specify the table if necessary (Laravel assumes the plural form of the class name)
     protected $table = 'comics';
 
+    /** Days before release that members get to read a scheduled comic. */
+    public const EARLY_ACCESS_DAYS = 7;
+
+    /** Days after release that a comic still carries the "Novo" ribbon. */
+    public const NEW_WINDOW_DAYS = 7;
+
     // The fields that are mass assignable
     protected $fillable = [
         'title',
@@ -29,6 +35,7 @@ class Comic extends Model
         'image_path',
         'slug',
         'published_at',
+        'is_exclusive',
         'user_id',
         'view_count',
     ];
@@ -40,6 +47,7 @@ class Comic extends Model
     {
         return [
             'published_at' => 'datetime',
+            'is_exclusive' => 'boolean',
         ];
     }
 
@@ -97,8 +105,13 @@ class Comic extends Model
     }
 
     /**
-     * What $user may see in lists: everything published, plus their own
-     * scheduled comics (admins see all scheduled). Guests get published.
+     * What $user may see in lists.
+     *
+     * Everything released, plus - for signed-in members only - the last
+     * week before a comic's scheduled date (early access). Owners keep
+     * their own whole queue and admins see every scheduled comic.
+     * Exclusive comics stay listed for guests on purpose: they become
+     * locked teaser cards (see isLockedFor) instead of disappearing.
      */
     public function scopeVisibleTo(Builder $query, ?User $user): Builder
     {
@@ -110,9 +123,14 @@ class Comic extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $inner) use ($user) {
+        $earlyAccessUntil = $user !== null ? now()->addDays(self::EARLY_ACCESS_DAYS) : null;
+
+        return $query->where(function (Builder $inner) use ($user, $earlyAccessUntil) {
             $inner->whereNull('comics.published_at')
                 ->orWhere('comics.published_at', '<=', now());
+            if ($earlyAccessUntil !== null) {
+                $inner->orWhere('comics.published_at', '<=', $earlyAccessUntil);
+            }
             if ($user !== null) {
                 $inner->orWhere('comics.user_id', $user->id);
             }
@@ -154,17 +172,65 @@ class Comic extends Model
     }
 
     /**
-     * Owner and admins may preview scheduled comics; everyone else
-     * only sees published ones.
+     * Members-only comic: guests never open it, but the lists still show
+     * a locked teaser card.
+     */
+    public function isExclusive(): bool
+    {
+        return (bool) ($this->is_exclusive ?? false);
+    }
+
+    /**
+     * Scheduled for release within the members-only early access window
+     * (the last week before the comic goes public).
+     */
+    public function isInEarlyAccessWindow(): bool
+    {
+        return $this->isScheduled()
+            && $this->published_at->lessThanOrEqualTo(now()->addDays(self::EARLY_ACCESS_DAYS));
+    }
+
+    /**
+     * Released recently enough to carry the "Novo" ribbon.
+     */
+    public function isNew(): bool
+    {
+        $releasedAt = $this->published_at ?? $this->created_at;
+
+        if ($releasedAt === null || $releasedAt->isFuture()) {
+            return false;
+        }
+
+        return $releasedAt->greaterThanOrEqualTo(now()->subDays(self::NEW_WINDOW_DAYS));
+    }
+
+    /**
+     * Shown to this viewer as a locked card: exclusive content and no
+     * signed-in account to unlock it.
+     */
+    public function isLockedFor(?User $user): bool
+    {
+        return $this->isExclusive() && $user === null;
+    }
+
+    /**
+     * May $user read the pages? Owners and admins open anything (their
+     * own queue included), members open exclusives and comics inside the
+     * early access window, and guests only ever see released comics.
      */
     public function isVisibleTo(?User $user): bool
     {
-        if ($this->isPublished()) {
-            return true;
+        if ($user !== null) {
+            if ((int) $this->user_id === (int) $user->id || (int) $user->admin_level >= 1) {
+                return true;
+            }
         }
 
-        return $user !== null
-            && ((int) $this->user_id === (int) $user->id || (int) $user->admin_level >= 1);
+        if ($this->isLockedFor($user)) {
+            return false;
+        }
+
+        return $this->isPublished() || ($user !== null && $this->isInEarlyAccessWindow());
     }
 
     public function pages(): HasMany

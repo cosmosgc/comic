@@ -44,6 +44,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
     Route::get('/comics', 'comics')->name('admin.comics');
     Route::post('/comics/{comic}/schedule', 'scheduleComic')->name('admin.comics.schedule');
+    Route::post('/comics/{comic}/exclusive', 'exclusiveComic')->name('admin.comics.exclusive');
     Route::delete('/comics/{comic}', 'destroyComic')->name('admin.comics.destroy');
     Route::get('/comics/{comic}/package', 'exportComicPackage')->name('admin.comics.package');
     Route::post('/comics/package', 'importComicPackage')->name('admin.comics.package-import');

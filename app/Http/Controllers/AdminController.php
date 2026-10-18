@@ -29,6 +29,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -340,14 +341,46 @@ class AdminController extends Controller
     {
         // Only the columns the table renders: the admin list would
         // otherwise hydrate every comic with all of its text columns.
+        $columns = ['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count'];
+        // Skipped on hosts whose comics table predates the column.
+        if (Schema::hasColumn('comics', 'is_exclusive')) {
+            $columns[] = 'is_exclusive';
+        }
+
         $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
-            ->get(['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count']);
+            ->get($columns);
 
         return view('admin.comics', [
             'comics' => $comics,
             'transferConfigured' => trim((string) config('transfer.remote_url')) !== ''
                 && trim((string) config('transfer.remote_token')) !== '',
         ]);
+    }
+
+    /**
+     * Flag (or unflag) a comic as members-only from the admin list.
+     * Guests then get 404 on the reader while the lists keep showing a
+     * locked teaser card.
+     */
+    public function exclusiveComic(Request $request, Comic $comic)
+    {
+        $request->validate([
+            'is_exclusive' => 'nullable|boolean',
+        ]);
+
+        if (! Schema::hasColumn('comics', 'is_exclusive')) {
+            return redirect()->route('admin.comics')
+                ->with('error', 'A coluna is_exclusive ainda não existe neste banco - rode as migrações.');
+        }
+
+        $comic->is_exclusive = $request->boolean('is_exclusive');
+        $comic->save();
+
+        $message = $comic->is_exclusive
+            ? "Comic \"{$comic->title}\" agora é exclusivo para membros (visitantes veem o card bloqueado)."
+            : "Comic \"{$comic->title}\" voltou a ser público.";
+
+        return redirect()->route('admin.comics')->with('success', $message);
     }
 
     /**

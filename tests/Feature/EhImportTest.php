@@ -12,6 +12,7 @@ use App\Services\EhComicImporter;
 use App\Services\EhImportException;
 use Illuminate\Http\Client\Factory as HttpClientFactory;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -172,10 +173,11 @@ class EhImportTest extends TestCase
             $cover = $comic->fresh()->image_path;
             $this->assertSame('comics/'.$comic->id.'/pages/page-0001.gif', $cover);
             $this->assertFileExists(public_path('storage/'.$cover));
-            // Strangers still 404 until the scheduled date (actingAs
-            // persists across requests, so check as someone else).
-            $this->actingAs(User::factory()->create(['admin_level' => 0]))
-                ->get("/comics/id/{$comic->id}")->assertNotFound();
+            // Not released yet: guests still 404 until the scheduled date
+            // (members get the last week early; the admin might still be
+            // signed in here, so drop to guest first).
+            Auth::logout();
+            $this->get("/comics/id/{$comic->id}")->assertNotFound();
         } finally {
             if ($comicId !== null) {
                 $this->deleteComicTree($comicId);

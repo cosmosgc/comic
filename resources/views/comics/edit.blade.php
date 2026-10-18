@@ -118,6 +118,28 @@
             @enderror
         </div>
 
+        <!-- Members-only flag: guests cannot open it and see a locked card -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
+            <label class="flex items-start gap-3">
+                <input type="hidden" name="is_exclusive" value="0">
+                <input type="checkbox"
+                       name="is_exclusive"
+                       value="1"
+                       @checked(old('is_exclusive', $comic->isExclusive()))
+                       class="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-fuchsia-500 focus:ring-fuchsia-500/40">
+                <span>
+                    <span class="block text-sm font-medium text-zinc-200">🔒 Exclusivo para membros</span>
+                    <span class="mt-1 block text-xs text-zinc-500">
+                        Visitantes deslogados não abrem o comic (a página dá 404); nas listas ele fica como card
+                        bloqueado, com o convite para entrar. Membros logados leem normalmente.
+                    </span>
+                </span>
+            </label>
+            @error('is_exclusive')
+                <p class="mt-1 text-xs text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
         <button type="submit"
                 class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
                        hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40">

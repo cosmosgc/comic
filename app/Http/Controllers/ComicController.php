@@ -47,7 +47,18 @@ class ComicController extends Controller
         $sort = $request->input('sort') === 'liked' && in_array('likedByUsers', $counts, true)
             ? 'liked'
             : 'latest';
-        $query = Comic::withCount($counts)->published();
+        // ?filter=exclusivo narrows the list to members-only comics. Guests
+        // reach the same page and get locked teaser cards, so the filter
+        // doubles as the pitch to sign up.
+        $filter = $request->input('filter') === 'exclusivo' ? 'exclusivo' : null;
+
+        // visibleTo() is the whole visibility matrix: released comics for
+        // everyone, the last week before release plus exclusives for
+        // members, and every queue for owners/admins.
+        $query = Comic::withCount($counts)->visibleTo(Auth::user());
+        if ($filter === 'exclusivo' && Schema::hasColumn('comics', 'is_exclusive')) {
+            $query->where('is_exclusive', true);
+        }
         if ($sort === 'liked') {
             $query->orderByDesc('liked_by_users_count')->orderByDesc('created_at');
         } else {
@@ -78,7 +89,7 @@ class ComicController extends Controller
         $latestComics = SidebarComposer::latestUploads();
         $recommendedComics = SidebarComposer::recommended();
 
-        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'latestComics', 'recommendedComics', 'layout'));
+        return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'filter', 'latestComics', 'recommendedComics', 'layout'));
     }
 
     public function create()
@@ -204,7 +215,9 @@ class ComicController extends Controller
      */
     public function search(Request $request)
     {
-        $query = Comic::query()->published();
+        // Members see the same catalogue as the home list (early access +
+        // exclusives); guests only see released comics.
+        $query = Comic::query()->visibleTo($request->user());
 
         // 🔎 Text search
         if ($request->filled('search')) {
@@ -334,6 +347,7 @@ class ComicController extends Controller
             'images' => 'required_without:folder|array',
             'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
             'published_at' => 'nullable|date',
+            'is_exclusive' => 'nullable|boolean',
         ]);
 
         // A client-supplied slug still goes through Str::slug() and the
@@ -344,14 +358,22 @@ class ComicController extends Controller
         $slug = Comic::generateUniqueSlug($requestedSlug !== '' ? $requestedSlug : (string) $request->input('title'));
 
         // Create the comic entry
-        $comic = Comic::create([
+        $attributes = [
             'title' => $request->input('title'),
             'author' => $request->input('author'),
             'description' => $request->input('desc'),
             'slug' => $slug,
             'published_at' => $request->filled('published_at') ? $request->date('published_at') : null,
             'user_id' => Auth::id(),
-        ]);
+        ];
+
+        // Members-only upload: skipped on hosts whose comics table predates
+        // the column, so an optional perk can never break the upload.
+        if (Schema::hasColumn('comics', 'is_exclusive')) {
+            $attributes['is_exclusive'] = $request->boolean('is_exclusive');
+        }
+
+        $comic = Comic::create($attributes);
 
         // Handle tags
         if ($request->filled('tags')) {
@@ -445,15 +467,25 @@ class ComicController extends Controller
             'description' => 'nullable|string|max:5000',
             'tags' => 'nullable|string|max:2000',
             'published_at' => 'nullable|date',
+            'is_exclusive' => 'nullable|boolean',
         ]);
         $this->authorizeComicAccess($comic);
         // Update comic details
-        $comic->update([
+        $attributes = [
             'title' => $validated['title'],
             'author' => $validated['author'] ?? null,
             'description' => $validated['description'] ?? null,
             'published_at' => $request->filled('published_at') ? $request->date('published_at') : null,
-        ]);
+        ];
+
+        // Owners (and admins) may flag their own comic as members-only. Only
+        // touched when the form sent the field, so callers that omit it
+        // (tests, API-ish update calls) never flip the flag by accident.
+        if ($request->has('is_exclusive') && Schema::hasColumn('comics', 'is_exclusive')) {
+            $attributes['is_exclusive'] = $request->boolean('is_exclusive');
+        }
+
+        $comic->update($attributes);
 
         // Sync tags only when the editor submitted (an absent key means
         // "untouched" — syncing null would wipe all tags).

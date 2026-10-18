@@ -84,6 +84,24 @@
             </p>
         </div>
 
+        <!-- Members-only upload -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
+            <label class="flex items-start gap-3">
+                <input type="checkbox"
+                       id="is_exclusive"
+                       name="is_exclusive"
+                       value="1"
+                       class="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-fuchsia-500 focus:ring-fuchsia-500/40">
+                <span>
+                    <span class="block text-sm font-medium text-zinc-200">🔒 Exclusivo para membros</span>
+                    <span class="mt-1 block text-xs text-zinc-500">
+                        Visitantes deslogados não abrem o comic; nas listas ele vira um card bloqueado com o convite
+                        para entrar. Membros logados leem normalmente.
+                    </span>
+                </span>
+            </label>
+        </div>
+
         <!-- Upload mode -->
         <div>
             <p class="mb-2 text-sm font-medium text-zinc-300">
@@ -696,6 +714,8 @@ document.addEventListener('DOMContentLoaded', function () {
             createData.append('desc', fieldValue('desc'));
             createData.append('tags', fieldValue('tags'));
             createData.append('published_at', fieldValue('published_at'));
+            // Checkbox: reading .value would always give "1", so read checked.
+            createData.append('is_exclusive', document.querySelector('#is_exclusive')?.checked ? '1' : '0');
             createData.append('upload_mode', mode);
             createData.append(mode === 'folder' ? 'folder[]' : 'images[]', prepared[firstIdx].blob, prepared[firstIdx].name);
 
