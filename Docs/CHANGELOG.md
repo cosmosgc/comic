@@ -59,7 +59,7 @@ Example:
 
 ### Changed
 - Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
-- Navbar e painéis laterais reorganizados: menu completo só a partir de 1024px (abaixo disso vira o botão de hambúrguer, que antes aparecia só até 768px), busca adaptável e painéis laterais dentro do mesmo container centralizado do topo/rodapé, fixos ao rolar com rolagem própria
+- Navbar e painéis laterais reorganizados: menu completo só a partir de 1024px (abaixo disso vira o botão de hambúrguer, que antes aparecia só até 768px), busca adaptável e painéis laterais **encostados nas bordas da tela** — o layout virou full-width (o limite de 1280px deixava ~120px de margem em cada lado em telas largas), com os painéis fixos ao rolar e rolagem própria
 
 ### Fixed
 - Rolagem horizontal da página em telas médias: a navbar completa não cabia abaixo de ~1024px e os painéis de largura fixa ficavam presos dentro das colunas de 2/12 da grade

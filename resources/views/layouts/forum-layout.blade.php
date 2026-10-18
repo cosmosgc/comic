@@ -22,7 +22,7 @@
 
 {{-- Detached-mode banner: make it obvious this is a separate area. --}}
 <div class="border-b border-zinc-800 bg-gradient-to-r from-violet-600/25 via-indigo-600/10 to-transparent">
-    <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-xs">
+    <div class="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-xs">
         <span class="text-zinc-300">🧭 Você está no <strong class="text-violet-300">Fórum</strong> — um espaço à parte da comunidade.</span>
         <a href="{{ route('forum.exit') }}" class="font-semibold text-violet-300 transition hover:text-violet-200">Voltar ao site →</a>
     </div>
@@ -30,7 +30,7 @@
 
 {{-- FORUM NAVBAR (distinct from the main site) --}}
 <nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur" aria-label="Navegação do fórum">
-    <div class="mx-auto max-w-7xl px-4">
+    <div class="w-full px-4">
         <div class="flex h-16 items-center justify-between gap-4">
 
             {{-- Forum brand --}}
@@ -132,7 +132,7 @@
 </main>
 
 <footer class="mt-12 border-t border-zinc-800 bg-zinc-950">
-    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
+    <div class="flex w-full flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
         <span class="flex items-center gap-2"><span aria-hidden="true">🗣️</span> Fórum · {{ config('app.site_title') }}</span>
         <nav class="flex items-center gap-5" aria-label="Rodapé do fórum">
             <a href="{{ route('forum.index') }}" class="transition hover:text-zinc-200">Início</a>

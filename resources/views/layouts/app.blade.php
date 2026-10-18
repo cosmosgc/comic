@@ -31,7 +31,7 @@
 
 <!-- NAVBAR -->
 <nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur" aria-label="Navegação principal">
-    <div class="mx-auto max-w-7xl px-4">
+    <div class="w-full px-4">
         <div class="flex h-16 items-center justify-between">
 
             <!-- Logo -->
@@ -205,11 +205,12 @@
 </nav>
 
 <!-- PAGE LAYOUT -->
-{{-- Same width and horizontal padding as the navbar/footer, so the page never
-     runs wider than the site chrome. The side panels are fixed-width flex
-     items, so `min-w-0` on <main> is what keeps wide content (grids, tables,
-     code blocks) from stretching the column and scrolling the whole page. --}}
-<div class="mx-auto flex w-full max-w-7xl items-start gap-6 px-4 py-6">
+{{-- Full-bleed shell: the side panels sit against the viewport edges (the
+     `p-1` on each aside is the only outer gap) and <main> carries the page
+     gutter instead, so the whole width of the screen is used. `min-w-0` on
+     <main> keeps wide content (grids, tables, code blocks) from stretching
+     the column and scrolling the whole page. --}}
+<div class="flex w-full items-start gap-4 py-6">
 
     @if($showPanels ?? false)
         <aside class="sticky top-20 hidden max-h-[calc(100vh-6rem)] w-64 shrink-0 overflow-y-auto rounded-xl bg-zinc-900/50 p-1 panel-scroll lg:block"
@@ -218,7 +219,7 @@
         </aside>
     @endif
 
-    <main id="main-content" class="min-w-0 flex-1">
+    <main id="main-content" class="min-w-0 flex-1 px-4 lg:pl-0 xl:pr-0">
         @yield('content')
     </main>
 
@@ -232,7 +233,7 @@
 </div>
 
 <footer class="mt-12 border-t border-zinc-800">
-    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
+    <div class="flex w-full flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
         <span>{{ config('app.site_title') }}</span>
         <nav class="flex items-center gap-5" aria-label="Rodapé">
             <a href="{{ route('comics.index') }}" class="transition hover:text-zinc-200">Comics</a>
