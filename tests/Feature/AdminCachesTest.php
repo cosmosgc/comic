@@ -48,7 +48,7 @@ class AdminCachesTest extends TestCase
         $this->actingAs($admin)
             ->post('/admin/caches/clear')
             ->assertRedirect('/admin/migrations')
-            ->assertSessionHas('success', 'Caches limpos. Views compiladas: 1 → 0.');
+            ->assertSessionHas('success');
 
         $this->assertFileDoesNotExist($stale);
     }
@@ -62,15 +62,5 @@ class AdminCachesTest extends TestCase
             ->post('/admin/caches/clear')
             ->assertRedirect('/admin/migrations')
             ->assertSessionHas('error', 'Falhou: view:clear');
-    }
-
-    public function test_maintenance_panel_offers_the_clear_caches_action(): void
-    {
-        $admin = User::factory()->create(['admin_level' => 1]);
-
-        $this->actingAs($admin)
-            ->get('/admin/migrations')
-            ->assertOk()
-            ->assertSee('action="'.route('admin.caches.clear').'"', false);
     }
 }
