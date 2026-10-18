@@ -645,7 +645,10 @@ class AdminImportController extends Controller
     }
 
     /**
-     * @param  array{category?: string|null, source_url: string, filecount: int}  $preview
+     * Import stamp: where it came from, plus a link to the gallery with
+     * the E-Hentai uploader as the link text (DescriptionText renders it).
+     *
+     * @param  array{category?: string|null, uploader?: string|null, source_url: string, filecount: int}  $preview
      */
     protected function suggestedDescription(array $preview): string
     {
@@ -654,6 +657,16 @@ class AdminImportController extends Controller
             $parts[] = '('.$preview['category'].')';
         }
 
-        return implode(' ', $parts).' — '.$preview['source_url'];
+        $stamp = implode(' ', $parts);
+        $uploader = trim((string) ($preview['uploader'] ?? ''));
+
+        if ($uploader === '') {
+            return $stamp.' — '.$preview['source_url'];
+        }
+
+        // Brackets in the name would break the [label](url) link.
+        $label = trim(str_replace(['[', ']'], ['(', ')'], $uploader));
+
+        return $stamp.' — ['.$label.']('.$preview['source_url'].')';
     }
 }

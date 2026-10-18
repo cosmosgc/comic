@@ -36,6 +36,11 @@
             margin-top: 10px;
             font-size: 0.9em;
         }
+        /* Links in a description (the importer links the E-Hentai uploader). */
+        .desc-link {
+            color: #7dd3fc;
+            text-decoration: underline;
+        }
         h5.card-title {
             color: white;
         }
@@ -348,7 +353,7 @@
         </div>
         <p class="comic-meta">By {{ $comic->author ?? 'Unknown Author' }} · Views: {{ $comic->view_count }}</p>
         @if ($comic->description)
-            <p>{{ $comic->description }}</p>
+            <p>{!! \App\Support\DescriptionText::render($comic->description) !!}</p>
         @endif
 
         <h3>Comentários (<span id="modalCommentCount">{{ $comic->comments_count ?? 0 }}</span>)</h3>
@@ -411,7 +416,7 @@
             <p>Uploaded By Unknown Uploader</p>
         @endif
         
-        <p>{{ $comic->description }}</p>
+        <p>{!! \App\Support\DescriptionText::render($comic->description) !!}</p>
         <p>Visualizações: {{ $comic->view_count }}</p>
     </div>
     @if($comic->tags->count())

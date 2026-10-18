@@ -129,7 +129,7 @@
                             <p class="text-sm text-zinc-400">By {{ $comic->author }}</p>
 
                             <p class="mt-2 text-sm text-zinc-500">
-                                {{ Str::limit($comic->description, 100) }}
+                                {{ Str::limit(\App\Support\DescriptionText::plain($comic->description), 100) }}
                             </p>
 
                             <!-- Tags -->

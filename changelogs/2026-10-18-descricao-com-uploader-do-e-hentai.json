@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Descrição dos comics importados mostra quem postou no E-Hentai",
+    "date": "2026-10-18",
+    "category": "Changed",
+    "tags": ["comics", "descrição", "e-hentai", "importação"],
+    "summary": "Comics importados do E-Hentai traziam a URL crua da galeria na descrição. Agora a descrição mostra o nome de quem publicou a galeria, e esse nome é um link para o post original. De brinde, qualquer URL solta numa descrição virou link clicável.",
+    "body": "## O que mudou\n\n- Um comic importado do E-Hentai passa a trazer na descrição o **nome de quem publicou a galeria** no lugar da URL crua, e esse nome é um **link para a galeria original** (abre em nova aba).\n\n## De brinde\n\n- Qualquer **URL solta** numa descrição de comic virou link clicável, então as descrições dos comics importados antes dessa mudança também ficaram clicáveis.\n\n## Detalhes\n\n- A descrição continua sendo texto (o link é escrito como `[nome](url)`), então o campo de editar comic não mudou. Na hora de exibir, o texto é escapado primeiro e só os links viram HTML: nada que venha do E-Hentai é executado no site."
+}

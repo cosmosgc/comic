@@ -49,6 +49,13 @@
         border-radius: 9999px;
     }
 
+    /* ---------- Links inside a comic description ---------- */
+    /* Imported comics link the E-Hentai uploader; DescriptionText renders
+       the markup, this styles it wherever the description shows up. */
+    .desc-link {
+        @apply text-sky-400 underline decoration-sky-500/40 underline-offset-2 hover:text-sky-300;
+    }
+
     /* ---------- Search dropdown ---------- */
     #comic-search-results {
         @apply max-h-64 cursor-pointer overflow-y-auto;

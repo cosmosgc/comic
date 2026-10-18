@@ -51,6 +51,7 @@ class EhImportTest extends TestCase
                     'rating' => '4.5',
                     'thumb' => 'https://img.test/thumb.jpg',
                     'filecount' => '2',
+                    'uploader' => 'some_uploader',
                     'tags' => ['artist:someone', 'female:stockings', 'language:portuguese'],
                 ]],
             ], 200),
@@ -100,6 +101,15 @@ class EhImportTest extends TestCase
             ->assertSee('female:stockings', false)
             ->assertSee('2 página(s)', false)
             ->assertSee(now()->addDay()->format('Y-m-d'), false);
+    }
+
+    public function test_preview_suggests_the_eh_uploader_linked_to_the_gallery(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/']);
+
+        $response->assertOk()
+            ->assertSee('[some_uploader](https://e-hentai.org/g/123/abcdef1234/)', false);
     }
 
     public function test_default_date_follows_latest_scheduled(): void

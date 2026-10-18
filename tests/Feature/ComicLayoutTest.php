@@ -43,6 +43,18 @@ class ComicLayoutTest extends TestCase
             ->assertSee('data-comics-layout-root="grid"', false);
     }
 
+    public function test_card_renders_a_linked_uploader_in_the_description(): void
+    {
+        Comic::factory()->create([
+            'title' => 'Described Comic '.uniqid(),
+            'description' => 'Importado do E-Hentai (Doujinshi) — [someone](https://e-hentai.org/g/1/aa/)',
+        ]);
+
+        $this->get('/')->assertOk()
+            ->assertSee('<a class="desc-link" href="https://e-hentai.org/g/1/aa/"', false)
+            ->assertSee('>someone</a>', false);
+    }
+
     public function test_top_comics_sit_in_sidebar_below_popular_tags(): void
     {
         Comic::factory()->create(['title' => 'Top Sidebar Comic '.uniqid(), 'view_count' => 99]);

@@ -21,7 +21,7 @@ class EhComicImporter
      * Fetch everything the import form needs: metadata + ordered
      * image-page URLs.
      *
-     * @return array{gid: int, token: string, title: string, title_jpn: string|null, artist: string, tags: array<int, string>, category: string|null, filecount: int, thumb: string|null, source_url: string, page_urls: array<int, string>, truncated: bool}
+     * @return array{gid: int, token: string, title: string, title_jpn: string|null, artist: string, tags: array<int, string>, category: string|null, filecount: int, thumb: string|null, uploader: string|null, source_url: string, page_urls: array<int, string>, truncated: bool}
      *
      * @throws EhImportException
      */
@@ -69,6 +69,7 @@ class EhComicImporter
             'category' => isset($meta['category']) ? (string) $meta['category'] : null,
             'filecount' => $filecount,
             'thumb' => isset($meta['thumb']) ? (string) $meta['thumb'] : null,
+            'uploader' => isset($meta['uploader']) && trim((string) $meta['uploader']) !== '' ? (string) $meta['uploader'] : null,
             'source_url' => $this->galleryUrl($gallery['gid'], $gallery['token']),
             'page_urls' => $pageUrls,
             'truncated' => $truncated,
