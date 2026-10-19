@@ -46,7 +46,7 @@
             <a href="{{ route('admin.dashboard') }}" class="text-base font-bold tracking-wide">
                 Painel Admin
             </a>
-            <button @click="sidebarOpen = false" class="rounded-lg p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Fechar menu">
+            <button type="button" @click="sidebarOpen = false" class="rounded-lg p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Fechar menu">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -156,7 +156,7 @@
         <header class="sticky top-0 z-20 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
             <div class="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center gap-3">
-                    <button @click="sidebarOpen = true" class="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Abrir menu">
+                    <button type="button" @click="sidebarOpen = true" class="rounded-lg p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden" aria-label="Abrir menu">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
                         </svg>
@@ -176,7 +176,7 @@
                     </button>
 
                     <div x-data="{ userOpen: false }" class="relative">
-                        <button @click="userOpen = !userOpen"
+                        <button type="button" @click="userOpen = !userOpen"
                                 class="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
                             <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
                             <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20">

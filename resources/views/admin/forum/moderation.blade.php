@@ -44,11 +44,11 @@
                                 @if ($report->status === 'pending')
                                     <form method="POST" action="{{ route('admin.forum.reports.resolve', $report) }}" class="inline">@csrf
                                         <input type="hidden" name="status" value="reviewed">
-                                        <button class="admin-btn admin-btn-sm admin-btn-primary">Revisar</button>
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary">Revisar</button>
                                     </form>
                                     <form method="POST" action="{{ route('admin.forum.reports.resolve', $report) }}" class="inline">@csrf
                                         <input type="hidden" name="status" value="dismissed">
-                                        <button class="admin-btn admin-btn-sm admin-btn-secondary">Descartar</button>
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">Descartar</button>
                                     </form>
                                 @else
                                     <span class="opacity-60">{{ $report->reviewed_at?->diffForHumans() ?? '—' }}</span>
@@ -77,11 +77,11 @@
                             <td class="whitespace-nowrap">{{ $post->created_at->diffForHumans() }}</td>
                             <td class="whitespace-nowrap">
                                 <form method="POST" action="{{ route('forum.posts.approve', $post) }}" class="inline">@csrf
-                                    <button class="admin-btn admin-btn-sm admin-btn-primary">Aprovar</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary">Aprovar</button>
                                 </form>
                                 <form method="POST" action="{{ route('forum.posts.destroy', $post) }}" class="inline" onsubmit="return confirm('Remover?')">
                                     @csrf @method('DELETE')
-                                    <button class="admin-btn admin-btn-sm admin-btn-danger">Remover</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Remover</button>
                                 </form>
                             </td>
                         </tr>

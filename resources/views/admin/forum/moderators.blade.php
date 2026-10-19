@@ -24,7 +24,7 @@
                         @endforeach
                     </select>
                 </div>
-                <button class="admin-btn admin-btn-primary">Adicionar</button>
+                <button type="submit" class="admin-btn admin-btn-primary">Adicionar</button>
             </form>
             @error('user_id')<p class="mt-2 text-xs text-rose-400">{{ $message }}</p>@enderror
         </div>
@@ -45,7 +45,7 @@
                             <td>
                                 <form method="POST" action="{{ route('admin.forum.moderators.destroy', $moderator->id) }}" class="inline" onsubmit="return confirm('Revogar moderação?')">
                                     @csrf @method('DELETE')
-                                    <button class="admin-btn admin-btn-sm admin-btn-danger">Revogar</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Revogar</button>
                                 </form>
                             </td>
                         </tr>

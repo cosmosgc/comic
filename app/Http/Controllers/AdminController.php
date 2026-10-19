@@ -814,7 +814,7 @@ class AdminController extends Controller
         }
 
         try {
-            $transport = new CurlFtpTransport(config('deploy'));
+            $transport = CurlFtpTransport::fromConfig(config('deploy'));
             $verification = $deployer->verify($transport);
         } catch (DeployException $e) {
             return redirect()->route('admin.deploy')

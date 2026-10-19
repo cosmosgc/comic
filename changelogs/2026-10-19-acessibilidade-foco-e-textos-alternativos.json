@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Foco visível no teclado e textos alternativos nas imagens",
+    "date": "2026-10-19",
+    "category": "Fixed",
+    "tags": ["acessibilidade", "teclado", "imagens", "formularios"],
+    "summary": "Quem navega pelo teclado agora vê um contorno de foco em links, botões e campos, e as imagens de posts e os avatares citados têm descrições que dizem de quem são. Botões de ação também declaram o tipo explicitamente, evitando envios acidentais de formulário.",
+    "body": "## Foco visível\n\nAté agora, links e botões sem estilo próprio dependiam do contorno padrão do navegador (que some em vários temas) e alguns ficavam sem nenhuma indicação ao navegar com Tab.\n\n- Um contorno `:focus-visible` (2px, com afastamento) foi adicionado aos dois bundles: site e painel admin.\n- No painel, o contorno é índigo escuro no tema claro e índigo claro no tema escuro.\n- Elementos que já tinham anel de foco (`focus:ring`) continuam com o próprio estilo.\n\n## Textos alternativos\n\n- As imagens de um post agora são anunciadas como \"Imagem do post de Fulano\" (ou \"Imagem 2 do post de Fulano\" quando há várias), em vez do genérico \"Mídia do post\".\n- O avatar do post citado diz de quem é (\"Avatar de Fulano\"), em vez de apenas \"avatar\".\n- Os botões **Editar** e **Excluir** dos comentários do leitor ganharam `aria-label` com o nome de quem comentou.\n\n## Tipos de botão\n\n- Toda alça de menu/aba (Alpine ou JavaScript) agora é `type=\"button\"`, então não envia um formulário por acidente ao ser clicada.\n- Os botões de envio dos formulários do fórum/admin declaram `type=\"submit\"`, deixando a intenção explícita."
+}

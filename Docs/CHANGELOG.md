@@ -75,3 +75,4 @@ Example:
 - Migration table listing scoped to the project database (previously listed every DB on shared MySQL servers) and tolerant of Laravel 11 vs 12 schema shapes
 - PHP upload limits raised via `public/.user.ini`; per-file/total caps enforced in validation and pre-checked in the browser
 - Selo "editado" nos posts só aparece quando o texto muda de verdade — o contador de visualizações (`increment`) também atualizava `updated_at` e marcava posts como editados sem ninguém ter editado
+- Acessibilidade: foco visível no teclado em links/botões/campos (site e admin), textos alternativos descritivos nas imagens de posts e avatares citados, e `type="button"`/`type="submit"` explícito nos botões

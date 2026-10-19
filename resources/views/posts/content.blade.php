@@ -66,12 +66,12 @@
         @if (!empty($mediaFiles))
             <div class="mt-3 overflow-hidden rounded-2xl border border-zinc-800">
                 @if (count($mediaFiles) === 1)
-                    <img src="{{ asset($mediaFiles[0]) }}" alt="Mídia do post"
+                    <img src="{{ asset($mediaFiles[0]) }}" alt="Imagem do post de {{ $authorName }}"
                          class="max-h-96 w-full object-cover">
                 @else
                     <div class="grid grid-cols-2 gap-0.5">
                         @foreach (array_slice($mediaFiles, 0, 4) as $media)
-                            <img src="{{ asset($media) }}" alt="Mídia do post"
+                            <img src="{{ asset($media) }}" alt="Imagem {{ $loop->iteration }} do post de {{ $authorName }}"
                                  class="h-48 w-full object-cover">
                         @endforeach
                     </div>
@@ -84,7 +84,7 @@
             <div class="mt-3 rounded-2xl border border-zinc-800 p-3 transition hover:bg-zinc-900/40">
                 <div class="flex items-center gap-1 text-sm">
                     <img src="{{ $quotedAuthor?->avatar_image_path ? asset($quotedAuthor->avatar_image_path) : asset('default-avatar.png') }}"
-                         alt="avatar" class="h-5 w-5 rounded-full object-cover">
+                         alt="Avatar de {{ $quotedAuthor?->name ?? 'usuário removido' }}" class="h-5 w-5 rounded-full object-cover">
                     <span class="truncate font-bold text-zinc-200">
                         {{ $quotedAuthor?->name ?? 'Usuário removido' }}
                     </span>

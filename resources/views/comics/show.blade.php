@@ -341,7 +341,7 @@
 <body>
     
 <a href="{{ url()->previous() }}" class="back-button">← Voltar</a>
-<button onclick="topFunction()" id="backToTopButton" class="back-to-top-button">↑ Topo</button>
+<button type="button" onclick="topFunction()" id="backToTopButton" class="back-to-top-button">↑ Topo</button>
 <div class="progress-indicator" id="progress">Página 1 de {{ $comic->pages->count() }}</div>
 <button type="button" id="commentsFab" class="comments-fab" title="Ler e escrever comentários">Comentários</button>
 
@@ -789,7 +789,7 @@ document.addEventListener('keyup', (e) => {
             '<div style="flex:1;min-width:0;">' +
             '<div class="meta"><strong>' + name + '</strong>' + chips + ' · <span title="' + esc(comment.created_at) + '">' + esc(fmtDate(comment.created_at)) + '</span></div>' +
             '<div class="comment-body"></div>' +
-            (canEdit ? '<div class="actions"><button type="button" data-act="edit">Editar</button><button type="button" data-act="delete">Excluir</button></div>' : '') +
+            (canEdit ? '<div class="actions"><button type="button" data-act="edit" aria-label="Editar comentário de ' + name + '">Editar</button><button type="button" data-act="delete" aria-label="Excluir comentário de ' + name + '">Excluir</button></div>' : '') +
             '</div></div>';
         div.querySelector('.comment-body').textContent = comment.body;
         if (canEdit) {

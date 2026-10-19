@@ -39,7 +39,7 @@ class DeployHost extends Command
         }
 
         try {
-            $transport = new CurlFtpTransport(config('deploy'));
+            $transport = CurlFtpTransport::fromConfig(config('deploy'));
         } catch (DeployException $e) {
             if ($this->option('status-file')) {
                 $this->writeStatus($this->option('status-file'), [

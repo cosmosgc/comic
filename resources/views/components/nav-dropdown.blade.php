@@ -3,7 +3,7 @@
 @props(['label', 'id'])
 
 <div x-data="{ open: false }" class="relative">
-    <button @click="open = !open" :aria-expanded="open.toString()"
+    <button type="button" @click="open = !open" :aria-expanded="open.toString()"
             aria-haspopup="menu" aria-controls="{{ $id }}"
             class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white"
             aria-label="Menu {{ $label }}">

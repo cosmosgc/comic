@@ -8,41 +8,52 @@ namespace App\Services\Deploy;
  */
 class CurlFtpTransport implements FtpTransport
 {
-    protected string $host;
-    protected int $port;
-    protected string $username;
-    protected string $password;
-    protected bool $ssl;
-    protected bool $verifySsl;
-    protected int $timeout;
-    protected bool $freshConnection;
-
     /** @var resource|\CurlHandle|null shared handle for connection reuse */
     protected $sharedHandle = null;
 
     /**
-     * @param array{host: string, port?: int, username?: string, password?: string, ssl?: bool, verify_ssl?: bool, timeout?: int, fresh_connection?: bool} $config
-     *
      * @throws DeployException
      */
-    public function __construct(array $config)
-    {
+    public function __construct(
+        protected string $host,
+        protected int $port = 21,
+        protected string $username = '',
+        protected string $password = '',
+        protected bool $ssl = true,
+        protected bool $verifySsl = false,
+        protected int $timeout = 30,
+        protected bool $freshConnection = false,
+    ) {
         if (! function_exists('curl_init')) {
             throw new DeployException('PHP cURL extension (ext-curl) is required for FTP deployment.');
         }
 
-        $this->host = trim((string) ($config['host'] ?? ''));
-        $this->port = (int) ($config['port'] ?? 21);
-        $this->username = (string) ($config['username'] ?? '');
-        $this->password = (string) ($config['password'] ?? '');
-        $this->ssl = (bool) ($config['ssl'] ?? true);
-        $this->verifySsl = (bool) ($config['verify_ssl'] ?? false);
-        $this->timeout = (int) ($config['timeout'] ?? 30);
-        $this->freshConnection = (bool) ($config['fresh_connection'] ?? false);
+        $this->host = trim($this->host);
 
         if ($this->host === '') {
             throw new DeployException('FTP host is not configured (FTP_HOST).');
         }
+    }
+
+    /**
+     * Build the transport from the `config('deploy')` shape.
+     *
+     * @param  array{host?: string, port?: int, username?: string, password?: string, ssl?: bool, verify_ssl?: bool, timeout?: int, fresh_connection?: bool}  $config
+     *
+     * @throws DeployException
+     */
+    public static function fromConfig(array $config): self
+    {
+        return new self(
+            host: trim((string) ($config['host'] ?? '')),
+            port: (int) ($config['port'] ?? 21),
+            username: (string) ($config['username'] ?? ''),
+            password: (string) ($config['password'] ?? ''),
+            ssl: (bool) ($config['ssl'] ?? true),
+            verifySsl: (bool) ($config['verify_ssl'] ?? false),
+            timeout: (int) ($config['timeout'] ?? 30),
+            freshConnection: (bool) ($config['fresh_connection'] ?? false),
+        );
     }
 
     public function __destruct()
@@ -138,7 +149,7 @@ class CurlFtpTransport implements FtpTransport
                 ? function ($ch) use ($command) {
                     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $command);
                 }
-                : null,
+            : null,
             ($command ?? 'GET')." {$encodedPath}"
         );
     }
@@ -148,7 +159,7 @@ class CurlFtpTransport implements FtpTransport
      * (a fresh TLS handshake per op costs ~1s); on any failure the shared
      * connection is dropped and the op retried once on a fresh one.
      *
-     * @param callable(resource|\CurlHandle): void|null $configure per-op options
+     * @param  callable(resource|\CurlHandle): void|null  $configure  per-op options
      */
     protected function perform(string $encodedPath, ?callable $configure, string $action): string
     {
@@ -209,7 +220,7 @@ class CurlFtpTransport implements FtpTransport
     }
 
     /**
-     * @param resource|\CurlHandle $ch
+     * @param  resource|\CurlHandle  $ch
      */
     protected function closeHandle($ch): void
     {
@@ -224,7 +235,7 @@ class CurlFtpTransport implements FtpTransport
      * Apply URL + common options. Always called on a fresh or reset handle,
      * so per-op options (UPLOAD, CUSTOMREQUEST, …) can never leak across ops.
      *
-     * @param resource|\CurlHandle $ch
+     * @param  resource|\CurlHandle  $ch
      */
     protected function setupHandle($ch, string $encodedPath): void
     {
@@ -245,7 +256,7 @@ class CurlFtpTransport implements FtpTransport
     }
 
     /**
-     * @param resource|\CurlHandle $ch
+     * @param  resource|\CurlHandle  $ch
      */
     protected function execute($ch, string $action): string
     {

@@ -298,7 +298,7 @@ class DeploySafetyTest extends TestCase
         if (! function_exists('curl_init')) {
             $this->markTestSkipped('ext-curl missing.');
         }
-        $transport = new CurlFtpTransport([
+        $transport = CurlFtpTransport::fromConfig([
             'host' => 'example.invalid',
             'username' => 'u',
             'password' => 'p',

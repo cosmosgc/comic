@@ -84,6 +84,7 @@
                     <!-- User Dropdown -->
                     <div x-data="{ userOpen: false }" class="relative">
                         <button
+                            type="button"
                             @click="userOpen = !userOpen"
                             :aria-expanded="userOpen.toString()"
                             aria-haspopup="menu"
@@ -152,7 +153,7 @@
                         Publicar
                     </a>
                 @endauth
-                <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Alternar menu" class="rounded-lg p-2 hover:bg-zinc-800">
+                <button type="button" @click="open = !open" :aria-expanded="open.toString()" aria-controls="mobile-menu" aria-label="Alternar menu" class="rounded-lg p-2 hover:bg-zinc-800">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2"
                          viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round"

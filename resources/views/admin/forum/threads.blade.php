@@ -19,7 +19,7 @@
                     @endforeach
                 </select>
             </div>
-            <button class="admin-btn admin-btn-primary">Filtrar</button>
+            <button type="submit" class="admin-btn admin-btn-primary">Filtrar</button>
         </div>
     </form>
 

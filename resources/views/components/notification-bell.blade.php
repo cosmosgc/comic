@@ -3,7 +3,7 @@
     @php($count = $unreadNotificationCount ?? 0)
     @php($items = $recentNotifications ?? collect())
     <div x-data="{ notificationsOpen: false }" class="relative">
-        <button @click="notificationsOpen = !notificationsOpen"
+        <button type="button" @click="notificationsOpen = !notificationsOpen"
                 :aria-expanded="notificationsOpen.toString()"
                 aria-label="Notificações"
                 class="relative rounded-lg border border-zinc-800 bg-zinc-900 p-2 text-zinc-300 transition hover:text-white">

@@ -22,12 +22,12 @@
                 <span class="flex items-center gap-2">
                     <form method="POST" action="{{ route('admin.forum.categories.toggle', $section->id) }}" class="inline">@csrf
                         <input type="hidden" name="field" value="is_visible">
-                        <button class="admin-btn admin-btn-sm admin-btn-secondary">{{ $section->is_visible ? 'Ocultar' : 'Mostrar' }}</button>
+                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">{{ $section->is_visible ? 'Ocultar' : 'Mostrar' }}</button>
                     </form>
                     <a href="{{ route('admin.forum.categories.edit', $section->id) }}" class="admin-btn admin-btn-sm admin-btn-secondary">Editar</a>
                     <form method="POST" action="{{ route('admin.forum.categories.destroy', $section->id) }}" class="inline" onsubmit="return confirm('Remover esta seção e seus quadros?')">
                         @csrf @method('DELETE')
-                        <button class="admin-btn admin-btn-sm admin-btn-secondary">Excluir</button>
+                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">Excluir</button>
                     </form>
                 </span>
             </div>
@@ -49,16 +49,16 @@
                                 <td class="whitespace-nowrap">
                                     <form method="POST" action="{{ route('admin.forum.categories.toggle', $board->id) }}" class="inline">@csrf
                                         <input type="hidden" name="field" value="is_visible">
-                                        <button class="admin-btn admin-btn-sm admin-btn-secondary">{{ $board->is_visible ? 'Ocultar' : 'Mostrar' }}</button>
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">{{ $board->is_visible ? 'Ocultar' : 'Mostrar' }}</button>
                                     </form>
                                     <form method="POST" action="{{ route('admin.forum.categories.toggle', $board->id) }}" class="inline">@csrf
                                         <input type="hidden" name="field" value="is_locked">
-                                        <button class="admin-btn admin-btn-sm admin-btn-secondary">{{ $board->is_locked ? 'Destrancar' : 'Trancar' }}</button>
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">{{ $board->is_locked ? 'Destrancar' : 'Trancar' }}</button>
                                     </form>
                                     <a href="{{ route('admin.forum.categories.edit', $board->id) }}" class="admin-btn admin-btn-sm admin-btn-primary">Editar</a>
                                     <form method="POST" action="{{ route('admin.forum.categories.destroy', $board->id) }}" class="inline" onsubmit="return confirm('Remover este quadro?')">
                                         @csrf @method('DELETE')
-                                        <button class="admin-btn admin-btn-sm admin-btn-secondary">Excluir</button>
+                                        <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">Excluir</button>
                                     </form>
                                 </td>
                             </tr>

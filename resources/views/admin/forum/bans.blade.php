@@ -32,7 +32,7 @@
                     <label class="admin-label" for="reason">Motivo</label>
                     <input id="reason" name="reason" maxlength="500" class="admin-input w-full">
                 </div>
-                <button class="admin-btn admin-btn-danger">Banir</button>
+                <button type="submit" class="admin-btn admin-btn-danger">Banir</button>
             </form>
             @error('user_id')<p class="mt-2 text-xs text-rose-400">{{ $message }}</p>@enderror
         </div>
@@ -54,7 +54,7 @@
                             <td>
                                 <form method="POST" action="{{ route('admin.forum.bans.destroy', $ban->id) }}" class="inline" onsubmit="return confirm('Remover banimento?')">
                                     @csrf @method('DELETE')
-                                    <button class="admin-btn admin-btn-sm admin-btn-secondary">Remover</button>
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-secondary">Remover</button>
                                 </form>
                             </td>
                         </tr>

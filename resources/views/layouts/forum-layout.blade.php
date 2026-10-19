@@ -68,7 +68,7 @@
                     @include('components.notification-bell')
 
                     <div x-data="{ userOpen: false }" class="relative">
-                        <button @click="userOpen = !userOpen" :aria-expanded="userOpen.toString()" aria-haspopup="menu"
+                        <button type="button" @click="userOpen = !userOpen" :aria-expanded="userOpen.toString()" aria-haspopup="menu"
                                 class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm" aria-label="Menu da conta">
                             <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
                             <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -95,7 +95,7 @@
             </div>
 
             {{-- Mobile toggle --}}
-            <button @click="open = !open" :aria-expanded="open.toString()" aria-controls="forum-mobile-menu" aria-label="Alternar menu"
+            <button type="button" @click="open = !open" :aria-expanded="open.toString()" aria-controls="forum-mobile-menu" aria-label="Alternar menu"
                     class="rounded-lg p-2 hover:bg-zinc-800 lg:hidden">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>

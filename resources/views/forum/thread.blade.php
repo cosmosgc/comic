@@ -40,17 +40,17 @@
         @if ($canModerate)
             <span class="ml-auto flex flex-wrap items-center gap-2">
                 <form method="POST" action="{{ route('forum.threads.pin', $thread) }}" class="inline">@csrf
-                    <button class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_pinned ? 'Desafixar' : 'Fixar' }}</button>
+                    <button type="submit" class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_pinned ? 'Desafixar' : 'Fixar' }}</button>
                 </form>
                 <form method="POST" action="{{ route('forum.threads.lock', $thread) }}" class="inline">@csrf
-                    <button class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_locked ? 'Reabrir' : 'Trancar' }}</button>
+                    <button type="submit" class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_locked ? 'Reabrir' : 'Trancar' }}</button>
                 </form>
                 <form method="POST" action="{{ route('forum.threads.approve', $thread) }}" class="inline">@csrf
-                    <button class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_approved ? 'Reprovar' : 'Aprovar' }}</button>
+                    <button type="submit" class="text-xs text-zinc-400 hover:text-zinc-100">{{ $thread->is_approved ? 'Reprovar' : 'Aprovar' }}</button>
                 </form>
                 <form method="POST" action="{{ route('forum.threads.destroy', $thread) }}" class="inline" onsubmit="return confirm('Remover este tópico?')">
                     @csrf @method('DELETE')
-                    <button class="text-xs text-rose-400 hover:text-rose-300">Remover</button>
+                    <button type="submit" class="text-xs text-rose-400 hover:text-rose-300">Remover</button>
                 </form>
             </span>
         @endif
