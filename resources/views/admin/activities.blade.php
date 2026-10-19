@@ -58,11 +58,11 @@
                             <td class="whitespace-nowrap" title="{{ $activity->created_at }}">{{ $activity->created_at?->diffForHumans() }}</td>
                             @php($knownUser = $activity->user ?? ($activity->ip_address ? $ipUsers->get($activity->ip_address) : null))
                             <td class="whitespace-nowrap">
-                                @if ($activity->user)
-                                    {{ $activity->user->name }}
-                                @elseif ($knownUser)
-                                    {{ $knownUser->name }}
-                                    <span class="admin-badge admin-badge-secondary" title="Atribuído pelo IP {{ $activity->ip_address }}">via IP</span>
+                                @if ($knownUser)
+                                    <a href="{{ route('profile.public.show.id', $knownUser->id) }}" class="hover:underline">{{ $knownUser->name }}</a>
+                                    @if (! $activity->user)
+                                        <span class="admin-badge admin-badge-secondary" title="Atribuído pelo IP {{ $activity->ip_address }}">via IP</span>
+                                    @endif
                                 @else
                                     Visitante
                                 @endif
