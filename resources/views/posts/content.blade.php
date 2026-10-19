@@ -47,8 +47,8 @@
                title="{{ $post->created_at }}">
                 {{ $post->created_at?->diffForHumans() }}
             </a>
-            @if ($post->updated_at && $post->created_at && $post->updated_at->gt($post->created_at->copy()->addMinute()))
-                <span class="shrink-0 text-xs text-zinc-600" title="Editado {{ $post->updated_at }}">· editado</span>
+            @if ($post->edited_at)
+                <span class="shrink-0 text-xs text-zinc-600" title="Editado {{ $post->edited_at }}">· editado</span>
             @endif
         </div>
 
@@ -257,7 +257,7 @@
             </button>
 
             {{-- Edit: owner or admin --}}
-            @if (auth()->check() && ((int) $post->author_id === (int) auth()->id() || (int) (auth()->user()->admin_level ?? 0) >= 1))
+            @if (auth()->user()?->can('update', $post))
                 <a href="{{ route('posts.edit', $post) }}"
                    title="Editar post"
                    aria-label="Editar post"
@@ -269,6 +269,23 @@
                     </span>
                 </a>
             @endif
+
+            {{-- Delete: owner or admin (replies/quotes cascade) --}}
+            @can('delete', $post)
+                <form method="POST" action="{{ route('posts.destroy', $post) }}"
+                      onsubmit="return confirm('Excluir este post? As respostas e citações também serão removidas.');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" title="Excluir post" aria-label="Excluir post"
+                            class="group flex items-center gap-1 text-xs transition hover:text-rose-400">
+                        <span class="rounded-full p-2 transition group-hover:bg-rose-500/10">
+                            <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6v3m-8 0 1 13h8l1-13"/>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+            @endcan
 
             {{-- Report: anyone but the author --}}
             @auth

@@ -30,6 +30,7 @@ class HashtagController extends Controller
         }
 
         $posts = $hashtag->posts()
+            ->notMutedBy($request->user())
             ->with(['author.badges', 'referencedPost.author.badges'])
             ->withCount($counts)
             ->latest()

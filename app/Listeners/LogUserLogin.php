@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enums\AnalyticsEventType;
 use App\Models\Analytics;
 use App\Support\ActivityLogger;
 use Illuminate\Auth\Events\Login;
@@ -19,7 +20,7 @@ class LogUserLogin
             'ip_address' => $this->request->ip(),
             'url' => 'login',  // You can specify a URL or event name
             'user_agent' => $this->request->userAgent(),
-            'event_type' => 'login',
+            'event_type' => AnalyticsEventType::Login->value,
         ]);
 
         ActivityLogger::log('auth.login', [

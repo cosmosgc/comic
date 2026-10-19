@@ -19,7 +19,7 @@
             {{ $thread->title }}
         </h1>
         <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-            <span class="rounded-full border border-zinc-700 px-2 py-0.5">{{ $thread->isQuestion() ? 'Pergunta' : 'Discussão' }}</span>
+            <span class="rounded-full border border-zinc-700 px-2 py-0.5">{{ $thread->isPoll() ? 'Enquete' : ($thread->isQuestion() ? 'Pergunta' : 'Discussão') }}</span>
             <span>{{ $thread->view_count }} visualizações</span>
             <span>{{ $thread->reply_count }} respostas</span>
             @foreach ($thread->tags as $tag)
@@ -55,6 +55,8 @@
             </span>
         @endif
     </div>
+
+    @include('forum.partials.poll', ['poll' => $poll ?? null, 'viewerPollVotes' => $viewerPollVotes ?? []])
 
     <div class="divide-y divide-zinc-800 overflow-hidden rounded-xl border border-zinc-800">
         @forelse ($posts as $post)

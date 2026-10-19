@@ -116,6 +116,18 @@
                     {{ $followingNow ? 'Seguindo' : 'Seguir' }}
                 </button>
             @endif
+
+            @if ($canMute ?? false)
+                <form method="POST" action="{{ route('users.mute', $user->getKey()) }}" class="mt-3">
+                    @csrf
+                    <button type="submit"
+                            class="inline-flex items-center rounded-lg border px-4 py-2 text-sm font-semibold transition {{ ($isMuted ?? false)
+                                ? 'border-rose-700/60 text-rose-300 hover:border-zinc-700 hover:text-zinc-200'
+                                : 'border-zinc-700 text-zinc-300 hover:border-rose-700 hover:text-rose-300' }}">
+                        {{ ($isMuted ?? false) ? 'Deixar de silenciar' : 'Silenciar' }}
+                    </button>
+                </form>
+            @endif
         @endauth
 
         @if (!empty($showEdit))

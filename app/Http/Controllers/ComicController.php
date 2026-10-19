@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreComicRequest;
+use App\Http\Requests\UpdateComicRequest;
+use App\Http\Resources\ComicResource;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Models\Tag;
@@ -17,20 +20,6 @@ use Illuminate\View\View;
 
 class ComicController extends Controller
 {
-    /**
-     * Owner-or-admin gate for comic mutation. Guests are blocked by the
-     * `auth` route middleware; this stops non-owners from touching
-     * other users' comics (admins bypass via admin_level >= 1).
-     */
-    protected function authorizeComicAccess(Comic $comic): void
-    {
-        $user = Auth::user();
-        abort_unless(
-            $user !== null && ((int) $comic->user_id === (int) $user->id || (int) $user->admin_level >= 1),
-            403
-        );
-    }
-
     public function index(Request $request)
     {
         // Counts degrade gracefully on hosts missing the new tables.
@@ -290,7 +279,7 @@ class ComicController extends Controller
         $comic->increment('view_count');
 
         // Return the comic and its pages as a single JSON response
-        return response()->json($comic);
+        return response()->json(new ComicResource($comic));
     }
 
     public function getAllComics(Request $request)
@@ -334,27 +323,11 @@ class ComicController extends Controller
         $comics = $query->get();
 
         // Return the comics as a JSON response
-        return response()->json($comics);
+        return response()->json(ComicResource::collection($comics));
     }
 
-    public function store(Request $request)
+    public function store(StoreComicRequest $request)
     {
-        // Per-file cap (KB). The total-request cap is checked in the browser
-        // before sending; nginx rejects oversized bodies with 413 before
-        // Laravel ever runs, so this is the second line of defense (422).
-        $maxFileKb = config('upload.max_file_mb', 10) * 1024;
-
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255',
-            'folder' => 'required_without:images|array',
-            'folder.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
-            'images' => 'required_without:folder|array',
-            'images.*' => 'file|mimes:jpeg,png,jpg,gif,webp|max:'.$maxFileKb,
-            'published_at' => 'nullable|date',
-            'is_exclusive' => 'nullable|boolean',
-        ]);
-
         // A client-supplied slug still goes through Str::slug() and the
         // uniqueness loop — and falls back to the title when it sanitizes
         // to nothing — so it can never collide (unique index → 500) or
@@ -439,7 +412,7 @@ class ComicController extends Controller
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
         }])->findOrFail($id);
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
 
         return view('comics.edit', compact('comic'));
     }
@@ -463,18 +436,11 @@ class ComicController extends Controller
         $comic->tags()->sync($tagIds);
     }
 
-    public function update(Request $request, Comic $comic)
+    public function update(UpdateComicRequest $request, Comic $comic)
     {
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'author' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:5000',
-            'tags' => 'nullable|string|max:2000',
-            'published_at' => 'nullable|date',
-            'is_exclusive' => 'nullable|boolean',
-        ]);
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
         // Update comic details
         $attributes = [
             'title' => $validated['title'],
@@ -503,7 +469,7 @@ class ComicController extends Controller
 
     public function reorderPages(Request $request, Comic $comic)
     {
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
 
         // Validate shape first: unknown ids or non-numeric positions 422.
         // Scoping the update to $comic->pages() stops callers from
@@ -526,7 +492,7 @@ class ComicController extends Controller
     {
         $page = Page::findOrFail($id);
         abort_unless($page->comic !== null, 404);
-        $this->authorizeComicAccess($page->comic);
+        $this->authorize('update', $page->comic);
 
         $filePath = public_path('storage/'.$page->image_path);
 
@@ -541,7 +507,7 @@ class ComicController extends Controller
 
     public function setCover(Comic $comic, Request $request)
     {
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
 
         $request->validate([
             'page_id' => 'required|exists:pages,id',

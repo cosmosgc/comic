@@ -177,6 +177,24 @@
             </div>
         </div>
 
+        <!-- Forum digest -->
+        <div class="flex items-start gap-3">
+            <input type="checkbox"
+                   id="forum_digest"
+                   name="forum_digest"
+                   value="1"
+                   @checked(old('forum_digest', $user->forum_digest))
+                   class="mt-1 h-4 w-4 rounded border-zinc-700 bg-zinc-950 text-indigo-600 focus:ring-indigo-500/40">
+            <div>
+                <label for="forum_digest" class="block text-sm font-medium text-zinc-300">
+                    Receber resumo semanal do fórum por e-mail
+                </label>
+                <p class="mt-0.5 text-xs text-zinc-500">
+                    Um e-mail por semana com os tópicos mais movimentados. Desligado por padrão.
+                </p>
+            </div>
+        </div>
+
         <!-- Featured badges -->
         @if (! empty($badgeDefinitions) && $user->badges->isNotEmpty())
             <div>

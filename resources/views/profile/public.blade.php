@@ -26,6 +26,8 @@
         'followingCount' => $followingCount ?? 0,
         'canFollow' => auth()->check() && auth()->id() !== $user->id && ($followsTab ?? false),
         'isFollowing' => auth()->check() && auth()->id() !== $user->id && ($followsTab ?? false) && auth()->user()->isFollowing($user),
+        'canMute' => $canMute ?? false,
+        'isMuted' => $isMuted ?? false,
     ])
 
     @php

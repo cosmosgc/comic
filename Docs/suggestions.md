@@ -5,15 +5,15 @@ Already applied in this pass: models `$casts` → `casts()` (+ relation/scope/sl
 
 ## Backend
 
-1. **Adopt FormRequests + Policies.** Create `app/Http/Requests/` (Comic/Page/Collection/Post/Profile/Analytics) with `exists`, `max`, `dimensions` rules; `app/Policies/` (ComicPolicy, CollectionPolicy, CommentPolicy, PostPolicy) keyed on owner-or-admin; replace inline `admin_level` checks and `authorizeCollection*` helpers. Register `AdminMiddleware` on the admin group (fixes `admin.widgets.*` hole).
-2. **Secure routes.** Add `->middleware('auth')` to all comic/page mutation routes; scope page queries to parent comic (`$comic->pages()->findOrFail($id)`); wrap reorder/sync in transactions; paginate + throttle API routes; consider `auth:sanctum` for API.
-3. **Harden uploads.** Switch to `Storage` (`store()`/`hashName()`), sanitize filenames, enforce `image|mimes|dimensions|max` + count limits, fix perms (`0755`, never `0777`), delete replaced avatars/covers, dedupe with `Str::uuid()` instead of `md5(now().rand())`.
-4. **Fix analytics pipeline.** Derive `user_id`/`ip`/`user_agent` server-side; add validation `max:` lengths, `auth` + `throttle`; paginate `referralAnalytics`; sample/queue `TrackPageView` (or keep disabled) with a retention policy for PII.
-5. **Introduce enums.** `AnalyticsEventType` (`PageView`, `Login`), `DeployState` (`Queued/Running/Cancelling/Cancelled`), `ChangelogCategory` (`Added/...`) — TitleCase keys per project rule; migrate string comparisons.
-6. **Query hygiene.** Eager-load relations on index/show/admin lists, paginate admin tables, consolidate `SidebarComposer` queries (cache `Widget::all()`/popular tags/recommended), fix `coverComic()` N+1 (eager-load `orderedComics` or cache per collection set), batch the post-ancestor walk.
-7. **Clean routing.** Remove duplicate `/` + `/comics` definitions; convert admin closures to `Route::controller(AdminController::class)->group(...)`; use implicit binding (`{user}`, `{comic}`) with typed controller params; `Route::middleware('auth')` (string form) for single middleware.
-8. **Remove stale `Post.$fillable.username`** (verify column; if unused, drop from fillable via migration review).
-9. **Lock test gaps.** Add feature tests: guest/non-owner comic mutation, page store, non-admin `admin.widgets.*`, analytics spoof + throttle, bogus collection IDs, deploy/migration authorization, avatar replacement/orphan.
+1. **[DONE 2026-10-19] Adopt FormRequests + Policies.** Create `app/Http/Requests/` (Comic/Page/Collection/Post/Profile/Analytics) with `exists`, `max`, `dimensions` rules; `app/Policies/` (ComicPolicy, CollectionPolicy, CommentPolicy, PostPolicy) keyed on owner-or-admin; replace inline `admin_level` checks and `authorizeCollection*` helpers. Register `AdminMiddleware` on the admin group (fixes `admin.widgets.*` hole).
+2. **[DONE 2026-10-17] Secure routes.** Add `->middleware('auth')` to all comic/page mutation routes; scope page queries to parent comic (`$comic->pages()->findOrFail($id)`); wrap reorder/sync in transactions; paginate + throttle API routes; consider `auth:sanctum` for API.
+3. **[DONE 2026-10-17, see note] Harden uploads.** Switch to `Storage` (`store()`/`hashName()`), sanitize filenames, enforce `image|mimes|dimensions|max` + count limits, fix perms (`0755`, never `0777`), delete replaced avatars/covers, dedupe with `Str::uuid()` instead of `md5(now().rand())`.
+4. **[DONE 2026-10-12] Fix analytics pipeline.** Derive `user_id`/`ip`/`user_agent` server-side; add validation `max:` lengths, `auth` + `throttle`; paginate `referralAnalytics`; sample/queue `TrackPageView` (or keep disabled) with a retention policy for PII.
+5. **[DONE 2026-10-19] Introduce enums.** `AnalyticsEventType` (`PageView`, `Login`), `DeployState` (`Queued/Running/Cancelling/Cancelled`), `ChangelogCategory` (`Added/...`) — TitleCase keys per project rule; migrate string comparisons.
+6. **[PARTIALLY FIXED 2026-10-18] Query hygiene.** Eager-load relations on index/show/admin lists, paginate admin tables, consolidate `SidebarComposer` queries (cache `Widget::all()`/popular tags/recommended), fix `coverComic()` N+1 (eager-load `orderedComics` or cache per collection set), batch the post-ancestor walk.
+7. **[DONE 2026-10-12] Clean routing.** Remove duplicate `/` + `/comics` definitions; convert admin closures to `Route::controller(AdminController::class)->group(...)`; use implicit binding (`{user}`, `{comic}`) with typed controller params; `Route::middleware('auth')` (string form) for single middleware.
+8. **[DONE 2026-10-12] Remove stale `Post.$fillable.username`** (verify column; if unused, drop from fillable via migration review).
+9. **[DONE 2026-10-18] Lock test gaps.** Add feature tests: guest/non-owner comic mutation, page store, non-admin `admin.widgets.*`, analytics spoof + throttle, bogus collection IDs, deploy/migration authorization, avatar replacement/orphan.
 
 ## Frontend / Build
 
@@ -25,4 +25,4 @@ Already applied in this pass: models `$casts` → `casts()` (+ relation/scope/sl
 15. **Decide Livewire.** If unused, remove the dependency; if adopted, add `<livewire:styles/>`/`<livewire:scripts/>` (v3 syntax, never `@livewireStyles`) and build one component (e.g. comic search) to replace jQuery `fetch` autocomplete.
 16. **Dark mode: one strategy.** Either Tailwind v4 `@custom-variant dark` + Alpine store/`localStorage`/`prefers-color-scheme` toggle, or delete `.dark-mode`/`.toggle-dark-mode` dead CSS.
 17. **Extract inline JS.** Move per-page `<script>` blocks to `resources/js/*.js` Vite entries; pass URLs via `data-*` attributes instead of `{{ url('/') }}` globals; avoid `innerHTML` string building (XSS-prone).
-18. **Add `pint.json`** to pin style rules and run Pint in CI so formatting stops drifting.
+18. **[DECLINED 2026-10-19] Add `pint.json`** to pin style rules and run Pint in CI so formatting stops drifting. Kept as-is on purpose: the PR checklist requires `vendor/bin/pint --dirty` **only on touched files**, because a repo-wide run reformats untouched code (especially `routes/web.php`). There is no CI workflow by design either (the host has no console).

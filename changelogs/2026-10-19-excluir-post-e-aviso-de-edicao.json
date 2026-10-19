@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Excluir o próprio post e aviso de edição confiável",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["posts", "moderacao", "perfil", "midia"],
+    "summary": "Agora dá para apagar um post pelo próprio menu de ações (só o autor ou um admin), com confirmação, e o selo \"editado\" passou a ser gravado no momento da edição em vez de depender do contador de visualizações.",
+    "body": "## Excluir posts\n\nO menu de ações de um post ganhou a opção **Excluir**.\n\n- Só o autor pode apagar o próprio post; administradores também podem remover qualquer post (pela política de moderação já existente).\n- Antes de apagar há uma confirmação, então não some nada sem querer.\n- Apagar um post remove junto suas respostas e citações (o banco já encadeava essas exclusões) e os arquivos de imagem do post são apagados do disco, sem deixar lixo em `public/storage`.\n- A exclusão é definitiva: não existe lixeira nem histórico.\n\n## Selo \"editado\"\n\nO indicador de que um post foi editado usava a data de \"última alteração\", que também mudava quando alguém só visitava o post (o contador de visualizações mexia nessa data). Isso fazia o selo aparecer sem ninguém ter editado nada.\n\nAgora a data de edição é gravada numa coluna própria (`edited_at`), preenchida **apenas** quando o texto do post realmente muda. O selo reflete só edições de verdade."
+}

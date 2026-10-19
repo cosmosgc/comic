@@ -2,27 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreAnalyticsRequest;
 use App\Models\Analytics;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AnalyticsController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreAnalyticsRequest $request)
     {
         // Identity is derived server-side: client-supplied user_id /
         // ip_address are ignored so callers can't forge them.
-        $validated = $request->validate([
-            'url' => 'required|string|max:2000',
-            'user_agent' => 'required|string|max:1000',
-            'event_type' => 'required|string|max:50',
-            'device_type' => 'required|string|max:50',
-            'referral_source' => 'nullable|string|max:2000',
-            'campaign' => 'nullable|string|max:255',
-            'duration' => 'nullable|integer|min:0|max:86400',
-            'browser' => 'nullable|string|max:100',
-            'os' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         // Create the analytics entry
         Analytics::create([

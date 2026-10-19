@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Collection;
 use App\Models\Post;
 use App\Models\User;
@@ -143,9 +144,13 @@ class ProfileController extends Controller
             ? Auth::user()->bookmarkedPosts()->pluck('posts.id')->all()
             : [];
 
+        $canMute = Auth::check() && Auth::id() !== $user->id && Schema::hasTable('mutes');
+        $isMuted = $canMute && Auth::user()->mutedUsers()->whereKey($user->getKey())->exists();
+
         return view('profile.public', compact(
             'user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections',
-            'likedComicIds', 'followsTab', 'followers', 'following', 'followersCount', 'followingCount', 'bookmarkedPostIds'
+            'likedComicIds', 'followsTab', 'followers', 'following', 'followersCount', 'followingCount', 'bookmarkedPostIds',
+            'canMute', 'isMuted'
         ));
     }
 
@@ -214,25 +219,9 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
         $user = Auth::user();
-
-        // Validate the request data
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
-            'password' => 'nullable|string|min:8|confirmed',
-            'avatar_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:2048|dimensions:max_width=5000,max_height=5000', // Limit to 2MB
-            'banner_image' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096|dimensions:max_width=8000,max_height=8000', // Limit to 4MB
-            'remove_banner' => 'nullable|boolean',
-            'bio' => 'nullable|string',
-            'links' => 'nullable|array',
-            'links.*' => 'url', // Each link should be valid URL
-            'show_liked_posts' => 'nullable|boolean',
-            'showcase_badges' => 'nullable|array',
-            'showcase_badges.*' => 'string|max:50',
-        ]);
 
         // Update user data
         $user->name = $request->input('name');
@@ -257,6 +246,7 @@ class ProfileController extends Controller
         $user->bio = $request->input('bio');
         $user->links = $request->input('links') ?: []; // Store links as an array
         $user->show_liked_posts = $request->boolean('show_liked_posts');
+        $user->forum_digest = $request->boolean('forum_digest');
 
         // Featured badges: keep only badges the user actually earned,
         // most featured first, capped at the configured limit.

@@ -56,6 +56,10 @@ Example:
 - Upload page: live per-image sizes, totals, and remove-before-send list
 - Sequential single-file comic uploads with in-browser image optimization (survives small nginx `client_max_body_size` caps)
 - FTP Deploy skips user content (`public/storage/`) and never deletes remotely
+- Posts: **excluir o próprio post** pelo menu de ações (autor ou admin, com confirmação) — as respostas/citações e as imagens do post somem junto; e **silenciar usuários** pelo perfil, escondendo os posts e as respostas da pessoa do feed, das hashtags e das listas de respostas, sem avisá-la
+- Fórum — enquetes: tópico do tipo **Enquete** com pergunta, 2 a 10 opções, escolha única ou múltipla e data de encerramento opcional; voto com resultado em barras e troca de voto enquanto a enquete estiver aberta
+- Fórum — **resumo semanal por e-mail** (opção no perfil, desligada por padrão) com os tópicos mais movimentados, e **reordenação por arrastar** de seções e quadros em Admin → Fórum → Categorias, com salvamento automático
+- Novas migrations: `edited_at` em `posts`, `mutes`, `forum_polls` + `forum_poll_options` + `forum_poll_votes` e `forum_digest` em `users`
 
 ### Changed
 - Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
@@ -70,3 +74,4 @@ Example:
 - `PageController@store` redirected to non-existent `comics.show` route (now `comics.showById`) — single-page adds 500'd after saving
 - Migration table listing scoped to the project database (previously listed every DB on shared MySQL servers) and tolerant of Laravel 11 vs 12 schema shapes
 - PHP upload limits raised via `public/.user.ini`; per-file/total caps enforced in validation and pre-checked in the browser
+- Selo "editado" nos posts só aparece quando o texto muda de verdade — o contador de visualizações (`increment`) também atualizava `updated_at` e marcava posts como editados sem ninguém ter editado

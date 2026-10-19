@@ -50,10 +50,15 @@
   - `reporter_id` (FK → `users`), `post_id` (nullable FK → `posts`),
     `reason`, `status` (pending/reviewed/dismissed), timestamps
 - [x] Report button (··· menu per post) + admin review queue (`admin.*` routes exist)
-- [ ] Optional later: mute/block — `create_mutes_table` (`user_id`, `muted_id`, unique),
-      filter muted authors out of the feed query
-- [ ] Post edit history? (currently no edit/delete at all — needs `update`/`destroy`
-      on `PostController` + policies first, no schema change for basic edit)
+- [x] Mute/block (2026-10-19): `create_mutes_table` (`user_id`, `muted_id`, unique) plus
+      `User::mutedUsers()`/`mutedBy()`; `Post::scopeNotMutedBy()` hides muted authors from
+      the feed, the hashtag timeline and the reply lists; `MuteController` toggles it from
+      the profile (`POST /users/{user}/mute`). Reversible and silent (the muted person is
+      never notified).
+- [x] Post edit/delete (2026-10-19): `PostController@destroy` (owner or admin via
+      `PostPolicy@delete`) hard-deletes the post, its media files and the cascaded
+      replies/quotes; `update` stamps `posts.edited_at` only when the text changes (the
+      "editado" badge used to read `updated_at`, which the view counter also bumped).
 
 ## Suggested order
 

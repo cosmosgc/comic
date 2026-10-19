@@ -83,6 +83,20 @@ class PostSocialTest extends TestCase
         $this->assertSame('After', $post->fresh()->text);
     }
 
+    public function test_admin_can_edit_any_post(): void
+    {
+        $author = User::factory()->create();
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $post = Post::factory()->create(['author_id' => $author->id, 'text' => 'Before']);
+
+        $this->actingAs($admin)->get("/posts/{$post->id}/edit")->assertOk();
+        $this->actingAs($admin)
+            ->put("/posts/{$post->id}", ['text' => 'Moderated'])
+            ->assertRedirect(route('posts.show', $post));
+
+        $this->assertSame('Moderated', $post->fresh()->text);
+    }
+
     public function test_intruder_and_guest_cannot_edit_post(): void
     {
         $author = User::factory()->create();

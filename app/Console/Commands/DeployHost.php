@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\DeployState;
 use App\Services\Deploy\CurlFtpTransport;
 use App\Services\Deploy\DeployCancelled;
 use App\Services\Deploy\DeployException;
@@ -34,7 +35,7 @@ class DeployHost extends Command
         }
 
         if ($this->option('status-file')) {
-            $this->writeStatus($this->option('status-file'), ['state' => 'running', 'phase' => 'listing'], true);
+            $this->writeStatus($this->option('status-file'), ['state' => DeployState::Running->value, 'phase' => 'listing'], true);
         }
 
         try {
@@ -42,7 +43,7 @@ class DeployHost extends Command
         } catch (DeployException $e) {
             if ($this->option('status-file')) {
                 $this->writeStatus($this->option('status-file'), [
-                    'state' => 'failed',
+                    'state' => DeployState::Failed->value,
                     'message' => $e->getMessage(),
                 ], true);
             }
@@ -61,7 +62,7 @@ class DeployHost extends Command
             if ($this->option('status-file')) {
                 $failed = array_filter($verification['checks'], fn ($c) => ! $c['ok']);
                 $this->writeStatus($this->option('status-file'), [
-                    'state' => 'failed',
+                    'state' => DeployState::Failed->value,
                     'message' => 'Verification failed — nothing was uploaded.',
                     'log' => array_map(fn ($c) => "[FAIL] {$c['label']}: {$c['detail']}", array_values($failed)),
                 ], true);
@@ -195,8 +196,8 @@ class DeployHost extends Command
         } catch (DeployCancelled $e) {
             if ($statusFile) {
                 $this->writeStatus($statusFile, [
-                    'state' => 'cancelled',
-                    'phase' => 'cancelled',
+                    'state' => DeployState::Cancelled->value,
+                    'phase' => DeployState::Cancelled->value,
                     'current' => null,
                     'message' => $e->getMessage(),
                 ], true);
@@ -207,8 +208,8 @@ class DeployHost extends Command
         } catch (\Throwable $e) {
             if ($statusFile) {
                 $this->writeStatus($statusFile, [
-                    'state' => 'failed',
-                    'phase' => 'failed',
+                    'state' => DeployState::Failed->value,
+                    'phase' => DeployState::Failed->value,
                     'current' => null,
                     'message' => 'Deploy crashed: '.$e->getMessage(),
                 ], true);
@@ -224,8 +225,8 @@ class DeployHost extends Command
 
         if ($statusFile) {
             $this->writeStatus($statusFile, [
-                'state' => $result['ok'] ? 'done' : 'failed',
-                'phase' => $result['ok'] ? 'done' : 'failed',
+                'state' => $result['ok'] ? DeployState::Done->value : DeployState::Failed->value,
+                'phase' => $result['ok'] ? DeployState::Done->value : DeployState::Failed->value,
                 'current' => null,
                 'message' => $result['message'],
                 'done' => $result['uploaded'],

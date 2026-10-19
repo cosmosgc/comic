@@ -17,11 +17,13 @@ use App\Http\Controllers\ComicController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FollowController;
 use App\Http\Controllers\ForumController;
+use App\Http\Controllers\ForumPollController;
 use App\Http\Controllers\ForumPostController;
 use App\Http\Controllers\ForumThreadController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostController;
@@ -183,12 +185,14 @@ Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
 Route::post('/posts', [PostController::class, 'store'])->name('posts.store')->middleware('auth');
 Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->middleware('auth')->name('posts.edit');
 Route::put('/posts/{post}', [PostController::class, 'update'])->middleware('auth')->name('posts.update');
+Route::delete('/posts/{post}', [PostController::class, 'destroy'])->middleware('auth')->name('posts.destroy');
 Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like')->middleware('auth');
 Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
 // ////////////////////////////////////////////////////////////
 // Social graph: follows, bookmarks and moderation (auth).
 Route::middleware('auth')->group(function () {
     Route::post('/users/{user}/follow', [FollowController::class, 'toggle'])->name('users.follow');
+    Route::post('/users/{user}/mute', [MuteController::class, 'toggle'])->name('users.mute');
     Route::post('/posts/{post}/bookmark', [BookmarkController::class, 'toggle'])->name('posts.bookmark');
     Route::get('/bookmarks', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/posts/{post}/report', [ReportController::class, 'store'])->name('posts.report');
@@ -260,6 +264,8 @@ Route::prefix('forum')->name('forum.')->group(function () {
         Route::post('/posts/{post}/report', [ForumPostController::class, 'report'])->name('posts.report');
 
         Route::post('/threads/{thread}/subscribe', [ForumThreadController::class, 'subscribe'])->name('threads.subscribe');
+        Route::post('/threads/{thread}/poll/vote', [ForumPollController::class, 'vote'])
+            ->middleware('throttle:20,1')->name('polls.vote');
         Route::post('/threads/{thread}/report', [ForumThreadController::class, 'report'])->name('threads.report');
         Route::post('/mark-solved/{post}', [ForumThreadController::class, 'solve'])->name('threads.solve');
 
@@ -279,6 +285,7 @@ Route::prefix('admin/forum')->name('admin.forum.')->middleware(['auth', AdminMid
     Route::get('/categories', [AdminForumController::class, 'categories'])->name('categories');
     Route::get('/categories/create', [AdminForumController::class, 'categoryCreate'])->name('categories.create');
     Route::post('/categories', [AdminForumController::class, 'categoryStore'])->name('categories.store');
+    Route::post('/categories/reorder', [AdminForumController::class, 'reorderCategories'])->name('categories.reorder');
     Route::get('/categories/{id}/edit', [AdminForumController::class, 'categoryEdit'])->name('categories.edit');
     Route::put('/categories/{id}', [AdminForumController::class, 'categoryUpdate'])->name('categories.update');
     Route::delete('/categories/{id}', [AdminForumController::class, 'categoryDestroy'])->name('categories.destroy');

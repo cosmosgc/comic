@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: enquetes nos tópicos",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "enquetes", "comunidade", "votacao"],
+    "summary": "Tópicos podem ser criados como enquete, com pergunta, de 2 a 10 opções, escolha única ou múltipla e data de encerramento opcional. Qualquer membro vota e pode mudar o voto enquanto a enquete estiver aberta.",
+    "body": "## Enquetes no fórum\n\nAo criar um tópico, o seletor de tipo agora tem a opção **Enquete**, junto de Discussão e Pergunta.\n\n- A enquete tem uma pergunta e de **2 a 10 opções** (opções em branco e repetidas são ignoradas).\n- Pode ser de **escolha única** (padrão) ou **múltipla escolha**.\n- Opcionalmente define uma data de **encerramento**; depois disso ninguém mais vota.\n- Membros votam direto no tópico; enquanto a enquete está aberta, enviar de novo **substitui o voto anterior** (essencial nas de escolha única).\n- O tópico mostra a contagem e a porcentagem de cada opção com uma barra, além do total de votos, e destaca as opções em que você votou.\n- Visitantes veem o resultado e um convite para entrar e votar.\n\nO tipo do tópico aparece no topo da página (Discussão, Pergunta ou Enquete)."
+}

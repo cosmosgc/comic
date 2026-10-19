@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AnalyticsEventType;
 use App\Models\Analytics;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class TrackPageView
             'ip_address' => $request->ip(),
             'url' => $request->fullUrl(),
             'user_agent' => $request->userAgent(),
-            'event_type' => 'page_view',
+            'event_type' => AnalyticsEventType::PageView->value,
         ]);
 
         return $next($request);

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 class Post extends Model
 {
@@ -21,7 +23,10 @@ class Post extends Model
      */
     protected function casts(): array
     {
-        return ['media' => 'array'];
+        return [
+            'media' => 'array',
+            'edited_at' => 'datetime',
+        ];
     }
 
     public function author(): BelongsTo
@@ -67,5 +72,20 @@ class Post extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(Post::class, 'parent_id')->latest();
+    }
+
+    /**
+     * Hide posts from authors the viewer muted. Degrades to no-op when the
+     * mutes table has not been migrated on the host yet.
+     */
+    public function scopeNotMutedBy(Builder $query, ?User $user): Builder
+    {
+        if ($user === null || ! Schema::hasTable('mutes')) {
+            return $query;
+        }
+
+        return $query->whereNotIn('posts.author_id', function ($sub) use ($user) {
+            $sub->select('muted_id')->from('mutes')->where('user_id', $user->id);
+        });
     }
 }

@@ -12,6 +12,7 @@ use App\Models\ForumThread;
 use App\Models\User;
 use App\Support\ForumNotifier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -131,6 +132,27 @@ class AdminForumController extends Controller
         $category->update([$field => ! $category->{$field}]);
 
         return back()->with('success', 'Categoria atualizada.');
+    }
+
+    /**
+     * Persist the drag order used by the admin category list (SortableJS).
+     * Sections and boards share the endpoint; sort_order is relative to the
+     * dropped group, so index-based values are enough.
+     */
+    public function reorderCategories(Request $request)
+    {
+        $validated = $request->validate([
+            'order' => 'required|array|min:1',
+            'order.*' => 'integer|distinct|exists:forum_categories,id',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach (array_values($validated['order']) as $index => $id) {
+                ForumCategory::whereKey($id)->update(['sort_order' => $index]);
+            }
+        });
+
+        return response()->json(['ok' => true]);
     }
 
     public function threads(Request $request)

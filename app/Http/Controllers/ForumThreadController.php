@@ -17,6 +17,7 @@ use App\Support\ForumNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Thread write actions: create, subscribe, report, mark-solved and the
@@ -56,6 +57,37 @@ class ForumThreadController extends Controller
                 'position' => 1,
                 'is_approved' => Forum::needsApproval(new ForumPost(['position' => 1])) === false,
             ]);
+
+            if ($thread->isPoll()) {
+                if (! Schema::hasTable('forum_polls')) {
+                    throw ValidationException::withMessages([
+                        'type' => 'Enquetes ainda não estão disponíveis neste servidor.',
+                    ]);
+                }
+
+                $options = collect($data['poll_options'] ?? [])
+                    ->map(fn ($label) => trim((string) $label))
+                    ->filter()
+                    ->unique(fn ($label) => mb_strtolower($label))
+                    ->values();
+
+                if ($options->count() < 2) {
+                    throw ValidationException::withMessages([
+                        'poll_options' => 'Informe pelo menos duas opções diferentes.',
+                    ]);
+                }
+
+                $poll = $thread->poll()->create([
+                    'question' => $data['poll_question'],
+                    'multiple' => (bool) ($data['poll_multiple'] ?? false),
+                    'closes_at' => $data['poll_closes_at'] ?? null,
+                ]);
+
+                $options->each(fn (string $label, int $index) => $poll->options()->create([
+                    'label' => $label,
+                    'position' => $index + 1,
+                ]));
+            }
 
             if (config('forum.approval_mode', 'none') !== 'none') {
                 $thread->update(['is_approved' => false]);

@@ -112,8 +112,17 @@ class ForumController extends Controller
             $request->session()->push('viewed_forum_threads', $thread->id);
         }
 
-        $thread->load(['author.badges', 'tags', 'category']);
+        $relations = ['author.badges', 'tags', 'category'];
+        if (Schema::hasTable('forum_polls')) {
+            $relations[] = 'poll.options';
+        }
+        $thread->load($relations);
         $thread->loadCount('posts');
+
+        $poll = Schema::hasTable('forum_polls') ? $thread->poll : null;
+        $viewerPollVotes = $poll && $request->user()
+            ? $poll->votes()->where('user_id', $request->user()->id)->pluck('forum_poll_option_id')->all()
+            : [];
 
         // Mark read up to the latest visible post.
         if ($request->user() && Schema::hasTable('forum_thread_reads')) {
@@ -155,6 +164,8 @@ class ForumController extends Controller
             'posts' => $posts,
             'viewerReactions' => $viewerReactions,
             'subscribed' => $subscribed,
+            'poll' => $poll,
+            'viewerPollVotes' => $viewerPollVotes,
             'canModerate' => Forum::isModerator($request->user(), $category),
             'isBanned' => Forum::isBanned($request->user(), $category->id),
         ]);

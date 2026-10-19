@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\ChangelogCategory;
+
 return [
 
     /*
@@ -15,6 +17,6 @@ return [
     'github_token' => env('CHANGELOG_GITHUB_TOKEN', ''),
     'github_per_page' => (int) env('CHANGELOG_GITHUB_PER_PAGE', 30),
 
-    'categories' => ['Added', 'Fixed', 'Changed', 'Removed'],
+    'categories' => ChangelogCategory::values(),
 
 ];

@@ -6,7 +6,9 @@
 > user collections incl. Favorites (§3) — policies enforced inline
 > (author-or-admin), single-favorites enforced in code.
 > Done from §4: collection counts on cards, most-liked sort, collection covers.
+> Closed 2026-10-19: the public read endpoints moved to `App\Http\Resources` and
+> Livewire was removed as unused (see `issues.md` #9 and #19).
 
 ## 4. Remaining polish
 
-- [ ] API or Livewire components consistent with the existing stack (`livewire/livewire ^3.5`)
+_Nothing open._

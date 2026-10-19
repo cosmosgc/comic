@@ -96,6 +96,16 @@ class ForumThread extends Model
         return $this->type === 'question';
     }
 
+    public function isPoll(): bool
+    {
+        return $this->type === 'poll';
+    }
+
+    public function poll(): HasOne
+    {
+        return $this->hasOne(ForumPoll::class);
+    }
+
     public function isSolved(): bool
     {
         return $this->solved_post_id !== null;

@@ -110,4 +110,92 @@ class ApiHardeningTest extends TestCase
         $this->assertTrue($names->contains('Públicos'));
         $this->assertFalse($names->contains('Favoritos'));
     }
+
+    public function test_comic_api_exposes_the_documented_fields(): void
+    {
+        $comic = Comic::factory()->create([
+            'title' => 'Contrato',
+            'author' => 'Autora',
+            'slug' => 'contrato',
+        ]);
+        $comic->pages()->create([
+            'image_path' => "comics/{$comic->id}/page-0001.jpg",
+            'page_number' => 1,
+        ]);
+
+        $listed = collect($this->getJson('/api/comics?search=Contrato')->assertOk()->json())->first();
+
+        // List endpoint: explicit scalar fields, no relation payload.
+        $this->assertSame('Contrato', $listed['title']);
+        $this->assertSame('contrato', $listed['slug']);
+        $this->assertSame('Autora', $listed['author']);
+        $this->assertArrayNotHasKey('pages', $listed);
+
+        // Detail endpoint keeps the eager-loaded pages.
+        $detail = $this->getJson("/api/comics/{$comic->id}")->assertOk()->json();
+        $this->assertSame('comics/'.$comic->id.'/page-0001.jpg', $detail['pages'][0]['image_path']);
+        $this->assertSame(1, $detail['pages'][0]['page_number']);
+    }
+
+    public function test_pages_api_exposes_only_public_page_fields(): void
+    {
+        $comic = Comic::factory()->create();
+        $comic->pages()->create([
+            'image_path' => "comics/{$comic->id}/page-0001.jpg",
+            'page_number' => 1,
+        ]);
+
+        $page = $this->getJson("/api/comics/{$comic->id}/pages")->assertOk()->json()[0];
+
+        $this->assertSame(
+            ['id', 'comic_id', 'image_path', 'page_number', 'created_at', 'updated_at'],
+            array_keys($page)
+        );
+    }
+
+    public function test_collection_api_uses_the_resource_contract(): void
+    {
+        $owner = User::factory()->create();
+        $collection = Collection::create([
+            'name' => 'Contrato',
+            'user_id' => $owner->id,
+            'is_public' => true,
+        ]);
+
+        $detail = $this->getJson("/api/collections/{$collection->id}")->assertOk()->json();
+        $this->assertSame('Contrato', $detail['name']);
+        $this->assertTrue($detail['is_public']);
+
+        $listed = collect($this->getJson('/api/collections')->assertOk()->json())
+            ->firstWhere('name', 'Contrato');
+        $this->assertArrayHasKey('comics', $listed);
+    }
+
+    public function test_analytics_endpoint_stores_a_valid_event(): void
+    {
+        $this->postJson('/api/analytics', [
+            'url' => 'https://example.test/comics',
+            'user_agent' => 'PHPUnit',
+            'event_type' => 'page_view',
+            'device_type' => 'desktop',
+            'duration' => 12,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('analytics', [
+            'url' => 'https://example.test/comics',
+            'event_type' => 'page_view',
+            'device_type' => 'desktop',
+        ]);
+    }
+
+    public function test_analytics_endpoint_rejects_an_invalid_event(): void
+    {
+        $this->postJson('/api/analytics', [
+            'url' => 'https://example.test/comics',
+            // Missing required user_agent / event_type / device_type.
+            'duration' => -1,
+        ])->assertStatus(422);
+
+        $this->assertDatabaseCount('analytics', 0);
+    }
 }

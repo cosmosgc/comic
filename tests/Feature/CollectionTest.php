@@ -94,6 +94,20 @@ class CollectionTest extends TestCase
         $this->actingAs($owner)->get("/collections/{$collection->id}")->assertOk();
     }
 
+    public function test_guest_visibility_follows_the_collection_flag(): void
+    {
+        $owner = User::factory()->create();
+        $public = Collection::create([
+            'name' => 'Open', 'user_id' => $owner->id, 'is_public' => true,
+        ]);
+        $private = Collection::create([
+            'name' => 'Secret', 'user_id' => $owner->id, 'is_public' => false,
+        ]);
+
+        $this->get("/collections/{$public->id}")->assertOk();
+        $this->get("/collections/{$private->id}")->assertForbidden();
+    }
+
     public function test_favorites_autocreated_on_register_and_toggleable(): void
     {
         $this->post('/register', [
@@ -264,6 +278,22 @@ class CollectionTest extends TestCase
         $this->get("/collections/{$collection->id}/edit")->assertRedirect('/login');
         $this->actingAs($stranger)->get("/collections/{$collection->id}/edit")->assertForbidden();
         $this->actingAs($owner)->get("/collections/{$collection->id}/edit")->assertOk();
+    }
+
+    public function test_admin_can_manage_any_collection(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $collection = Collection::create([
+            'name' => 'Mine', 'user_id' => $owner->id, 'is_public' => true,
+        ]);
+
+        $this->actingAs($admin)->get("/collections/{$collection->id}/edit")->assertOk();
+        $this->actingAs($admin)
+            ->put("/collections/{$collection->id}", ['name' => 'Renamed'])
+            ->assertRedirect(route('collections.edit', $collection));
+
+        $this->assertSame('Renamed', $collection->fresh()->name);
     }
 
     public function test_show_header_displays_first_comic_cover(): void

@@ -2,27 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePageRequest;
+use App\Http\Resources\PageResource;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Support\ImageStore;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PageController extends Controller
 {
-    /**
-     * Owner-or-admin gate, mirroring ComicController (page routes carry
-     * the parent comic id, so authorize against it).
-     */
-    protected function authorizeComicAccess(Comic $comic): void
-    {
-        $user = Auth::user();
-        abort_unless(
-            $user !== null && ((int) $comic->user_id === (int) $user->id || (int) $user->admin_level >= 1),
-            403
-        );
-    }
-
     public function create($comicId)
     {
         $comic = Comic::findOrFail($comicId);
@@ -30,15 +18,10 @@ class PageController extends Controller
         return view('pages.create', compact('comic'));
     }
 
-    public function store(Request $request, $comicId)
+    public function store(StorePageRequest $request, $comicId)
     {
-        // webp allowed: the upload page recompresses big images to webp in-browser.
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:'.(config('upload.max_file_mb', 10) * 1024),
-        ]);
-
         $comic = Comic::findOrFail($comicId);
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
 
         // Store with a generated name (never the client's) under the
         // comic's `pages/` folder.
@@ -61,13 +44,10 @@ class PageController extends Controller
         return redirect()->route('comics.showById', $comic->id)->with('success', 'Página enviada com sucesso.');
     }
 
-    public function addPage(Request $request, $comicId)
+    public function addPage(StorePageRequest $request, $comicId)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:'.(config('upload.max_file_mb', 10) * 1024),
-        ]);
         $comic = Comic::findOrFail($comicId);
-        $this->authorizeComicAccess($comic);
+        $this->authorize('update', $comic);
         $pageNumber = $comic->pages()->count() + 1;
 
         // Generated name, comic root (same convention as comic uploads).
@@ -94,6 +74,6 @@ class PageController extends Controller
         $pages = $comic->pages()->orderBy('page_number')->get();
 
         // Return the pages as JSON
-        return response()->json($pages);
+        return response()->json(PageResource::collection($pages));
     }
 }

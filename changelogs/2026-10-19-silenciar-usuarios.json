@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Silenciar um usuário",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["rede-social", "perfil", "feed", "moderacao"],
+    "summary": "Dá para silenciar alguém pelo perfil: os posts e respostas dessa pessoa somem do seu feed, das hashtags e das listas de respostas, sem que ela saiba. Silenciar é reversível a qualquer momento.",
+    "body": "## Silenciar\n\nNo perfil de outra pessoa agora existe o botão **Silenciar** (ao lado de Seguir).\n\n- Enquanto o silêncio estiver ativo, os posts dessa pessoa não aparecem para você no feed nem nas páginas de hashtag, e as respostas dela não aparecem na árvore de comentários dos posts.\n- Você continua conseguindo abrir o perfil e um post específico direto pelo link - o bloqueio é do fluxo, não da página.\n- Silenciar é **silencioso**: a pessoa não é avisada e não perde seguidor nem nada do tipo.\n- O botão vira **Deixar de silenciar** a qualquer momento, e tudo volta a aparecer.\n- Você não consegue silenciar a si mesmo."
+}

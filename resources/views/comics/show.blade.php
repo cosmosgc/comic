@@ -380,8 +380,7 @@
     @php
         // Only whoever may open the comic gets here: the owner/admin
         // previewing the queue, or a member inside the early access week.
-        $viewerIsOwnerOrAdmin = auth()->check()
-            && ((int) auth()->id() === (int) $comic->user_id || (int) auth()->user()->admin_level >= 1);
+        $viewerIsOwnerOrAdmin = auth()->user()?->can('update', $comic) ?? false;
     @endphp
     @if ($comic->isExclusive())
         <p style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#701a75;color:#f5d0fe;font-size:0.85em;">
@@ -443,7 +442,7 @@
 
     <div class="engage-row">
         @auth
-            @if ((int) $comic->user_id === (int) auth()->id() || (int) auth()->user()->admin_level >= 1)
+            @if (auth()->user()?->can('update', $comic))
                 <a class="engage-btn" href="{{ route('comics.edit', $comic->id) }}" title="Editar este comic">✎ Editar</a>
             @endif
         @endauth

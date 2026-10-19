@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: resumo semanal por e-mail e reordenação por arrastar",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "email", "admin", "categorias"],
+    "summary": "Quem quiser recebe um resumo semanal dos tópicos mais movimentados do fórum por e-mail (opção no perfil, desligada por padrão) e o admin agora reordena seções e quadros arrastando, com salvamento automático.",
+    "body": "## Resumo semanal do fórum\n\nEm **Editar perfil** há uma nova opção: *Receber resumo semanal do fórum por e-mail*.\n\n- Desligada por padrão - ninguém recebe e-mail sem marcar.\n- O resumo traz os tópicos com mais movimento recente, com link direto para cada um e a contagem de respostas.\n- É enviado uma vez por semana (segunda-feira de manhã) e só quando houve movimento no fórum.\n- Basta desmarcar a opção para deixar de receber.\n\n## Reordenar categorias arrastando\n\nNa tela **Admin \u2192 Fórum \u2192 Categorias**, seções e quadros ganharam uma alça (**\u22ee\u22ee**).\n\n- Arraste para colocar na ordem que quiser e a ordem é salva sozinha, sem botão de salvar.\n- Seções e quadros são reordenados dentro do seu próprio grupo (um quadro continua no mesmo lugar da seção).\n- Antes disso a ordem tinha que ser digitada número a número no formulário da categoria."
+}

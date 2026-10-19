@@ -1,6 +1,6 @@
 # Forum — Implementation Plan
 
-> Status: **shipped** (core through phase 7). New tables are all prefixed
+> Status: **shipped** (core through phase 8). New tables are all prefixed
 > `forum_` so they sort together in the database and are easy to spot/manage
 > by hand. Implemented work is summarised in [CHANGELOG.md](CHANGELOG.md).
 >
@@ -9,7 +9,9 @@
 > subscriptions, unread tracking, attachments; reports + moderator
 > actions; admin categories/moderation/moderators/bans/settings;
 > notifications + gamification; search, tags and solved answers.
-> Deferred (phase 8): polls, email digests, drag-ordering polish.
+> Phase 8 shipped 2026-10-19: thread polls, the weekly opt-in e-mail
+> digest (`forum:digest`) and drag-ordering of sections/boards in
+> Admin → Fórum → Categorias.
 
 ## 1. Goals
 
@@ -221,12 +223,16 @@ timestamps. Keys: `enabled`, `approval_mode` (`none,first_post,all`),
 `allowed_mime`, `posts_per_page`, `hot_window_days`, `auto_lock_days`,
 `signature_enabled`, `prohibited_words` (list).
 
-### Phase 3 (optional): polls
+### Phase 3 (optional): polls — **shipped 2026-10-19**
 
 `forum_polls` (`forum_thread_id` unique, `question`, `multiple`, `closes_at`),
 `forum_poll_options` (`forum_poll_id`, `label`, `position`, `votes_count`),
-`forum_poll_votes` (`forum_poll_id`, `forum_poll_option_id`, `user_id`,
-unique `(forum_poll_id, user_id)`).
+`forum_poll_votes` (`forum_poll_id`, `forum_poll_option_id`, `user_id`).
+The unique index is `(forum_poll_option_id, user_id)` so multi-choice polls
+work; the controller clears the previous rows when a single-choice poll is
+re-voted. Models `ForumPoll`/`ForumPollOption`/`ForumPollVote`, voting at
+`POST /forum/threads/{thread}/poll/vote`, rendered by
+`resources/views/forum/partials/poll.blade.php`.
 
 ## 4. Models & relations
 
@@ -324,7 +330,8 @@ POST /admin/forum/settings                 admin.forum.settings
   activity chart (Chart.js, already loaded), latest threads, moderation
   queue counts.
 - **Categories**: CRUD self-referential tree, drag order (Sortable is
-  already loaded), visibility/lock/min_role toggles, counters.
+  already loaded; **shipped 2026-10-19** — `POST /admin/forum/categories/reorder`),
+  visibility/lock/min_role toggles, counters.
 - **Threads/posts**: searchable DataTable, bulk lock/pin/approve/delete,
   move thread between boards, view as member.
 - **Moderation queue**: reports + pending-approval posts, resolve/dismiss
@@ -372,7 +379,7 @@ POST /admin/forum/settings                 admin.forum.settings
 5. Admin moderation queue, bans, moderators, settings.
 6. Notifications + gamification wiring + backfill.
 7. Search, tags, solved answers, profile tab.
-8. (Optional) Polls, attachments polish, email digests.
+8. **[DONE 2026-10-19]** Polls, the weekly e-mail digest (`forum:digest`) and admin drag-ordering (attachments already shipped).
 
 ## 11. Tests
 

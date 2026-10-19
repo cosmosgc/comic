@@ -39,8 +39,9 @@
                     <div class="flex-1">
                         <label for="thread-type" class="mb-1 block text-xs font-semibold text-zinc-400">Tipo</label>
                         <select id="thread-type" name="type" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none">
-                            <option value="discussion">Discussão</option>
-                            <option value="question">Pergunta</option>
+                            <option value="discussion" @selected(old('type', 'discussion') === 'discussion')>Discussão</option>
+                            <option value="question" @selected(old('type') === 'question')>Pergunta</option>
+                            <option value="poll" @selected(old('type') === 'poll')>Enquete</option>
                         </select>
                     </div>
                     <div class="flex-1">
@@ -51,6 +52,29 @@
                 <div>
                     <label for="thread-body" class="mb-1 block text-xs font-semibold text-zinc-400">Mensagem (Markdown)</label>
                     <textarea id="thread-body" name="body" required rows="6" class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">{{ old('body') }}</textarea>
+                </div>
+                <div id="poll-fields" class="{{ old('type') === 'poll' ? '' : 'hidden' }} rounded-lg border border-zinc-800 p-3">
+                    <p class="mb-2 text-xs font-semibold text-zinc-400">Enquete</p>
+                    <input name="poll_question" value="{{ old('poll_question') }}" maxlength="200" placeholder="Pergunta da enquete"
+                           class="mb-2 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                    <div class="space-y-2">
+                        @for ($i = 0; $i < 5; $i++)
+                            <input name="poll_options[]" value="{{ old('poll_options.'.$i) }}" maxlength="120"
+                                   placeholder="Opção {{ $i + 1 }}{{ $i < 2 ? '' : ' (opcional)' }}"
+                                   class="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+                        @endfor
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-4 text-xs text-zinc-400">
+                        <label class="inline-flex items-center gap-2">
+                            <input type="checkbox" name="poll_multiple" value="1" @checked(old('poll_multiple'))>
+                            Permitir múltipla escolha
+                        </label>
+                        <label class="inline-flex items-center gap-2">
+                            Encerra em
+                            <input type="datetime-local" name="poll_closes_at" value="{{ old('poll_closes_at') }}"
+                                   class="rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-1">
+                        </label>
+                    </div>
                 </div>
                 <div>
                     <label for="thread-attachments" class="mb-1 block text-xs font-semibold text-zinc-400">Anexos (imagens)</label>
@@ -125,4 +149,18 @@
     <div class="mt-4 flex justify-center">{{ $threads->links() }}</div>
 
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const type = document.getElementById('thread-type');
+        const poll = document.getElementById('poll-fields');
+        if (!type || !poll) return;
+
+        const sync = () => poll.classList.toggle('hidden', type.value !== 'poll');
+        type.addEventListener('change', sync);
+        sync();
+    });
+</script>
 @endsection

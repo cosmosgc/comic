@@ -9,10 +9,16 @@
         <a href="{{ route('admin.forum.categories.create') }}" class="admin-btn admin-btn-primary">Nova categoria</a>
     </div>
 
+    <p class="mb-2 text-xs opacity-60">Arraste pelo ⋮⋮ para reordenar seções e quadros. A ordem salva automaticamente.</p>
+
+    <div id="section-list" data-reorder-url="{{ route('admin.forum.categories.reorder') }}">
     @foreach ($sections as $section)
-        <div class="admin-card mb-4">
+        <div class="admin-card mb-4" data-id="{{ $section->id }}">
             <div class="admin-card-header">
-                <span>{{ $section->icon }} {{ $section->name }}</span>
+                <span class="flex items-center gap-2">
+                    <span class="drag-handle cursor-move select-none text-zinc-500" title="Arrastar para reordenar">⋮⋮</span>
+                    {{ $section->icon }} {{ $section->name }}
+                </span>
                 <span class="flex items-center gap-2">
                     <form method="POST" action="{{ route('admin.forum.categories.toggle', $section->id) }}" class="inline">@csrf
                         <input type="hidden" name="field" value="is_visible">
@@ -27,10 +33,11 @@
             </div>
             <div class="admin-table-wrap">
                 <table class="admin-table admin-table-compact">
-                    <thead><tr><th>Quadro</th><th>Tópicos</th><th>Ordem</th><th>Permissão</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody>
+                    <thead><tr><th class="w-8"></th><th>Quadro</th><th>Tópicos</th><th>Ordem</th><th>Permissão</th><th>Status</th><th>Ações</th></tr></thead>
+                    <tbody class="board-list">
                         @forelse ($section->children as $board)
-                            <tr>
+                            <tr data-id="{{ $board->id }}">
+                                <td class="drag-handle cursor-move select-none text-zinc-500" title="Arrastar para reordenar">⋮⋮</td>
                                 <td>{{ $board->icon }} {{ $board->name }}<br><span class="text-xs opacity-60">{{ $board->slug }}</span></td>
                                 <td>{{ $board->threads_count }}</td>
                                 <td>{{ $board->sort_order }}</td>
@@ -56,15 +63,58 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-center opacity-60">Nenhum quadro nesta seção.</td></tr>
+                            <tr><td colspan="7" class="text-center opacity-60">Nenhum quadro nesta seção.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
     @endforeach
+    </div>
 
     @if ($sections->isEmpty())
         <div class="admin-card"><div class="admin-card-body text-center opacity-60">Nenhuma seção criada ainda. Crie a primeira categoria.</div></div>
     @endif
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const list = document.getElementById('section-list');
+        if (!list || !window.Sortable) return;
+
+        const url = list.dataset.reorderUrl;
+        const persist = function (ids) {
+            if (!ids.length) return;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({ order: ids }),
+            }).catch(function () {});
+        };
+        const idsIn = function (root) {
+            return Array.from(root.querySelectorAll(':scope > [data-id]')).map(function (el) {
+                return Number(el.dataset.id);
+            });
+        };
+
+        new Sortable(list, {
+            handle: '.drag-handle',
+            animation: 150,
+            onEnd: function () { persist(idsIn(list)); },
+        });
+
+        document.querySelectorAll('.board-list').forEach(function (tbody) {
+            new Sortable(tbody, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function () { persist(idsIn(tbody)); },
+            });
+        });
+    });
+</script>
 @endsection

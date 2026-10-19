@@ -66,7 +66,7 @@ class CommentController extends Controller
      */
     public function update(Request $request, Comment $comment)
     {
-        $this->authorizeComment($request, $comment);
+        $this->authorize('update', $comment);
 
         $request->validate([
             'body' => 'required|string|max:2000',
@@ -86,7 +86,7 @@ class CommentController extends Controller
      */
     public function destroy(Request $request, Comment $comment)
     {
-        $this->authorizeComment($request, $comment);
+        $this->authorize('delete', $comment);
 
         $comment->delete();
 
@@ -95,14 +95,5 @@ class CommentController extends Controller
         }
 
         return redirect()->back()->with('success', 'Comentário excluído.');
-    }
-
-    protected function authorizeComment(Request $request, Comment $comment): void
-    {
-        $user = $request->user();
-
-        if ($user->id !== $comment->user_id && (int) $user->admin_level < 1) {
-            abort(403, 'You can only modify your own comments.');
-        }
     }
 }

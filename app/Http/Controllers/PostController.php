@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePostRequest;
 use App\Models\Hashtag;
 use App\Models\Post;
 use App\Support\ActivityLogger;
@@ -22,7 +23,9 @@ class PostController extends Controller
         $tab = $validated['tab'] ?? 'latest';
         $query = trim($validated['q'] ?? '');
 
-        $posts = Post::with(['author.badges', 'referencedPost.author.badges'])
+        $posts = Post::query()
+            ->notMutedBy($request->user())
+            ->with(['author.badges', 'referencedPost.author.badges'])
             ->withCount(['quotes', 'likedByUsers', 'replies']);
 
         if ($query !== '') {
@@ -66,10 +69,6 @@ class PostController extends Controller
             return response()->json(['data' => $posts]);
         }
 
-        if ($request->wantsJson()) {
-            return response()->json(['data' => $posts]);
-        }
-
         // Single query so the heart button knows the viewer's likes (no N+1).
         $likedPostIds = $request->user()
             ? $request->user()->likedPosts()->pluck('posts.id')->all()
@@ -84,16 +83,8 @@ class PostController extends Controller
         return view('posts.index', compact('posts', 'likedPostIds', 'bookmarkedPostIds', 'tab', 'query'));
     }
 
-    public function store(Request $request)
+    public function store(StorePostRequest $request)
     {
-        $request->validate([
-            'text' => 'nullable|string|max:280',
-            'media' => 'nullable|array|max:4',
-            'media.*' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4048',
-            'referenced_post_id' => 'nullable|exists:posts,id',
-            'parent_id' => 'nullable|exists:posts,id',
-        ]);
-
         // Certifica que pelo menos um dos campos (texto ou mídia) está preenchido
         if (! $request->text && ! $request->hasFile('media') && ! $request->referenced_post_id) {
             return redirect()->back()->withErrors(['error' => 'O post precisa ter texto ou mídia.']);
@@ -149,37 +140,46 @@ class PostController extends Controller
         return redirect()->route('posts.index');
     }
 
-    /**
-     * Owner-or-admin gate for post edits.
-     */
-    protected function authorizePost(Post $post): void
-    {
-        $user = auth()->user();
-        abort_unless(
-            $user !== null && ((int) $post->author_id === (int) $user->id || (int) ($user->admin_level ?? 0) >= 1),
-            403
-        );
-    }
-
     public function edit(Post $post)
     {
-        $this->authorizePost($post);
+        $this->authorize('update', $post);
 
         return view('posts.edit', compact('post'));
     }
 
     public function update(Request $request, Post $post)
     {
-        $this->authorizePost($post);
+        $this->authorize('update', $post);
 
         $validated = $request->validate([
             'text' => 'nullable|string|max:280',
         ]);
 
-        $post->update(['text' => $validated['text'] ?? null]);
+        $post->fill(['text' => $validated['text'] ?? null]);
+        if ($post->isDirty('text')) {
+            $post->edited_at = now();
+        }
+        $post->save();
         Hashtag::syncForPost($post, $post->text);
 
         return redirect()->route('posts.show', $post)->with('success', 'Post atualizado.');
+    }
+
+    /**
+     * Delete a post. Replies and quotes cascade at the database level;
+     * the media files on disk are removed here.
+     */
+    public function destroy(Post $post)
+    {
+        $this->authorize('delete', $post);
+
+        foreach ((array) $post->media as $media) {
+            ImageStore::delete($media);
+        }
+
+        $post->delete();
+
+        return redirect()->route('posts.index')->with('success', 'Post excluído.');
     }
 
     /**
@@ -211,6 +211,7 @@ class PostController extends Controller
         }
 
         $replies = $post->replies()
+            ->notMutedBy($request->user())
             ->with($with)
             ->withCount($replyCounts)
             ->latest()
@@ -220,8 +221,8 @@ class PostController extends Controller
         // then id-only stubs so deeper chains render a "continue" link).
         // MySQL 5.7 hosts can't do recursive CTEs, hence fixed depth.
         $replies->getCollection()->load([
-            'replies' => fn ($query) => $query->with($with)->withCount($replyCounts)->latest(),
-            'replies.replies' => fn ($query) => $query->with($with)->withCount($replyCounts)->latest(),
+            'replies' => fn ($query) => $query->notMutedBy($request->user())->with($with)->withCount($replyCounts)->latest(),
+            'replies.replies' => fn ($query) => $query->notMutedBy($request->user())->with($with)->withCount($replyCounts)->latest(),
             'replies.replies.replies:id,parent_id',
         ]);
 

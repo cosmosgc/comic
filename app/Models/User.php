@@ -31,6 +31,7 @@ class User extends Authenticatable
         'links',
         'admin_level',
         'show_liked_posts',
+        'forum_digest',
         'experience',
         'level',
         'last_active_on',
@@ -49,6 +50,7 @@ class User extends Authenticatable
         return [
             'links' => 'array',
             'show_liked_posts' => 'boolean',
+            'forum_digest' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_on' => 'date',
@@ -120,6 +122,32 @@ class User extends Authenticatable
     public function bookmarkedPosts(): BelongsToMany
     {
         return $this->belongsToMany(Post::class, 'bookmarks')->withTimestamps();
+    }
+
+    /**
+     * Accounts this user has muted.
+     */
+    public function mutedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'mutes',
+            'user_id',
+            'muted_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Accounts that have muted this user.
+     */
+    public function mutedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'mutes',
+            'muted_id',
+            'user_id'
+        )->withTimestamps();
     }
 
     /**

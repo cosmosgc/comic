@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AnalyticsEventType;
+use App\Enums\ChangelogCategory;
+use App\Enums\DeployState;
 use App\Models\ActivityLog;
 use App\Models\Analytics;
 use App\Models\Comic;
@@ -38,8 +41,8 @@ class AdminController extends Controller
 
     public function showDashboard()
     {
-        $pageViews = Analytics::where('event_type', 'page_view')->count();
-        $logins = Analytics::where('event_type', 'login')->count();
+        $pageViews = Analytics::where('event_type', AnalyticsEventType::PageView->value)->count();
+        $logins = Analytics::where('event_type', AnalyticsEventType::Login->value)->count();
         $analytics = Analytics::latest()->paginate(10); // Show recent events
 
         return view('admin.dashboard', compact('pageViews', 'logins', 'analytics'));
@@ -869,8 +872,8 @@ class AdminController extends Controller
         }
         file_put_contents($statusPath, json_encode([
             'id' => $id,
-            'state' => 'queued',
-            'phase' => 'queued',
+            'state' => DeployState::Queued->value,
+            'phase' => DeployState::Queued->value,
             'started_at' => now()->toIso8601String(),
             'dry_run' => $dryRun,
             'force' => $force,
@@ -946,7 +949,7 @@ class AdminController extends Controller
         }
 
         $state = $status['state'] ?? null;
-        if (! in_array($state, ['queued', 'running', 'cancelling'], true)) {
+        if (! in_array($state, DeployState::activeValues(), true)) {
             return redirect()->route('admin.deploy')
                 ->with('deploy_run_id', $id)
                 ->with('error', 'Esta execução já terminou — nada a cancelar.');
@@ -958,10 +961,10 @@ class AdminController extends Controller
         $status['updated_at'] = now()->toIso8601String();
         if ($stale) {
             // No heartbeat for 5+ minutes: the worker is dead, don't wait.
-            $status['state'] = 'cancelled';
+            $status['state'] = DeployState::Cancelled->value;
             $status['message'] = 'Cancelled (worker had stopped responding — no files were harmed).';
         } else {
-            $status['state'] = 'cancelling';
+            $status['state'] = DeployState::Cancelling->value;
             $status['message'] = 'Cancellation requested — the worker stops after the current file.';
         }
         file_put_contents($path, json_encode($status));
@@ -978,7 +981,7 @@ class AdminController extends Controller
     {
         foreach (glob(storage_path('app/deploy/*.json')) ?: [] as $path) {
             $status = json_decode((string) @file_get_contents($path), true);
-            if (! is_array($status) || ! in_array($status['state'] ?? null, ['queued', 'running', 'cancelling'], true)) {
+            if (! is_array($status) || ! in_array($status['state'] ?? null, DeployState::activeValues(), true)) {
                 continue;
             }
             // Stale heartbeats (>30 min) are dead workers, not running ones.
@@ -1097,7 +1100,7 @@ class AdminController extends Controller
             'pr' => $pr['number'],
             'title' => $pr['title'],
             'date' => now()->format('Y-m-d'),
-            'category' => 'Added',
+            'category' => ChangelogCategory::Added->value,
             'tags' => [],
             'summary' => '',
             'body' => $pr['body'],
