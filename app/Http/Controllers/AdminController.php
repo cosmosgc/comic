@@ -348,7 +348,7 @@ class AdminController extends Controller
     {
         // Only the columns the table renders: the admin list would
         // otherwise hydrate every comic with all of its text columns.
-        $columns = ['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count'];
+        $columns = ['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count', 'image_path'];
         // Skipped on hosts whose comics table predates the column.
         if (Schema::hasColumn('comics', 'is_exclusive')) {
             $columns[] = 'is_exclusive';

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Capa na lista de comics do admin",
+    "date": "2026-10-19",
+    "category": "Changed",
+    "tags": ["admin", "comics", "interface"],
+    "summary": "A lista de comics do painel agora mostra a capa de cada comic ao lado do título, com um marcador discreto quando o comic ainda não tem capa.",
+    "body": "## Lista de comics\n\n- A coluna **Nome** ganhou uma miniatura 3:4 da capa, clicável como o título.\n- Comics sem `image_path` mostram um espaço tracejado com “Sem capa”, em vez de uma imagem quebrada.\n- A consulta do painel passou a selecionar `image_path` junto das demais colunas exibidas."
+}

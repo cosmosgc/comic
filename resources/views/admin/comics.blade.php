@@ -48,12 +48,12 @@
                 <thead>
                     <tr>
                         <th class="w-[4%]">ID</th>
-                        <th class="w-[14%]">Nome</th>
+                        <th class="w-[18%]">Nome</th>
                         <th class="w-[9%]">Autor</th>
-                        <th class="w-[14%]">Slug</th>
+                        <th class="w-[12%]">Slug</th>
                         <th class="w-[8%]">Criado em</th>
                         <th class="w-[12%]">Publicação</th>
-                        <th class="w-[17%]">Agendar</th>
+                        <th class="w-[15%]">Agendar</th>
                         <th class="w-[6%]">Views</th>
                         <th class="w-[16%]">Ações</th>
                     </tr>
@@ -63,9 +63,25 @@
                         <tr>
                             <td>{{ $comic->id }}</td>
                             <td>
-                                <a href="{{ route('comics.showBySlug', $comic->slug) }}"
-                                   class="block max-w-full truncate font-medium text-indigo-600 hover:underline dark:text-indigo-300"
-                                   title="{{ $comic->title }}">{{ $comic->title }}</a>
+                                <div class="flex items-center gap-2">
+                                    @if ($comic->image_path)
+                                        <a href="{{ route('comics.showBySlug', $comic->slug) }}"
+                                           class="shrink-0"
+                                           title="Abrir {{ $comic->title }}">
+                                            <img src="{{ asset('storage/'.$comic->image_path) }}"
+                                                 alt="Capa de {{ $comic->title }}"
+                                                 loading="lazy"
+                                                 class="h-14 w-10 rounded border border-zinc-300/60 object-cover dark:border-zinc-700">
+                                        </a>
+                                    @else
+                                        <span data-cover-placeholder
+                                              class="flex h-14 w-10 shrink-0 items-center justify-center rounded border border-dashed border-zinc-400/60 text-[10px] opacity-60 dark:border-zinc-600"
+                                              title="Sem capa">—</span>
+                                    @endif
+                                    <a href="{{ route('comics.showBySlug', $comic->slug) }}"
+                                       class="block min-w-0 truncate font-medium text-indigo-600 hover:underline dark:text-indigo-300"
+                                       title="{{ $comic->title }}">{{ $comic->title }}</a>
+                                </div>
                             </td>
                             <td>{{ $comic->author }}</td>
                             <td><code class="block max-w-full truncate" title="{{ $comic->slug }}">{{ $comic->slug }}</code></td>
