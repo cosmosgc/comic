@@ -333,7 +333,7 @@
     @endif
 @endsection
 
-@section('scripts')
+@push('scripts')
 @if ($stage === 'progress')
 <script>
 (function () {
@@ -744,4 +744,4 @@
 })();
 </script>
 @endif
-@endsection
+@endpush

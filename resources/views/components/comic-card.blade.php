@@ -18,7 +18,7 @@
            class="flex items-center gap-2 hover:opacity-80">
 
             <img
-                src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}"
+                src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}"
                 alt="{{ $comic->user->name }} avatar"
                 class="h-8 w-8 rounded-full border border-zinc-700 object-cover"
             >

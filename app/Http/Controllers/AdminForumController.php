@@ -11,10 +11,13 @@ use App\Models\ForumSetting;
 use App\Models\ForumThread;
 use App\Models\User;
 use App\Support\ForumNotifier;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 /**
  * Admin → Fórum: category tree, moderation queue, moderators, bans and
@@ -22,7 +25,7 @@ use Illuminate\Support\Str;
  */
 class AdminForumController extends Controller
 {
-    public function dashboard()
+    public function dashboard(): View
     {
         $totals = [
             'categories' => ForumCategory::count(),
@@ -56,7 +59,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function categories()
+    public function categories(): View
     {
         $sections = ForumCategory::query()
             ->sections()
@@ -70,7 +73,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function categoryCreate()
+    public function categoryCreate(): View
     {
         return view('admin.forum.category-form', [
             'category' => new ForumCategory(['is_visible' => true, 'min_role' => 'member']),
@@ -79,7 +82,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function categoryStore(Request $request)
+    public function categoryStore(Request $request): RedirectResponse
     {
         $data = $this->validateCategory($request);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
@@ -89,7 +92,7 @@ class AdminForumController extends Controller
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria criada.');
     }
 
-    public function categoryEdit(int $id)
+    public function categoryEdit(int $id): View
     {
         return view('admin.forum.category-form', [
             'category' => ForumCategory::findOrFail($id),
@@ -98,7 +101,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function categoryUpdate(Request $request, int $id)
+    public function categoryUpdate(Request $request, int $id): RedirectResponse
     {
         $category = ForumCategory::findOrFail($id);
         $data = $this->validateCategory($request);
@@ -114,7 +117,7 @@ class AdminForumController extends Controller
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria atualizada.');
     }
 
-    public function categoryDestroy(int $id)
+    public function categoryDestroy(int $id): RedirectResponse
     {
         $category = ForumCategory::findOrFail($id);
         $category->delete();
@@ -122,7 +125,7 @@ class AdminForumController extends Controller
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria removida.');
     }
 
-    public function categoryToggle(Request $request, int $id)
+    public function categoryToggle(Request $request, int $id): RedirectResponse
     {
         $category = ForumCategory::findOrFail($id);
         $field = $request->input('field', 'is_visible');
@@ -139,7 +142,7 @@ class AdminForumController extends Controller
      * Sections and boards share the endpoint; sort_order is relative to the
      * dropped group, so index-based values are enough.
      */
-    public function reorderCategories(Request $request)
+    public function reorderCategories(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'order' => 'required|array|min:1',
@@ -155,7 +158,7 @@ class AdminForumController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function threads(Request $request)
+    public function threads(Request $request): View
     {
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
@@ -179,7 +182,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function moderation(Request $request)
+    public function moderation(Request $request): View
     {
         $validated = $request->validate(['status' => 'nullable|in:pending,reviewed,dismissed']);
         $status = $validated['status'] ?? 'pending';
@@ -214,7 +217,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function resolveReport(Request $request, ForumReport $report)
+    public function resolveReport(Request $request, ForumReport $report): RedirectResponse
     {
         $validated = $request->validate(['status' => 'required|in:reviewed,dismissed']);
 
@@ -229,7 +232,7 @@ class AdminForumController extends Controller
         return back()->with('success', 'Denúncia atualizada.');
     }
 
-    public function moderators()
+    public function moderators(): View
     {
         return view('admin.forum.moderators', [
             'moderators' => ForumModerator::with(['user', 'category'])->latest()->get(),
@@ -237,7 +240,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function moderatorStore(Request $request)
+    public function moderatorStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
@@ -255,14 +258,14 @@ class AdminForumController extends Controller
         return back()->with('success', 'Moderador adicionado.');
     }
 
-    public function moderatorDestroy(int $id)
+    public function moderatorDestroy(int $id): RedirectResponse
     {
         ForumModerator::findOrFail($id)->delete();
 
         return back()->with('success', 'Moderador removido.');
     }
 
-    public function bans()
+    public function bans(): View
     {
         return view('admin.forum.bans', [
             'bans' => ForumBan::with(['user', 'category', 'banner'])->latest()->paginate(25),
@@ -270,7 +273,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function banStore(Request $request)
+    public function banStore(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
@@ -292,14 +295,14 @@ class AdminForumController extends Controller
         return back()->with('success', 'Usuário banido.');
     }
 
-    public function banDestroy(int $id)
+    public function banDestroy(int $id): RedirectResponse
     {
         ForumBan::findOrFail($id)->delete();
 
         return back()->with('success', 'Banimento removido.');
     }
 
-    public function settings()
+    public function settings(): View
     {
         return view('admin.forum.settings', [
             'enabled' => (bool) config('forum.enabled', true),
@@ -316,7 +319,7 @@ class AdminForumController extends Controller
         ]);
     }
 
-    public function saveSettings(Request $request)
+    public function saveSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'enabled' => 'nullable|boolean',

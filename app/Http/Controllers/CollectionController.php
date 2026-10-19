@@ -7,9 +7,12 @@ use App\Http\Resources\CollectionResource;
 use App\Models\Collection;
 use App\Models\Comic;
 use App\Support\ActivityLogger;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 class CollectionController extends Controller
 {
@@ -27,7 +30,7 @@ class CollectionController extends Controller
     /**
      * The viewer's own collections (for the reader quick-add dropdown).
      */
-    public function mine(Request $request)
+    public function mine(Request $request): JsonResponse|RedirectResponse
     {
         $collections = $this->ownsColumns()
             ? $request->user()->collections()->with('comics:id')->orderBy('name')->get(['id', 'name', 'is_favorites'])
@@ -40,7 +43,7 @@ class CollectionController extends Controller
         return redirect()->route('collections.index');
     }
 
-    public function index()
+    public function index(): View
     {
         $query = Collection::with(['comics' => fn ($query) => $query->orderBy('collection_comic.order')]);
         if ($this->ownsColumns()) {
@@ -56,7 +59,7 @@ class CollectionController extends Controller
         return view('collections.index', ['collections' => $query->latest()->get()]);
     }
 
-    public function show(Request $request, Collection $collection)
+    public function show(Request $request, Collection $collection): View
     {
         $this->authorize('view', $collection);
 
@@ -92,7 +95,7 @@ class CollectionController extends Controller
         return view('collections.show', compact('collection', 'comics', 'likedComicIds', 'canEdit', 'searchTerm'));
     }
 
-    public function showById($id)
+    public function showById($id): JsonResponse
     {
         // Retrieve the collection along with its comics. Private
         // collections (e.g. a user's Favorites) are not exposed by the
@@ -112,7 +115,7 @@ class CollectionController extends Controller
         return response()->json(new CollectionResource($query->findOrFail($id)));
     }
 
-    public function getAllCollections(Request $request)
+    public function getAllCollections(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'search' => 'nullable|string|max:255',
@@ -153,14 +156,14 @@ class CollectionController extends Controller
         return response()->json(CollectionResource::collection($collections));
     }
 
-    public function create()
+    public function create(): View
     {
         $comics = Comic::all(); // Fetch all comics for selection
 
         return view('collections.create', compact('comics'));
     }
 
-    public function store(CollectionRequest $request)
+    public function store(CollectionRequest $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validated();
 
@@ -194,7 +197,7 @@ class CollectionController extends Controller
         return redirect()->route('collections.create')->with('success', 'Coleção criada com sucesso.');
     }
 
-    public function edit(Collection $collection)
+    public function edit(Collection $collection): View
     {
         $this->authorize('update', $collection);
         $comics = Comic::orderBy('title')->get(['id', 'title', 'image_path']); // Fetch all comics for selection
@@ -204,7 +207,7 @@ class CollectionController extends Controller
         return view('collections.edit', compact('collection', 'comics', 'selectedComics', 'supportsOwnership'));
     }
 
-    public function update(CollectionRequest $request, Collection $collection)
+    public function update(CollectionRequest $request, Collection $collection): RedirectResponse
     {
         $this->authorize('update', $collection);
 
@@ -230,7 +233,7 @@ class CollectionController extends Controller
         return redirect()->route('collections.edit', $collection)->with('success', 'Coleção atualizada com sucesso.');
     }
 
-    public function destroy(Collection $collection)
+    public function destroy(Collection $collection): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $collection);
         $collection->delete();
@@ -245,7 +248,7 @@ class CollectionController extends Controller
     /**
      * Add one comic (quick-add dropdown / favorite shortcut).
      */
-    public function addComic(Request $request, Collection $collection, Comic $comic)
+    public function addComic(Request $request, Collection $collection, Comic $comic): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $collection);
 
@@ -276,7 +279,7 @@ class CollectionController extends Controller
     /**
      * Remove one comic from a collection.
      */
-    public function removeComic(Request $request, Collection $collection, Comic $comic)
+    public function removeComic(Request $request, Collection $collection, Comic $comic): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $collection);
         $collection->comics()->detach($comic->id);
@@ -294,7 +297,7 @@ class CollectionController extends Controller
     /**
      * Toggle a comic in the viewer's built-in Favorites collection.
      */
-    public function toggleFavorite(Request $request, Comic $comic)
+    public function toggleFavorite(Request $request, Comic $comic): JsonResponse
     {
         $favorites = Collection::favoritesFor($request->user());
 
@@ -321,7 +324,7 @@ class CollectionController extends Controller
         ]);
     }
 
-    public function updateSortOrder(Request $request, Collection $collection)
+    public function updateSortOrder(Request $request, Collection $collection): JsonResponse
     {
         $this->authorize('update', $collection);
 

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAnalyticsRequest;
 use App\Models\Analytics;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class AnalyticsController extends Controller
 {
-    public function store(StoreAnalyticsRequest $request)
+    public function store(StoreAnalyticsRequest $request): JsonResponse
     {
         // Identity is derived server-side: client-supplied user_id /
         // ip_address are ignored so callers can't forge them.
@@ -32,7 +34,7 @@ class AnalyticsController extends Controller
         return response()->json(['message' => 'Estatísticas salvas com sucesso.'], 201);
     }
 
-    public function referralAnalytics()
+    public function referralAnalytics(): View
     {
         // Capped: the full table would blow memory on large installs.
         $analyticsData = Analytics::select('referral_source', 'url')

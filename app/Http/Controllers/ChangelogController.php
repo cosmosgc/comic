@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ChangelogReader;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ChangelogController extends Controller
 {
@@ -12,7 +13,7 @@ class ChangelogController extends Controller
         //
     }
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = trim((string) $request->input('q', ''));
         $entries = $this->reader->search($this->reader->all(), $query);
@@ -31,7 +32,7 @@ class ChangelogController extends Controller
         ]);
     }
 
-    public function show(string $entry)
+    public function show(string $entry): View
     {
         $changelog = $this->reader->find($entry);
         abort_if($changelog === null, 404);

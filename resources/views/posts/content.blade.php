@@ -5,7 +5,7 @@
     $authorUrl = $author ? route('profile.public.show.username', ['username' => $author->handleName()]) : null;
     $avatar = $author?->avatar_image_path
         ? asset($author->avatar_image_path)
-        : asset('default-avatar.png');
+        : Vite::asset('resources/images/default-avatar.svg');
     // $post->media may be an array (new rows, via casts) or a JSON string (legacy rows)
     $mediaFiles = is_array($post->media) ? $post->media : (json_decode($post->media, true) ?: []);
     $quoted = $post->referencedPost;
@@ -83,7 +83,7 @@
         @if ($quoted)
             <div class="mt-3 rounded-2xl border border-zinc-800 p-3 transition hover:bg-zinc-900/40">
                 <div class="flex items-center gap-1 text-sm">
-                    <img src="{{ $quotedAuthor?->avatar_image_path ? asset($quotedAuthor->avatar_image_path) : asset('default-avatar.png') }}"
+                    <img src="{{ $quotedAuthor?->avatar_image_path ? asset($quotedAuthor->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}"
                          alt="Avatar de {{ $quotedAuthor?->name ?? 'usuário removido' }}" class="h-5 w-5 rounded-full object-cover">
                     <span class="truncate font-bold text-zinc-200">
                         {{ $quotedAuthor?->name ?? 'Usuário removido' }}

@@ -240,7 +240,7 @@
 @endsection
 
 
-@section('scripts')
+@push('scripts')
 <script type="module">
     // Sortable is bundled by resources/js/app.js (deferred module, runs first).
     const deletePageBaseUrl = "{{ url('page') }}";
@@ -323,4 +323,4 @@ document.querySelectorAll('.set-cover').forEach(button => {
 });
 </script>
 
-@endsection
+@endpush

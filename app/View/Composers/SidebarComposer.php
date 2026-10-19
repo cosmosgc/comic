@@ -6,6 +6,7 @@ use App\Models\Comic;
 use App\Models\Hashtag;
 use App\Models\Tag;
 use App\Models\Widget;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -48,7 +49,7 @@ class SidebarComposer
     /**
      * Sidebar data for one key (see compose()).
      */
-    protected function resolve(string $key)
+    protected function resolve(string $key): Collection
     {
         return match ($key) {
             'widgets' => Widget::all(),
@@ -66,7 +67,7 @@ class SidebarComposer
      * only tags whose total comic likes meet the threshold qualify,
      * ordered by total likes, then shuffled within the top pool.
      */
-    public static function popularTags(int $limit = self::POPULAR_TAGS_LIMIT)
+    public static function popularTags(int $limit = self::POPULAR_TAGS_LIMIT): Collection
     {
         $hasLikes = Schema::hasTable('comic_user_likes');
 
@@ -135,7 +136,7 @@ class SidebarComposer
     /**
      * Newest published comics first.
      */
-    public static function latestUploads(int $limit = self::SIDEBAR_COMICS_LIMIT)
+    public static function latestUploads(int $limit = self::SIDEBAR_COMICS_LIMIT): Collection
     {
         $query = Comic::query()->published()->withCount(self::engagementCounts())->latest();
 
@@ -149,7 +150,7 @@ class SidebarComposer
      * a random pick of 5 keeps the sidebar from going stale. Falls
      * back to latest uploads when nothing qualifies yet.
      */
-    public static function recommended(int $limit = self::SIDEBAR_COMICS_LIMIT)
+    public static function recommended(int $limit = self::SIDEBAR_COMICS_LIMIT): Collection
     {
         $hasLikes = Schema::hasTable('comic_user_likes');
         $counts = self::engagementCounts();

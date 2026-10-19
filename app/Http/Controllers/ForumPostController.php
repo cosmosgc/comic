@@ -13,6 +13,8 @@ use App\Models\ForumThread;
 use App\Support\ActivityLogger;
 use App\Support\Forum;
 use App\Support\ForumNotifier;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,7 +24,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class ForumPostController extends Controller
 {
-    public function store(StoreForumPostRequest $request, ForumThread $thread)
+    public function store(StoreForumPostRequest $request, ForumThread $thread): RedirectResponse
     {
         abort_unless(Forum::enabled(), 404);
 
@@ -78,7 +80,7 @@ class ForumPostController extends Controller
         return redirect()->to($this->threadUrl($thread).'#post-'.$post->id)->with('success', $message);
     }
 
-    public function update(UpdateForumPostRequest $request, ForumPost $post)
+    public function update(UpdateForumPostRequest $request, ForumPost $post): RedirectResponse
     {
         $this->authorize('update', $post);
 
@@ -96,7 +98,7 @@ class ForumPostController extends Controller
         return back()->with('success', 'Post atualizado.');
     }
 
-    public function destroy(Request $request, ForumPost $post)
+    public function destroy(Request $request, ForumPost $post): RedirectResponse
     {
         $this->authorize('delete', $post);
         $thread = $post->thread;
@@ -113,7 +115,7 @@ class ForumPostController extends Controller
         return back()->with('success', 'Post removido.');
     }
 
-    public function react(Request $request, ForumPost $post)
+    public function react(Request $request, ForumPost $post): JsonResponse
     {
         $validated = $request->validate([
             'reaction' => 'nullable|string|in:'.implode(',', array_keys(ForumPostReaction::kinds())),
@@ -156,7 +158,7 @@ class ForumPostController extends Controller
         ]);
     }
 
-    public function report(Request $request, ForumPost $post)
+    public function report(Request $request, ForumPost $post): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         abort_if((int) $post->user_id === (int) $user->id, 403, 'Você não pode denunciar seu próprio post.');
@@ -196,7 +198,7 @@ class ForumPostController extends Controller
             : back()->with('success', 'Denúncia enviada. Obrigado por ajudar.');
     }
 
-    public function approve(Request $request, ForumPost $post)
+    public function approve(Request $request, ForumPost $post): RedirectResponse
     {
         $this->authorize('moderate', $post);
         $thread = $post->thread;

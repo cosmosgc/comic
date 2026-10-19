@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Avatar padrão e imagem de compartilhamento no build",
+    "date": "2026-10-19",
+    "category": "Fixed",
+    "tags": ["avatares", "imagens", "build", "seguranca"],
+    "summary": "Quem ainda não enviou um avatar agora vê um avatar padrão de verdade, e o cartão de compartilhamento do site tem imagem em instalações novas. Os dois arquivos passaram a ser versionados em resources/images e servidos pelo Vite.",
+    "body": "## Avatar padrão\n\nAs views já apontavam para `default-avatar.png`, mas o arquivo nunca esteve no repositório: instalações novas mostravam a imagem quebrada em perfis, posts, fórum e ranking.\n\n- O avatar padrão agora é `resources/images/default-avatar.svg`, versionado e servido por `Vite::asset()`.\n- O leitor de comics usa a mesma URL no avatar de comentários.\n\n## Imagem de compartilhamento\n\n- O `og:image`/`twitter:image` (`icon.jpg`) também não existia no repositório. Agora é `resources/images/icon.png`, gerado no build.\n- Uploads de usuários continuam em `asset('storage/...')`; só as imagens fixas do site saíram de `public/`.\n\n## Segurança\n\n- O nome do arquivo na lista de upload agora passa por `escapeHtml()` antes de entrar no HTML (nomes de arquivo podem conter `<`/`>` em alguns sistemas)."
+}

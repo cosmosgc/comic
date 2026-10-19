@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use App\Models\Report;
 use App\Support\ActivityLogger;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class ReportController extends Controller
 {
-    public function store(Request $request, Post $post)
+    public function store(Request $request, Post $post): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         abort_if((int) $post->author_id === (int) $user->id, 403, 'Você não pode denunciar seu próprio post.');

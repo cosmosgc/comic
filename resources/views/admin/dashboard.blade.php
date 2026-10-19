@@ -49,7 +49,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
     <script type="module">
         // Deferred module: Chart.js comes from resources/js/admin.js.
         const rawData = {
@@ -147,4 +147,4 @@
         document.getElementById('timeScale').addEventListener('change', rebuildChart);
         document.addEventListener('admin-theme-changed', rebuildChart);
     </script>
-@endsection
+@endpush

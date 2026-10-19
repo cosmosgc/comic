@@ -12,6 +12,8 @@ use App\Models\Widget;
 use App\Support\ActivityLogger;
 use App\Support\ImageStore;
 use App\View\Composers\SidebarComposer;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +22,7 @@ use Illuminate\View\View;
 
 class ComicController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         // Counts degrade gracefully on hosts missing the new tables.
         // The collections pivot predates all migrations, always countable.
@@ -84,12 +86,12 @@ class ComicController extends Controller
         return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'filter', 'latestComics', 'recommendedComics', 'layout'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('comics.upload');
     }
 
-    public function show($id)
+    public function show($id): View
     {
         // Legacy entry point kept for old links: the reader is
         // showById()/showBySlug(), which also attach the engagement data
@@ -141,7 +143,7 @@ class ComicController extends Controller
     }
 
     // In your ComicController or equivalent
-    public function showById($id)
+    public function showById($id): View
     {
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
@@ -154,7 +156,7 @@ class ComicController extends Controller
     }
 
     // Method to show a comic by its slug
-    public function showBySlug($slug)
+    public function showBySlug($slug): View
     {
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
@@ -202,16 +204,14 @@ class ComicController extends Controller
      * - /search?search=Batman          → Finds comics with "Batman" in title or author.
      * - /search?tag=Action            → Finds comics with the "Action" tag.
      * - /search?search=Batman&tag=DC  → Finds comics with "Batman" in title/author and tagged "DC".
-     *
-     * @return View
      */
-    public function search(Request $request)
+    public function search(Request $request): View
     {
         // Members see the same catalogue as the home list (early access +
         // exclusives); guests only see released comics.
         $query = Comic::query()->visibleTo($request->user());
 
-        // 🔎 Text search
+        // Text search
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -220,7 +220,7 @@ class ComicController extends Controller
             });
         }
 
-        // 🏷️ Tag filter
+        // Tag filter
         if ($request->filled('tag')) {
             $tagName = $request->input('tag');
             $query->whereHas('tags', function ($q) use ($tagName) {
@@ -271,7 +271,7 @@ class ComicController extends Controller
         ]);
     }
 
-    public function getComic($id)
+    public function getComic($id): JsonResponse
     {
         // Fetch the comic along with its related pages
         $comic = Comic::with('pages')->findOrFail($id);
@@ -282,7 +282,7 @@ class ComicController extends Controller
         return response()->json(new ComicResource($comic));
     }
 
-    public function getAllComics(Request $request)
+    public function getAllComics(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'search' => 'nullable|string|max:255',
@@ -326,7 +326,7 @@ class ComicController extends Controller
         return response()->json(ComicResource::collection($comics));
     }
 
-    public function store(StoreComicRequest $request)
+    public function store(StoreComicRequest $request): JsonResponse
     {
         // A client-supplied slug still goes through Str::slug() and the
         // uniqueness loop — and falls back to the title when it sanitizes
@@ -407,7 +407,7 @@ class ComicController extends Controller
 
     }
 
-    public function edit($id)
+    public function edit($id): View
     {
         $comic = Comic::with(['pages' => function ($query) {
             $query->orderBy('page_number');
@@ -436,7 +436,7 @@ class ComicController extends Controller
         $comic->tags()->sync($tagIds);
     }
 
-    public function update(UpdateComicRequest $request, Comic $comic)
+    public function update(UpdateComicRequest $request, Comic $comic): RedirectResponse
     {
         $validated = $request->validated();
 
@@ -467,7 +467,7 @@ class ComicController extends Controller
         return redirect()->route('comics.edit', $comic->id)->with('success', 'Comic atualizado com sucesso.');
     }
 
-    public function reorderPages(Request $request, Comic $comic)
+    public function reorderPages(Request $request, Comic $comic): JsonResponse
     {
         $this->authorize('update', $comic);
 
@@ -488,7 +488,7 @@ class ComicController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function deletePage($id)
+    public function deletePage($id): JsonResponse
     {
         $page = Page::findOrFail($id);
         abort_unless($page->comic !== null, 404);
@@ -505,7 +505,7 @@ class ComicController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function setCover(Comic $comic, Request $request)
+    public function setCover(Comic $comic, Request $request): JsonResponse
     {
         $this->authorize('update', $comic);
 

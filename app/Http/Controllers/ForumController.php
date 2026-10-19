@@ -12,6 +12,7 @@ use App\Support\ActivityLogger;
 use App\Support\Forum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 /**
  * Public, read-mostly forum surface: index, board, thread, search and
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class ForumController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $this->ensureEnabled();
 
@@ -50,7 +51,7 @@ class ForumController extends Controller
         ]);
     }
 
-    public function category(Request $request, string $categorySlug)
+    public function category(Request $request, string $categorySlug): View
     {
         $this->ensureEnabled();
         $category = $this->resolveCategory($categorySlug);
@@ -99,7 +100,7 @@ class ForumController extends Controller
         ]);
     }
 
-    public function thread(Request $request, string $categorySlug, string $threadSlug)
+    public function thread(Request $request, string $categorySlug, string $threadSlug): View
     {
         $this->ensureEnabled();
         $category = $this->resolveCategory($categorySlug);
@@ -171,7 +172,7 @@ class ForumController extends Controller
         ]);
     }
 
-    public function search(Request $request)
+    public function search(Request $request): View
     {
         $this->ensureEnabled();
 
@@ -209,7 +210,7 @@ class ForumController extends Controller
         ]);
     }
 
-    public function unread(Request $request)
+    public function unread(Request $request): View
     {
         $this->ensureEnabled();
         $user = $request->user();

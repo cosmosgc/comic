@@ -93,7 +93,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 (function () {
     var fields = ['background', 'border', 'text_color'];
@@ -120,4 +120,4 @@
     paint();
 })();
 </script>
-@endsection
+@endpush

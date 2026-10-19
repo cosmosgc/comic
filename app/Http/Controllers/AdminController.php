@@ -28,18 +28,22 @@ use App\Services\MigrationInspector;
 use App\Services\TransferException;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminController extends Controller
 {
     //
 
-    public function showDashboard()
+    public function showDashboard(): View
     {
         $pageViews = Analytics::where('event_type', AnalyticsEventType::PageView->value)->count();
         $logins = Analytics::where('event_type', AnalyticsEventType::Login->value)->count();
@@ -48,7 +52,7 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('pageViews', 'logins', 'analytics'));
     }
 
-    public function dashboard(Request $request)
+    public function dashboard(Request $request): View
     {
         $totalUsers = User::count();
         $totalComics = Comic::count();
@@ -103,7 +107,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function analytics()
+    public function analytics(): View
     {
         // 100 rows per page: the table renders client-side (DataTables),
         // so paginating 1000 events at once was pure render cost.
@@ -117,7 +121,7 @@ class AdminController extends Controller
      * comments, uploads, collections, auth) with a "Ver" link to
      * whatever the user interacted with.
      */
-    public function activities(Request $request)
+    public function activities(Request $request): View
     {
         $validated = $request->validate([
             'action' => 'nullable|string|max:50',
@@ -166,7 +170,7 @@ class AdminController extends Controller
     /**
      * Moderation queue: post reports awaiting review.
      */
-    public function reports(Request $request)
+    public function reports(Request $request): View
     {
         $validated = $request->validate([
             'status' => 'nullable|in:pending,reviewed,dismissed',
@@ -197,7 +201,7 @@ class AdminController extends Controller
      * Review or dismiss a report (owner-or-admin is enforced by the
      * admin middleware on the whole group).
      */
-    public function resolveReport(Request $request, Report $report)
+    public function resolveReport(Request $request, Report $report): RedirectResponse
     {
         $validated = $request->validate([
             'status' => 'required|in:reviewed,dismissed',
@@ -217,7 +221,7 @@ class AdminController extends Controller
      * "fun" stats (popular searches, most active users, peak hours,
      * most-liked comics). Ranged like the analytics dashboard.
      */
-    public function activityReport(Request $request)
+    public function activityReport(Request $request): View
     {
         $validated = $request->validate([
             'start_date' => 'nullable|date',
@@ -340,7 +344,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function comics()
+    public function comics(): View
     {
         // Only the columns the table renders: the admin list would
         // otherwise hydrate every comic with all of its text columns.
@@ -365,7 +369,7 @@ class AdminController extends Controller
      * Guests then get 404 on the reader while the lists keep showing a
      * locked teaser card.
      */
-    public function exclusiveComic(Request $request, Comic $comic)
+    public function exclusiveComic(Request $request, Comic $comic): RedirectResponse
     {
         $request->validate([
             'is_exclusive' => 'nullable|boolean',
@@ -391,7 +395,7 @@ class AdminController extends Controller
      * date keeps it off the public site and flags it as "Em breve"; an empty
      * date publishes it right away.
      */
-    public function scheduleComic(Request $request, Comic $comic)
+    public function scheduleComic(Request $request, Comic $comic): RedirectResponse
     {
         $request->validate([
             'published_at' => 'nullable|date',
@@ -414,7 +418,7 @@ class AdminController extends Controller
      * comments and import tracking go via FK cascades; the cover + page
      * files under storage/comics/{id} are removed from disk.
      */
-    public function destroyComic(Comic $comic)
+    public function destroyComic(Comic $comic): RedirectResponse
     {
         File::deleteDirectory(public_path("storage/comics/{$comic->id}"));
         $title = $comic->title;
@@ -428,7 +432,7 @@ class AdminController extends Controller
      * shell on first run, then the view polls pushTransfer per chunk.
      * Resumes re-push from page one (remote upserts by page number).
      */
-    public function transferComic(Comic $comic, ComicTransferService $sender)
+    public function transferComic(Comic $comic, ComicTransferService $sender): JsonResponse
     {
         $transfer = $comic->transfer;
         if ($transfer !== null && $transfer->isDone()) {
@@ -478,7 +482,7 @@ class AdminController extends Controller
      * Pages already stored remotely are skipped, so retries after an
      * interruption only send what's missing.
      */
-    public function pushTransfer(ComicTransfer $transfer, ComicTransferService $sender)
+    public function pushTransfer(ComicTransfer $transfer, ComicTransferService $sender): JsonResponse
     {
         if ($transfer->isDone()) {
             return response()->json($this->transferPayload($transfer, true, $transfer->remote_view_url));
@@ -562,7 +566,7 @@ class AdminController extends Controller
      * Download a transfer package (.zip with manifest + images) to
      * import on another installation (e.g. local → remote).
      */
-    public function exportComicPackage(Comic $comic, ComicPackageService $packages)
+    public function exportComicPackage(Comic $comic, ComicPackageService $packages): RedirectResponse|BinaryFileResponse
     {
         try {
             $path = $packages->export($comic);
@@ -577,7 +581,7 @@ class AdminController extends Controller
      * Rebuild a comic from an uploaded transfer package (fresh IDs,
      * tags resolved, cover + order preserved).
      */
-    public function importComicPackage(Request $request, ComicPackageService $packages)
+    public function importComicPackage(Request $request, ComicPackageService $packages): RedirectResponse
     {
         $request->validate(['package' => 'required|file|mimes:zip|max:512000']);
 
@@ -591,7 +595,7 @@ class AdminController extends Controller
             ->with('success', "Pacote importado: {$comic->title} ({$comic->pages()->count()} página(s)).");
     }
 
-    public function users()
+    public function users(): View
     {
         // Column list instead of the whole table: the list shows five
         // columns, so hydrating password hashes/bio/link JSON for every
@@ -601,7 +605,7 @@ class AdminController extends Controller
         return view('admin.users', compact('users'));
     }
 
-    public function editUser($id)
+    public function editUser($id): View
     {
         $user = User::findOrFail($id);
 
@@ -609,7 +613,7 @@ class AdminController extends Controller
     }
 
     // Method to update the user details
-    public function updateUser(Request $request, $id)
+    public function updateUser(Request $request, $id): RedirectResponse
     {
         $user = User::findOrFail($id);
         // Validate input
@@ -634,7 +638,7 @@ class AdminController extends Controller
     }
 
     // Method to delete a user
-    public function destroyUser($id)
+    public function destroyUser($id): RedirectResponse
     {
         $user = User::findOrFail($id);
 
@@ -652,7 +656,7 @@ class AdminController extends Controller
      * Show migration status: files on disk vs. tables in the database.
      * Works without console access — the Run button calls migrate via HTTP.
      */
-    public function migrations(MigrationInspector $inspector)
+    public function migrations(MigrationInspector $inspector): View
     {
         $report = $inspector->report();
 
@@ -662,7 +666,7 @@ class AdminController extends Controller
     /**
      * Run pending migrations from the admin panel (POST only).
      */
-    public function runMigrations(Request $request)
+    public function runMigrations(Request $request): RedirectResponse
     {
         $request->validate([
             'action' => 'required|in:migrate',
@@ -695,7 +699,7 @@ class AdminController extends Controller
      * calling a class that no longer exists — the site 500s until the cache is
      * cleared. That normally needs console access, which this panel replaces.
      */
-    public function clearCaches(Request $request)
+    public function clearCaches(Request $request): RedirectResponse
     {
         /** @var list<string> $commands */
         $commands = ['view:clear', 'config:clear', 'route:clear', 'cache:clear', 'event:clear'];
@@ -750,7 +754,7 @@ class AdminController extends Controller
      * Show the FTP deploy panel (push code to the host without console).
      * Deploys are meant to run from a local/staging copy of this panel.
      */
-    public function deploy(FtpDeployer $deployer)
+    public function deploy(FtpDeployer $deployer): View
     {
         // Drop status files older than a day (keeps storage/app/deploy tidy).
         foreach (glob(storage_path('app/deploy/*.json')) ?: [] as $path) {
@@ -806,7 +810,7 @@ class AdminController extends Controller
     /**
      * Test the FTPS connection and verify the remote dir is this project.
      */
-    public function verifyDeploy(FtpDeployer $deployer)
+    public function verifyDeploy(FtpDeployer $deployer): RedirectResponse
     {
         if (! $deployer->isConfigured()) {
             return redirect()->route('admin.deploy')
@@ -835,7 +839,7 @@ class AdminController extends Controller
      * is polled via deployStatus(). The worker re-verifies first and
      * aborts on any mismatch.
      */
-    public function runDeploy(Request $request, FtpDeployer $deployer)
+    public function runDeploy(Request $request, FtpDeployer $deployer): RedirectResponse
     {
         $request->validate([
             'confirm' => 'accepted',
@@ -909,7 +913,7 @@ class AdminController extends Controller
     /**
      * Live progress for a background deploy run (polled by the view).
      */
-    public function deployStatus(string $id)
+    public function deployStatus(string $id): JsonResponse
     {
         // IDs are Str::random(32) (A-Za-z0-9), not hex.
         if (! preg_match('/^[A-Za-z0-9]{32}$/', $id)) {
@@ -934,7 +938,7 @@ class AdminController extends Controller
      * flag and stops gracefully; a dead worker (stale heartbeat) is marked
      * cancelled outright so the lock releases immediately.
      */
-    public function cancelDeploy(string $id)
+    public function cancelDeploy(string $id): RedirectResponse
     {
         if (! preg_match('/^[A-Za-z0-9]{32}$/', $id)) {
             abort(404);
@@ -1032,7 +1036,7 @@ class AdminController extends Controller
     public function changelogs(
         ChangelogReader $reader,
         GithubPullRequests $github
-    ) {
+    ): View {
         $entries = $reader->all();
         $used = $reader->prsUsed();
 
@@ -1070,7 +1074,7 @@ class AdminController extends Controller
         ChangelogReader $reader,
         ChangelogWriter $writer,
         GithubPullRequests $github
-    ) {
+    ): RedirectResponse {
         $request->validate(['number' => 'required|integer|min:1']);
         $number = (int) $request->input('number');
 
@@ -1110,7 +1114,7 @@ class AdminController extends Controller
             ->with('success', "PR #{$number} importado — revise e salve.");
     }
 
-    public function changelogCreate()
+    public function changelogCreate(): View
     {
         return view('admin.changelog-form', [
             'entry' => null,
@@ -1119,7 +1123,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function changelogEdit(string $id, ChangelogReader $reader)
+    public function changelogEdit(string $id, ChangelogReader $reader): View
     {
         $entry = $reader->find($id);
         abort_if($entry === null, 404);
@@ -1134,7 +1138,7 @@ class AdminController extends Controller
     public function changelogStore(
         Request $request,
         ChangelogWriter $writer
-    ) {
+    ): RedirectResponse {
         [$data, $errors] = $writer->validate($request->all(), config('changelog.categories', []));
         if ($errors !== []) {
             return redirect()->route('admin.changelogs.create')
@@ -1153,7 +1157,7 @@ class AdminController extends Controller
         string $id,
         ChangelogReader $reader,
         ChangelogWriter $writer
-    ) {
+    ): RedirectResponse {
         abort_if($reader->find($id) === null, 404);
 
         [$data, $errors] = $writer->validate($request->all(), config('changelog.categories', []));
@@ -1173,7 +1177,7 @@ class AdminController extends Controller
         string $id,
         ChangelogReader $reader,
         ChangelogWriter $writer
-    ) {
+    ): RedirectResponse {
         abort_if($reader->find($id) === null, 404);
         $writer->delete($id);
 
@@ -1181,7 +1185,7 @@ class AdminController extends Controller
             ->with('success', 'Entrada excluída.');
     }
 
-    public function widgets()
+    public function widgets(): View
     {
         $widgets = Widget::orderBy('position_index')->get();
 
@@ -1189,7 +1193,7 @@ class AdminController extends Controller
     }
 
     // Store new widget
-    public function storeWidget(Request $request)
+    public function storeWidget(Request $request): RedirectResponse
     {
         $request->validate([
             'position_index' => 'required|integer',
@@ -1202,7 +1206,7 @@ class AdminController extends Controller
     }
 
     // Show edit form
-    public function editWidget($id)
+    public function editWidget($id): View
     {
         $widget = Widget::findOrFail($id);
 
@@ -1210,7 +1214,7 @@ class AdminController extends Controller
     }
 
     // Update widget
-    public function updateWidget(Request $request, $id)
+    public function updateWidget(Request $request, $id): RedirectResponse
     {
         $widget = Widget::findOrFail($id);
 
@@ -1225,7 +1229,7 @@ class AdminController extends Controller
     }
 
     // Delete widget
-    public function destroyWidget($id)
+    public function destroyWidget($id): RedirectResponse
     {
         Widget::destroy($id);
 
@@ -1236,7 +1240,7 @@ class AdminController extends Controller
      * Tag categories: color-coded groups (artist, character, copyright,
      * species, general, meta, lore) with keyword/namespace mapping.
      */
-    public function tagCategories()
+    public function tagCategories(): View
     {
         $categories = TagCategory::withCount('tags')->orderBy('sort_order')->orderBy('name')->get();
         $uncategorized = Tag::whereNull('category_id')->count();
@@ -1244,12 +1248,12 @@ class AdminController extends Controller
         return view('admin.tag-categories', compact('categories', 'uncategorized'));
     }
 
-    public function tagCategoryCreate()
+    public function tagCategoryCreate(): View
     {
         return view('admin.tag-category-form', ['category' => null]);
     }
 
-    public function tagCategoryStore(Request $request)
+    public function tagCategoryStore(Request $request): RedirectResponse
     {
         $validated = $this->validateTagCategory($request);
 
@@ -1258,14 +1262,14 @@ class AdminController extends Controller
         return redirect()->route('admin.tag-categories')->with('success', 'Categoria criada.');
     }
 
-    public function tagCategoryEdit($id)
+    public function tagCategoryEdit($id): View
     {
         $category = TagCategory::findOrFail($id);
 
         return view('admin.tag-category-form', compact('category'));
     }
 
-    public function tagCategoryUpdate(Request $request, $id)
+    public function tagCategoryUpdate(Request $request, $id): RedirectResponse
     {
         $category = TagCategory::findOrFail($id);
         $validated = $this->validateTagCategory($request, $category->id);
@@ -1275,7 +1279,7 @@ class AdminController extends Controller
         return redirect()->route('admin.tag-categories')->with('success', 'Categoria atualizada.');
     }
 
-    public function tagCategoryDestroy($id)
+    public function tagCategoryDestroy($id): RedirectResponse
     {
         $category = TagCategory::findOrFail($id);
 
@@ -1291,7 +1295,7 @@ class AdminController extends Controller
      * Flip a category's public visibility. Hidden categories keep
      * their tags stored (search + editor unaffected).
      */
-    public function tagCategoryToggle($id)
+    public function tagCategoryToggle($id): RedirectResponse
     {
         $category = TagCategory::findOrFail($id);
         $category->update(['is_visible' => ! $category->is_visible]);
@@ -1308,7 +1312,7 @@ class AdminController extends Controller
      * Forget what namespaced imports taught this category (its learned
      * vocabulary). Curated keywords are untouched.
      */
-    public function tagCategoryClearLearned($id)
+    public function tagCategoryClearLearned($id): RedirectResponse
     {
         $category = TagCategory::findOrFail($id);
         $category->update(['learned_keywords' => []]);
@@ -1325,7 +1329,7 @@ class AdminController extends Controller
      * unknown namespace categories). Picks up edited keywords,
      * namespaces, or colors without touching anything else.
      */
-    public function tagCategoryRecategorize()
+    public function tagCategoryRecategorize(): RedirectResponse
     {
         $names = Tag::orderBy('id')->pluck('name');
         $changed = 0;

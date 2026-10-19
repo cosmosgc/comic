@@ -7,18 +7,23 @@ use App\Models\Collection;
 use App\Models\Post;
 use App\Models\User;
 use App\Support\ImageStore;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Vite;
+use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile.
      */
-    public function show(Request $request)
+    public function show(Request $request): View
     {
         $user = Auth::user(); // Authenticated user
         $user->loadMissing('badges');
@@ -55,7 +60,7 @@ class ProfileController extends Controller
         ));
     }
 
-    public function publicShowById($id)
+    public function publicShowById($id): View|RedirectResponse
     {
         try {
             $user = User::findOrFail($id); // Attempt to fetch user by ID
@@ -67,7 +72,7 @@ class ProfileController extends Controller
         }
     }
 
-    public function publicShowByUsername($username)
+    public function publicShowByUsername($username): View|RedirectResponse
     {
         try {
             // Accept either the stable handle or the legacy display name.
@@ -87,7 +92,7 @@ class ProfileController extends Controller
      * owner made them public; the viewer always sees filled hearts for
      * their own likes.
      */
-    protected function publicProfile(User $user, $comics)
+    protected function publicProfile(User $user, $comics): View
     {
         $user->loadMissing('badges');
         $tab = in_array(request()->input('tab'), ['likes', 'collections', 'followers', 'following'], true)
@@ -181,7 +186,7 @@ class ProfileController extends Controller
      * Null when the likes table doesn't exist yet (host without migration).
      * Counts degrade gracefully on partially-migrated databases.
      */
-    protected function likedPostsFor(User $user)
+    protected function likedPostsFor(User $user): ?LengthAwarePaginator
     {
         if (! Schema::hasTable('post_likes')) {
             return null;
@@ -204,7 +209,7 @@ class ProfileController extends Controller
     /**
      * Show the form for editing the user's profile.
      */
-    public function edit()
+    public function edit(): View
     {
         $user = Auth::user();
         $user->loadMissing('badges');
@@ -219,7 +224,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(UpdateProfileRequest $request)
+    public function update(UpdateProfileRequest $request): RedirectResponse
     {
         $user = Auth::user();
 
@@ -270,7 +275,7 @@ class ProfileController extends Controller
     /**
      * Hover-card data for @mentions and profile links (public JSON).
      */
-    public function card(string $username)
+    public function card(string $username): JsonResponse
     {
         $user = User::where('name', $username)->firstOrFail();
         $user->loadMissing('badges');
@@ -283,7 +288,7 @@ class ProfileController extends Controller
             'name' => $user->name,
             'handle' => $user->handleName(),
             'bio' => $user->bio,
-            'avatar_url' => $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'),
+            'avatar_url' => $user->avatar_image_path ? asset($user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg'),
             'banner_url' => $user->banner_image_path ? asset($user->banner_image_path) : null,
             'profile_url' => route('profile.public.show.username', ['username' => $user->handleName()]),
             'comics_count' => $user->comics()->visibleTo(Auth::user())->count(),

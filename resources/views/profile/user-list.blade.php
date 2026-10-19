@@ -6,7 +6,7 @@
 @else
     <ul class="divide-y divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-800">
         @foreach ($users as $listUser)
-            @php($avatar = $listUser->avatar_image_path ? asset($listUser->avatar_image_path) : asset('default-avatar.png'))
+            @php($avatar = $listUser->avatar_image_path ? asset($listUser->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg'))
             @php($userUrl = route('profile.public.show.username', ['username' => $listUser->handleName()]))
             <li class="flex items-center gap-3 px-4 py-3">
                 <a href="{{ $userUrl }}" data-hovercard="{{ $listUser->name }}">

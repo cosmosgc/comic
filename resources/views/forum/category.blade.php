@@ -108,7 +108,7 @@
         <div class="divide-y divide-zinc-800">
             @forelse ($threads as $thread)
                 <div class="flex items-start gap-3 px-4 py-3 transition hover:bg-zinc-900/40">
-                    <img src="{{ $thread->author?->avatar_image_path ? asset($thread->author->avatar_image_path) : asset('default-avatar.png') }}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">
+                    <img src="{{ $thread->author?->avatar_image_path ? asset($thread->author->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}" alt="" class="h-9 w-9 shrink-0 rounded-full object-cover">
                     <div class="min-w-0 flex-1">
                         <a href="{{ route('forum.thread', ['categorySlug' => $category->slug, 'threadSlug' => $thread->slug]) }}"
                            class="font-semibold hover:underline">
@@ -151,7 +151,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const type = document.getElementById('thread-type');
@@ -163,4 +163,4 @@
         sync();
     });
 </script>
-@endsection
+@endpush

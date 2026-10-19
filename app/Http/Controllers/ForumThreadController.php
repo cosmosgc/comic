@@ -14,6 +14,8 @@ use App\Services\Gamification;
 use App\Support\ActivityLogger;
 use App\Support\Forum;
 use App\Support\ForumNotifier;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +27,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ForumThreadController extends Controller
 {
-    public function store(StoreForumThreadRequest $request, string $categorySlug)
+    public function store(StoreForumThreadRequest $request, string $categorySlug): RedirectResponse
     {
         abort_unless(Forum::enabled(), 404);
 
@@ -129,7 +131,7 @@ class ForumThreadController extends Controller
         ])->with('success', $message);
     }
 
-    public function subscribe(Request $request, ForumThread $thread)
+    public function subscribe(Request $request, ForumThread $thread): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         $existing = $thread->subscriptions()->where('user_id', $user->id)->first();
@@ -149,7 +151,7 @@ class ForumThreadController extends Controller
         return back()->with('success', $subscribed ? 'Inscrito no tópico.' : 'Inscrição removida.');
     }
 
-    public function report(Request $request, ForumThread $thread)
+    public function report(Request $request, ForumThread $thread): JsonResponse|RedirectResponse
     {
         $user = $request->user();
         abort_if((int) $thread->user_id === (int) $user->id, 403, 'Você não pode denunciar seu próprio tópico.');
@@ -192,7 +194,7 @@ class ForumThreadController extends Controller
     /**
      * The OP (or a moderator) marks a reply as the accepted answer.
      */
-    public function solve(Request $request, ForumPost $post)
+    public function solve(Request $request, ForumPost $post): RedirectResponse
     {
         $thread = $post->thread;
         abort_if($thread === null, 404);
@@ -223,7 +225,7 @@ class ForumThreadController extends Controller
         return back()->with('success', 'Resposta marcada como solução.');
     }
 
-    public function pin(Request $request, ForumThread $thread)
+    public function pin(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->authorize('moderate', $thread);
         $thread->update(['is_pinned' => ! $thread->is_pinned]);
@@ -233,7 +235,7 @@ class ForumThreadController extends Controller
         return back()->with('success', $thread->is_pinned ? 'Tópico fixado.' : 'Tópico desafixado.');
     }
 
-    public function lock(Request $request, ForumThread $thread)
+    public function lock(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->authorize('moderate', $thread);
         $thread->update(['is_locked' => ! $thread->is_locked]);
@@ -243,7 +245,7 @@ class ForumThreadController extends Controller
         return back()->with('success', $thread->is_locked ? 'Tópico trancado.' : 'Tópico reaberto.');
     }
 
-    public function approve(Request $request, ForumThread $thread)
+    public function approve(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->authorize('moderate', $thread);
         $thread->update(['is_approved' => ! $thread->is_approved]);
@@ -253,7 +255,7 @@ class ForumThreadController extends Controller
         return back()->with('success', $thread->is_approved ? 'Tópico aprovado.' : 'Aprovação removida.');
     }
 
-    public function move(Request $request, ForumThread $thread)
+    public function move(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->authorize('moderate', $thread);
         $validated = $request->validate([
@@ -280,7 +282,7 @@ class ForumThreadController extends Controller
         return back()->with('success', 'Tópico movido.');
     }
 
-    public function destroy(Request $request, ForumThread $thread)
+    public function destroy(Request $request, ForumThread $thread): RedirectResponse
     {
         $this->authorize('delete', $thread);
         $category = $thread->category;

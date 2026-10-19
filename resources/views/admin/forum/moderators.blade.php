@@ -58,7 +58,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     (function () {
         const input = document.getElementById('user_search');
@@ -91,4 +91,4 @@
         });
     })();
 </script>
-@endsection
+@endpush

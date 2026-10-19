@@ -32,7 +32,7 @@
             @php($rank = $index + 1)
             @php($isMe = $viewer && (int) $viewer->id === (int) $user->id)
             @php($points = $tab === 'weekly' ? (int) ($user->weekly_exp ?? 0) : (int) $user->experience)
-            @php($avatar = $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'))
+            @php($avatar = $user->avatar_image_path ? asset($user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg'))
             <a href="{{ route('profile.public.show.username', ['username' => $user->name]) }}"
                class="flex items-center gap-3 border-b border-zinc-800 px-4 py-3 transition last:border-0 hover:bg-zinc-800/50 {{ $isMe ? 'bg-indigo-600/10' : '' }}">
                 <span class="w-8 shrink-0 text-center text-sm font-bold {{ $rank <= 3 ? 'text-amber-400' : 'text-zinc-500' }}">

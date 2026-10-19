@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 /**
  * Public leaderboard: all-time experience plus a weekly board computed
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class LeaderboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $tab = $request->input('tab') === 'weekly' ? 'weekly' : 'all-time';
 
@@ -37,7 +38,7 @@ class LeaderboardController extends Controller
     /**
      * @return Collection<int, User>
      */
-    protected function allTimeLeaders()
+    protected function allTimeLeaders(): Collection
     {
         return User::query()
             ->with('badges')
@@ -50,7 +51,7 @@ class LeaderboardController extends Controller
     /**
      * @return Collection<int, User>
      */
-    protected function weeklyLeaders()
+    protected function weeklyLeaders(): Collection
     {
         if (! Schema::hasTable('activity_logs')) {
             return User::query()->whereRaw('1 = 0')->get();

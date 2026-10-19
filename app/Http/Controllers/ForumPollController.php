@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ForumPollVote;
 use App\Models\ForumThread;
 use App\Support\Forum;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class ForumPollController extends Controller
 {
-    public function vote(Request $request, ForumThread $thread)
+    public function vote(Request $request, ForumThread $thread): RedirectResponse
     {
         abort_unless(Forum::enabled(), 404);
         abort_unless(Schema::hasTable('forum_polls'), 404);

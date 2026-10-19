@@ -7,6 +7,7 @@ use App\Support\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 /**
  * Private per-user post bookmarks ("salvos").
@@ -43,7 +44,7 @@ class BookmarkController extends Controller
     /**
      * The viewer's private bookmarks page.
      */
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         if (! Schema::hasTable('bookmarks')) {
             return view('bookmarks.index', ['posts' => null, 'likedPostIds' => [], 'bookmarkedPostIds' => []]);

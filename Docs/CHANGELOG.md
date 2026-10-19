@@ -76,3 +76,4 @@ Example:
 - PHP upload limits raised via `public/.user.ini`; per-file/total caps enforced in validation and pre-checked in the browser
 - Selo "editado" nos posts só aparece quando o texto muda de verdade — o contador de visualizações (`increment`) também atualizava `updated_at` e marcava posts como editados sem ninguém ter editado
 - Acessibilidade: foco visível no teclado em links/botões/campos (site e admin), textos alternativos descritivos nas imagens de posts e avatares citados, e `type="button"`/`type="submit"` explícito nos botões
+- Avatar padrão e imagem de compartilhamento agora vêm de `resources/images` pelo Vite (não somem em instalações novas); nomes de arquivo no upload são escapados antes de entrar na lista

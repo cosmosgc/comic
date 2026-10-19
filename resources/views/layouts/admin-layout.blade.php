@@ -30,7 +30,7 @@
     </script>
 
     @vite(['resources/css/admin.css', 'resources/js/admin.js'])
-    @yield('styles')
+    @stack('styles')
 </head>
 <body class="min-h-screen bg-zinc-100 font-sans text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
 
@@ -206,6 +206,6 @@
      resources/js/admin.js (Vite build), which exposes them as globals and
      runs before DOMContentLoaded. Per-page blocks below must therefore wait
      for DOMContentLoaded instead of touching those globals while parsing. -->
-@yield('scripts')
+@stack('scripts')
 </body>
 </html>

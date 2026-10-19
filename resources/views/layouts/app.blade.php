@@ -12,14 +12,14 @@
     {{-- Open Graph --}}
     <meta property="og:title" content="Comics Index">
     <meta property="og:description" content="Top comics da semana">
-    <meta property="og:image" content="{{ asset('icon.jpg') }}">
+    <meta property="og:image" content="{{ Vite::asset('resources/images/icon.png') }}">
     <meta property="og:url" content="{{ url()->current() }}">
 
     {{-- Twitter --}}
     <meta name="twitter:card" content="summary_large_image">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @yield('styles')
+    @stack('styles')
 
 </head>
 
@@ -450,7 +450,7 @@
     {{-- Shared front-end interactions (hover cards, follow toggle, XP toast). --}}
     @include('layouts.partials.interactions')
 
-    @yield('scripts')
+    @stack('scripts')
 
 </body>
 </html>

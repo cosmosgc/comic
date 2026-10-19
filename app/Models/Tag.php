@@ -6,6 +6,7 @@ use App\Services\TagCategorizer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
 class Tag extends Model
@@ -39,7 +40,7 @@ class Tag extends Model
     }
 
     // Define relationship with Comic
-    public function comics()
+    public function comics(): BelongsToMany
     {
         return $this->belongsToMany(Comic::class);
     }

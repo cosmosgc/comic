@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#4f46e5">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @yield('styles')
+    @stack('styles')
 </head>
 
 <body class="min-h-screen bg-zinc-950 text-zinc-100">
@@ -144,7 +144,7 @@
 
 @include('layouts.partials.interactions')
 
-@yield('scripts')
+@stack('scripts')
 
 </body>
 </html>

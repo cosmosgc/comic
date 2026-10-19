@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\Comment;
 use App\Support\ActivityLogger;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
@@ -12,7 +14,7 @@ class CommentController extends Controller
     /**
      * Paginated comments for the reader info modal (newest first).
      */
-    public function index(Request $request, Comic $comic)
+    public function index(Request $request, Comic $comic): JsonResponse|RedirectResponse
     {
         $comments = $comic->comments()
             ->with([
@@ -31,7 +33,7 @@ class CommentController extends Controller
     /**
      * Store a comment on a comic (auth required).
      */
-    public function store(Request $request, Comic $comic)
+    public function store(Request $request, Comic $comic): JsonResponse|RedirectResponse
     {
         $request->validate([
             'body' => 'required|string|max:2000',
@@ -64,7 +66,7 @@ class CommentController extends Controller
     /**
      * Update a comment — author or admin only.
      */
-    public function update(Request $request, Comment $comment)
+    public function update(Request $request, Comment $comment): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $comment);
 
@@ -84,7 +86,7 @@ class CommentController extends Controller
     /**
      * Delete a comment — author or admin only.
      */
-    public function destroy(Request $request, Comment $comment)
+    public function destroy(Request $request, Comment $comment): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $comment);
 

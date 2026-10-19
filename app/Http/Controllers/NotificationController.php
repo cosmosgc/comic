@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -13,7 +15,7 @@ class NotificationController extends Controller
     /**
      * Latest notifications as JSON (the bell refreshes from here).
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $notifications = $request->user()->notifications()
             ->latest()
@@ -35,7 +37,7 @@ class NotificationController extends Controller
     /**
      * Mark one notification read and follow its link.
      */
-    public function read(Request $request, string $id)
+    public function read(Request $request, string $id): RedirectResponse
     {
         $notification = $request->user()->notifications()->where('id', $id)->firstOrFail();
         $notification->markAsRead();
@@ -46,7 +48,7 @@ class NotificationController extends Controller
     /**
      * Mark every notification read.
      */
-    public function readAll(Request $request)
+    public function readAll(Request $request): RedirectResponse
     {
         $request->user()->unreadNotifications->markAsRead();
 

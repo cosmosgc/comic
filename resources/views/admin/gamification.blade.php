@@ -337,7 +337,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script type="module">
     // Deferred module: Chart.js comes from resources/js/admin.js.
     // Alpine evaluates x-data in the global scope, so keep it attached.
@@ -498,4 +498,4 @@
         if (curveSelect) curveSelect.addEventListener('change', refresh);
     })();
 </script>
-@endsection
+@endpush

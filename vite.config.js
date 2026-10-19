@@ -10,6 +10,8 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/css/admin.css',
                 'resources/js/admin.js',
+                'resources/images/default-avatar.svg',
+                'resources/images/icon.png',
             ],
             refresh: true,
         }),

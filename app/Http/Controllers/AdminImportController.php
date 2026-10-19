@@ -11,12 +11,15 @@ use App\Models\Tag;
 use App\Services\EhComicImporter;
 use App\Services\EhImportException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Full-comic import from E-Hentai (admin only).
@@ -39,7 +42,7 @@ class AdminImportController extends Controller
     /**
      * Step 1: URL form + upcoming schedule queue + tuning.
      */
-    public function show()
+    public function show(): View
     {
         return view('admin.import', [
             'stage' => 'form',
@@ -54,7 +57,7 @@ class AdminImportController extends Controller
      * Step 2: fetch gallery metadata + page list, stash in cache,
      * render the editable form.
      */
-    public function preview(Request $request)
+    public function preview(Request $request): RedirectResponse|View
     {
         $request->validate(['url' => 'required|string|max:500']);
 
@@ -86,7 +89,7 @@ class AdminImportController extends Controller
      * Step 3: create the scheduled comic, resolve tags, seed the page
      * queue, hand off to the progress view.
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'preview_token' => 'required|string|size:32',
@@ -125,7 +128,7 @@ class AdminImportController extends Controller
     /**
      * Progress view: polls fetchPages until complete.
      */
-    public function progress(Comic $comic)
+    public function progress(Comic $comic): View
     {
         $comic = $comic->fresh();
         $import = $comic->ehImport;
@@ -172,7 +175,7 @@ class AdminImportController extends Controller
     /**
      * Download one stored page file to the admin's computer.
      */
-    public function downloadPageFile(Comic $comic, int $number)
+    public function downloadPageFile(Comic $comic, int $number): BinaryFileResponse
     {
         $page = $comic->pages()->where('page_number', $number)->first();
         abort_unless($page !== null, 404);
@@ -346,7 +349,7 @@ class AdminImportController extends Controller
     /**
      * Wipe every page and download the whole gallery again in order.
      */
-    public function redownload(Request $request, Comic $comic)
+    public function redownload(Request $request, Comic $comic): RedirectResponse
     {
         $request->validate(['url' => 'required|string|max:500']);
 
@@ -372,7 +375,7 @@ class AdminImportController extends Controller
      * Save the tuning from the import view. Empty fields delete the row
      * (file default returns) and apply immediately to this process too.
      */
-    public function updateSettings(Request $request)
+    public function updateSettings(Request $request): RedirectResponse
     {
         $defs = EhImportSetting::definitions();
         $rules = [];
@@ -400,7 +403,7 @@ class AdminImportController extends Controller
     /**
      * Cancel an import: removes the comic, its pages, files and queue.
      */
-    public function destroy(Comic $comic)
+    public function destroy(Comic $comic): RedirectResponse
     {
         // eh_imports + eh_import_pages go with the comic via cascade.
         $comic->pages()->delete();

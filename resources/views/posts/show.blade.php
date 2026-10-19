@@ -42,7 +42,7 @@
                 <input type="hidden" name="parent_id" id="replyParentId" value="{{ $post->id }}">
 
                 <div class="flex gap-3">
-                    <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : asset('default-avatar.png') }}"
+                    <img src="{{ Auth::user()->avatar_image_path ? asset(Auth::user()->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}"
                          alt="Seu avatar"
                          class="h-10 w-10 shrink-0 rounded-full border border-zinc-800 object-cover">
 

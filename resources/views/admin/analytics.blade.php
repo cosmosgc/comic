@@ -52,7 +52,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
     <script type="module">
         // Deferred module: jQuery/DataTables come from resources/js/admin.js.
         $(document).ready(function() {
@@ -62,4 +62,4 @@
             });
         });
     </script>
-@endsection
+@endpush

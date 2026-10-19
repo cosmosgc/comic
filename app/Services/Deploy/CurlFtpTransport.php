@@ -202,6 +202,9 @@ class CurlFtpTransport implements FtpTransport
     /**
      * @return resource|\CurlHandle
      */
+    /**
+     * @return resource|\CurlHandle
+     */
     protected function sharedHandle()
     {
         if ($this->sharedHandle === null) {

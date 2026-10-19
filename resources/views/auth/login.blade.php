@@ -105,7 +105,7 @@
 @endsection
 
 
-@section('styles')
+@push('styles')
 <style>
     html, body {
         width: 100%;
@@ -123,11 +123,11 @@
 
 
 </style>
-@endsection
+@endpush
 
 
 
-@section('scripts')
+@push('scripts')
 <script>
     // Setup canvas and context
     const canvas = document.getElementById('canvas');
@@ -220,4 +220,4 @@
     createCircles();
     drawWaves();
 </script>
-@endsection
+@endpush

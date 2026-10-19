@@ -7,18 +7,21 @@ use App\Http\Resources\PageResource;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Support\ImageStore;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 class PageController extends Controller
 {
-    public function create($comicId)
+    public function create($comicId): View
     {
         $comic = Comic::findOrFail($comicId);
 
         return view('pages.create', compact('comic'));
     }
 
-    public function store(StorePageRequest $request, $comicId)
+    public function store(StorePageRequest $request, $comicId): RedirectResponse
     {
         $comic = Comic::findOrFail($comicId);
         $this->authorize('update', $comic);
@@ -44,7 +47,7 @@ class PageController extends Controller
         return redirect()->route('comics.showById', $comic->id)->with('success', 'Página enviada com sucesso.');
     }
 
-    public function addPage(StorePageRequest $request, $comicId)
+    public function addPage(StorePageRequest $request, $comicId): RedirectResponse
     {
         $comic = Comic::findOrFail($comicId);
         $this->authorize('update', $comic);
@@ -63,7 +66,7 @@ class PageController extends Controller
         return redirect()->route('comics.edit', $comic->id)->with('success', 'Página enviada com sucesso.');
     }
 
-    public function getPagesByComicId($id)
+    public function getPagesByComicId($id): JsonResponse
     {
         // Pages are the comic's content: a scheduled/unlisted comic must
         // not leak them to anyone who guesses the id.

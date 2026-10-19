@@ -59,7 +59,7 @@
             </label>
             <div class="mb-2 flex items-center gap-3">
                 <img id="avatarPreview"
-                     src="{{ $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png') }}"
+                     src="{{ $user->avatar_image_path ? asset($user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}"
                      alt="Prévia do avatar"
                      class="h-16 w-16 rounded-full border border-zinc-700 object-cover">
                 <p class="text-xs text-zinc-500">Avatar atual — escolher um arquivo mostra a troca na hora.</p>
@@ -274,7 +274,7 @@
     </form>
 </div>
 @endsection
-@section('scripts')
+@push('scripts')
 <script>
 document.getElementById('add-link').addEventListener('click', function () {
     const linksContainer = document.getElementById('links-list');
@@ -321,4 +321,4 @@ function livePreview(inputId, imgId) {
 livePreview('avatar_image', 'avatarPreview');
 livePreview('banner_image', document.getElementById('bannerPreview') ? 'bannerPreview' : 'bannerPreviewNew');
 </script>
-@endsection
+@endpush

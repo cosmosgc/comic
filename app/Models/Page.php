@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Page extends Model
 {
@@ -16,7 +17,7 @@ class Page extends Model
     ];
 
     // Define relationship with Comic
-    public function comic()
+    public function comic(): BelongsTo
     {
         return $this->belongsTo(Comic::class);
     }

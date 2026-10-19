@@ -8,13 +8,16 @@ use App\Models\Post;
 use App\Support\ActivityLogger;
 use App\Support\ImageStore;
 use App\Support\SocialNotifier;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 class PostController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse|View
     {
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
@@ -83,9 +86,9 @@ class PostController extends Controller
         return view('posts.index', compact('posts', 'likedPostIds', 'bookmarkedPostIds', 'tab', 'query'));
     }
 
-    public function store(StorePostRequest $request)
+    public function store(StorePostRequest $request): RedirectResponse
     {
-        // Certifica que pelo menos um dos campos (texto ou mídia) está preenchido
+        // At least one of text, media or a quoted post is required.
         if (! $request->text && ! $request->hasFile('media') && ! $request->referenced_post_id) {
             return redirect()->back()->withErrors(['error' => 'O post precisa ter texto ou mídia.']);
         }
@@ -140,14 +143,14 @@ class PostController extends Controller
         return redirect()->route('posts.index');
     }
 
-    public function edit(Post $post)
+    public function edit(Post $post): View
     {
         $this->authorize('update', $post);
 
         return view('posts.edit', compact('post'));
     }
 
-    public function update(Request $request, Post $post)
+    public function update(Request $request, Post $post): RedirectResponse
     {
         $this->authorize('update', $post);
 
@@ -169,7 +172,7 @@ class PostController extends Controller
      * Delete a post. Replies and quotes cascade at the database level;
      * the media files on disk are removed here.
      */
-    public function destroy(Post $post)
+    public function destroy(Post $post): RedirectResponse
     {
         $this->authorize('delete', $post);
 
@@ -185,7 +188,7 @@ class PostController extends Controller
     /**
      * Single-post thread view: parent chain plus direct replies.
      */
-    public function show(Request $request, Post $post)
+    public function show(Request $request, Post $post): JsonResponse|View
     {
         // Count once per viewer (session), like Comic::$view_count per view.
         $viewed = $request->session()->get('viewed_posts', []);

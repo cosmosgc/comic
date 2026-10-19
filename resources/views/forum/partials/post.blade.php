@@ -1,6 +1,6 @@
 @php
     $author = $post->author;
-    $avatar = $author?->avatar_image_path ? asset($author->avatar_image_path) : asset('default-avatar.png');
+    $avatar = $author?->avatar_image_path ? asset($author->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg');
     $active = $viewerReactions[$post->id] ?? [];
     $isMod = $canModerate ?? false;
     $isOwner = auth()->check() && (int) $post->user_id === (int) auth()->id();

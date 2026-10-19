@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hashtag;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 /**
  * Public hashtag timeline: every post carrying #tag.
  */
 class HashtagController extends Controller
 {
-    public function show(Request $request, string $tag)
+    public function show(Request $request, string $tag): RedirectResponse|View
     {
         $tag = ltrim(mb_strtolower(trim($tag)), '#');
 

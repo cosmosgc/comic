@@ -124,7 +124,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
     <script type="module">
         // Deferred module: Chart.js comes from resources/js/admin.js.
         const reportData = {
@@ -257,4 +257,4 @@
         buildCharts();
         document.addEventListener('admin-theme-changed', rebuildCharts);
     </script>
-@endsection
+@endpush

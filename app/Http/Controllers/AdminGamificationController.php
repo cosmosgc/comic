@@ -10,9 +10,12 @@ use App\Models\Post;
 use App\Models\User;
 use App\Services\Gamification;
 use App\Support\ActivityLogger;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\View\View;
 
 /**
  * Admin → Gamificação: retune exp/curve/badges, hand out XP and
@@ -21,7 +24,7 @@ use Illuminate\Support\Facades\Schema;
  */
 class AdminGamificationController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $actions = ActivityLog::actions();
         $exp = config('gamification.exp', []);
@@ -57,7 +60,7 @@ class AdminGamificationController extends Controller
      * Writes override rows; deleting a row (blank field) would restore
      * the file default — here we always store the submitted values.
      */
-    public function saveSettings(Request $request)
+    public function saveSettings(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'level_base' => 'required|integer|min:1|max:1000000',
@@ -152,7 +155,7 @@ class AdminGamificationController extends Controller
      * Recompute every stored level from experience with the current
      * curve (public ranking and chips read the stored column).
      */
-    public function resyncLevels()
+    public function resyncLevels(): RedirectResponse
     {
         $updated = Gamification::resyncLevels();
 
@@ -163,7 +166,7 @@ class AdminGamificationController extends Controller
     /**
      * Hand out (or take away) experience and grant/revoke a badge.
      */
-    public function grant(Request $request)
+    public function grant(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
@@ -216,7 +219,7 @@ class AdminGamificationController extends Controller
     /**
      * Read-only preview of what a full recalculation would award.
      */
-    public function backfillPreview()
+    public function backfillPreview(): RedirectResponse
     {
         $users = 0;
         $changed = 0;
@@ -242,7 +245,7 @@ class AdminGamificationController extends Controller
     /**
      * Run the backfill for real (retro-fits XP from existing content).
      */
-    public function backfill()
+    public function backfill(): RedirectResponse
     {
         $exit = Artisan::call('gamification:backfill');
         $output = trim(Artisan::output());
@@ -255,7 +258,7 @@ class AdminGamificationController extends Controller
     /**
      * Typeahead source for the "give XP/badge" panel (admin JSON).
      */
-    public function searchUsers(Request $request)
+    public function searchUsers(Request $request): JsonResponse
     {
         $term = trim((string) $request->input('q', ''));
         if (mb_strlen($term) < 2) {

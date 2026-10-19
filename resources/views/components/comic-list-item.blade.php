@@ -37,7 +37,7 @@
     <div class="flex min-w-0 flex-1 flex-col">
         <div class="flex items-center gap-2 text-sm">
             <img
-                src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}"
+                src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}"
                 alt="{{ $comic->user->name }} avatar"
                 class="h-6 w-6 rounded-full border border-zinc-700 object-cover"
             >

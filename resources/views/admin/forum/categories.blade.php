@@ -77,7 +77,7 @@
     @endif
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const list = document.getElementById('section-list');
@@ -117,4 +117,4 @@
         });
     });
 </script>
-@endsection
+@endpush

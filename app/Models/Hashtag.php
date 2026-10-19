@@ -72,7 +72,7 @@ class Hashtag extends Model
      *
      * @return Collection<int, Hashtag>
      */
-    public static function trending(int $days = 7, int $limit = 8)
+    public static function trending(int $days = 7, int $limit = 8): Collection
     {
         if (! Schema::hasTable('hashtags') || ! Schema::hasTable('hashtag_post')) {
             return collect();

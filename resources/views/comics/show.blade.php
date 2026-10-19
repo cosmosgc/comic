@@ -404,7 +404,7 @@
                 <div class="uploader-info">
                     <h5 class="card-title">{{ $comic->user->name }}</h5>
                     <img 
-                        src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : asset('default-avatar.png') }}" 
+                        src="{{ $comic->user->avatar_image_path ? asset($comic->user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg') }}" 
                         alt="{{ $comic->user->name }}'s avatar" 
                         class="avatar-image"
                         style="max-width: 100px; border-radius: 50%;"
@@ -703,6 +703,7 @@ document.addEventListener('keyup', (e) => {
     const URLS = {
         // App base URL (respects subpath installs like /comic/public).
         assetBase: '{{ url('/') }}',
+        defaultAvatar: '{{ Vite::asset('resources/images/default-avatar.svg') }}',
         comments: '{{ route('comments.index', $comic) }}',
         commentBase: '{{ url('/comments') }}',
         like: '{{ route('comics.like', $comic) }}',
@@ -777,9 +778,9 @@ document.addEventListener('keyup', (e) => {
             ? comment.user.badges[0] : null;
         const chips = (lvl && lvl > 1 ? '<span class="lvl-chip">Lv ' + lvl + '</span>' : '') +
             (badge ? ' <span title="' + esc(badge.label || '') + '">' + esc(badge.icon || '') + '</span>' : '');
-        const avatar = URLS.assetBase + '/' + (comment.user && comment.user.avatar_image_path
-            ? comment.user.avatar_image_path.replace(/^\/+/, '')
-            : 'default-avatar.png');
+        const avatar = comment.user && comment.user.avatar_image_path
+            ? URLS.assetBase + '/' + comment.user.avatar_image_path.replace(/^\/+/, '')
+            : URLS.defaultAvatar;
         const div = document.createElement('div');
         div.className = 'comment-item';
         div.dataset.commentId = comment.id;

@@ -8,14 +8,14 @@
 
     <meta property="og:title" content="Comics - Descubra os Melhores da Semana">
     <meta property="og:description" content="Veja os top comics da semana com os mais visualizados e explore a coleção completa.">
-    <meta property="og:image" content="{{ asset('icon.jpg') }}">
+    <meta property="og:image" content="{{ Vite::asset('resources/images/icon.png') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Comics - Descubra os Melhores da Semana">
     <meta name="twitter:description" content="Veja os comics mais populares da semana e explore a vasta coleção.">
-    <meta name="twitter:image" content="{{ asset('icon.jpg') }}">
+    <meta name="twitter:image" content="{{ Vite::asset('resources/images/icon.png') }}">
 @endsection
 
 @section('content')
@@ -112,7 +112,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Grid/list preference: stored in a cookie (like the upload-mode
@@ -128,4 +128,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
-@endsection
+@endpush

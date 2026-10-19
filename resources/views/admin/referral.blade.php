@@ -14,7 +14,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
     <script type="module">
         // Deferred module: d3 comes from resources/js/admin.js.
         const treeData = {!! $treeData !!};
@@ -91,4 +91,4 @@
 
         document.addEventListener('admin-theme-changed', paintTree);
     </script>
-@endsection
+@endpush

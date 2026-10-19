@@ -1,7 +1,7 @@
 {{-- Shared profile header card with banner background.
      Expects $user. Set $showEdit to show the Edit button (own profile). --}}
 @php($bannerUrl = $user->banner_image_path ? asset($user->banner_image_path) : null)
-@php($avatarUrl = $user->avatar_image_path ? asset($user->avatar_image_path) : asset('default-avatar.png'))
+@php($avatarUrl = $user->avatar_image_path ? asset($user->avatar_image_path) : Vite::asset('resources/images/default-avatar.svg'))
 
 <div class="mb-8 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-lg">
     {{-- Banner --}}

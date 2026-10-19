@@ -215,7 +215,7 @@
 @endsection
 
 
-@section('styles')
+@push('styles')
 <style>
     #image-preview img {
         max-width: 150px;
@@ -226,9 +226,9 @@
         height: 25px;
     }
 </style>
-@endsection
+@endpush
 
-@section('scripts')<script>
+@push('scripts')<script>
 document.addEventListener('DOMContentLoaded', function () {
     const uploadFolder = document.getElementById('upload_folder');
     const uploadImages = document.getElementById('upload_images');
@@ -238,6 +238,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const titleInput = document.getElementById('title');
     const warning = document.getElementById('duplicate-warning');
     const apiUrl = `{{ route('api.comics') }}`;
+
+    // File names can contain HTML-significant characters on some filesystems.
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[char]));
 
     let checkTimeout = null;
 
@@ -475,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const row = document.createElement('tr');
             row.className = 'border-t border-zinc-800 text-zinc-300';
             row.innerHTML =
-                `<td class="py-1 pr-2 break-all">${file.name}</td>` +
+                `<td class="py-1 pr-2 break-all">${escapeHtml(file.name)}</td>` +
                 `<td class="py-1 pr-2 whitespace-nowrap">${fmtBytes(file.size)}</td>` +
                 `<td class="py-1 pr-2 whitespace-nowrap" id="dims-${i}">…</td>` +
                 `<td class="py-1 pr-2">${status}</td>` +
@@ -761,4 +766,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 </script>
-@endsection
+@endpush

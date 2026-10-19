@@ -70,7 +70,7 @@
     </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const labels = @json(array_keys($activity));
@@ -89,4 +89,4 @@
         });
     });
 </script>
-@endsection
+@endpush
