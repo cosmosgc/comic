@@ -12,3 +12,17 @@
 ## 4. Remaining polish
 
 _Nothing open._
+
+## User requests
+
+- [ ] Add a public calendar route for upcoming comics, with a list view of scheduled comics.
+  - Use one explicit “far ahead” publication threshold for both the calendar/list and sidebar.
+  - For comics beyond that threshold, blur or obscure the comic card and do not reveal its name.
+  - Show the normal card and name when the comic is within the visible scheduling window.
+- [ ] Make upcoming comics easy to discover by linking to the calendar/list from the default page, Novidades, and other relevant public entry points.
+- [ ] Add an upcoming-comics list to the sidebar, applying the same far-ahead visibility rules as the calendar/list.
+- [ ] On the main page, add blur or obscure comics that guests cannot access and prevent guests who are not logged in from opening them; provide an appropriate prompt or link to log in.
+- [ ] Add admin filters in `admin/comics` for comics that need attention:
+  - Comics without tags.
+  - Potential duplicate comics.
+  - User-reported comics, when report data is available.

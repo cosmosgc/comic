@@ -100,10 +100,15 @@
                 Agendar publicação
             </label>
             <input type="datetime-local"
+                   id="published_at"
                    name="published_at"
                    value="{{ old('published_at', $comic->published_at?->format('Y-m-d\\TH:i')) }}"
                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
                           focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            @include('components.scheduled-date-calendar', [
+                'inputId' => 'published_at',
+                'scheduledDateCounts' => $scheduledDateCounts,
+            ])
             @if ($comic->isScheduled())
                 <p class="mt-1 text-xs text-amber-300">
                     ⏳ Agendado para {{ $comic->published_at->format('d/m/Y H:i') }} — visível só para você e admins até lá.

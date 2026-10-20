@@ -88,7 +88,9 @@ class ComicController extends Controller
 
     public function create(): View
     {
-        return view('comics.upload');
+        return view('comics.upload', [
+            'scheduledDateCounts' => Comic::scheduledDateCounts(),
+        ]);
     }
 
     public function show($id): View
@@ -414,7 +416,10 @@ class ComicController extends Controller
         }])->findOrFail($id);
         $this->authorize('update', $comic);
 
-        return view('comics.edit', compact('comic'));
+        return view('comics.edit', [
+            'comic' => $comic,
+            'scheduledDateCounts' => Comic::scheduledDateCounts($comic->id),
+        ]);
     }
 
     /**

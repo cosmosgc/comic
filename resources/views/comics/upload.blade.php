@@ -79,6 +79,10 @@
                    name="published_at"
                    class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm
                           focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            @include('components.scheduled-date-calendar', [
+                'inputId' => 'published_at',
+                'scheduledDateCounts' => $scheduledDateCounts,
+            ])
             <p class="mt-1 text-xs text-zinc-500">
                 Opcional: escolha data e hora para o comic aparecer no site. Vazio = publica na hora.
             </p>

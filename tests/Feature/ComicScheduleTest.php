@@ -69,6 +69,37 @@ class ComicScheduleTest extends TestCase
         $this->get("/comics/id/{$comic->id}")->assertOk();
     }
 
+    public function test_schedule_calendar_groups_future_comics_by_date_and_excludes_the_edited_comic(): void
+    {
+        $this->travelTo('2026-10-20 10:00:00');
+        $owner = User::factory()->create();
+        Comic::factory()->count(2)->create([
+            'published_at' => '2026-10-21 09:00:00',
+        ]);
+        $comic = Comic::factory()->create([
+            'user_id' => $owner->id,
+            'published_at' => '2026-10-22 09:00:00',
+        ]);
+        Comic::factory()->create([
+            'published_at' => '2026-10-19 09:00:00',
+        ]);
+
+        $this->assertSame([
+            '2026-10-21' => 2,
+            '2026-10-22' => 1,
+        ], Comic::scheduledDateCounts());
+
+        $this->actingAs($owner)
+            ->get(route('comics.create'))
+            ->assertOk()
+            ->assertSee("data-scheduled-dates='{\"2026-10-21\":2,\"2026-10-22\":1}'", false);
+
+        $this->actingAs($owner)
+            ->get(route('comics.edit', $comic))
+            ->assertOk()
+            ->assertSee("data-scheduled-dates='{\"2026-10-21\":2}'", false);
+    }
+
     public function test_owner_can_schedule_on_update_and_clear_to_publish(): void
     {
         $owner = User::factory()->create();

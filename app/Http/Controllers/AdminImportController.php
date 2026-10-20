@@ -51,6 +51,7 @@ class AdminImportController extends Controller
         return view('admin.import', [
             'stage' => 'form',
             'defaultDate' => Comic::defaultScheduledDate()->format('Y-m-d\\TH:i'),
+            'scheduledDateCounts' => Comic::scheduledDateCounts(),
             'queue' => Comic::scheduled()->with('ehImport:id,comic_id,total_pages')->withCount('pages')
                 ->orderBy('published_at')->orderBy('id')->limit(8)->get(['id', 'title', 'published_at']),
             'settingDefs' => EhImportSetting::definitions(),
@@ -87,6 +88,7 @@ class AdminImportController extends Controller
             'preview' => $preview,
             'previewToken' => $token,
             'defaultDate' => Comic::defaultScheduledDate()->format('Y-m-d\\TH:i'),
+            'scheduledDateCounts' => Comic::scheduledDateCounts(),
             'suggestedDescription' => $this->suggestedDescription($preview),
             'duplicateExact' => $duplicates['exact'],
             'duplicateMatches' => $duplicates['matches'],

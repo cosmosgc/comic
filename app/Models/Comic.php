@@ -105,6 +105,25 @@ class Comic extends Model
     }
 
     /**
+     * @return array<string, int>
+     */
+    public static function scheduledDateCounts(?int $excludingComicId = null): array
+    {
+        if (! Schema::hasColumn('comics', 'published_at')) {
+            return [];
+        }
+
+        return self::scheduled()
+            ->when($excludingComicId !== null, fn (Builder $query) => $query->where('id', '!=', $excludingComicId))
+            ->selectRaw('DATE(published_at) as schedule_date, COUNT(*) as comic_count')
+            ->groupByRaw('DATE(published_at)')
+            ->orderByRaw('DATE(published_at)')
+            ->pluck('comic_count', 'schedule_date')
+            ->map(fn ($count): int => (int) $count)
+            ->all();
+    }
+
+    /**
      * What $user may see in lists.
      *
      * Everything released, plus - for signed-in members only - the last

@@ -3,6 +3,7 @@ import DataTable, { util } from 'datatables.net';
 import Chart from 'chart.js/auto';
 import { hierarchy, select, selectAll, tree, zoom } from 'd3';
 import Alpine from 'alpinejs';
+import './scheduled-date-calendar';
 
 // The admin views bootstrap DataTables/Chart.js/d3 inline, so the bundle
 // exposes the same globals the CDN tags used to provide. Everything is

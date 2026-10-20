@@ -233,6 +233,11 @@
                         <label for="import-published" class="admin-label">Publicar em</label>
                         <input type="datetime-local" class="admin-input" name="published_at" id="import-published"
                                value="{{ old('published_at', $defaultDate) }}">
+                        @include('components.scheduled-date-calendar', [
+                            'inputId' => 'import-published',
+                            'scheduledDateCounts' => $scheduledDateCounts,
+                            'admin' => true,
+                        ])
                         <p class="mt-1 text-xs opacity-60">
                             Padrão: um dia após o último agendado da fila (ou amanhã, se a fila estiver vazia).
                             Vazio = publica na hora.
