@@ -126,6 +126,7 @@ Route::get('/comics', [ComicController::class, 'index'])->name('comics.index');
 Route::get('/comics/create', [ComicController::class, 'create'])->middleware('auth')->name('comics.create');
 Route::post('/comics', [ComicController::class, 'store'])->middleware('auth')->name('comics.store');
 Route::get('/comics/search', [ComicController::class, 'search'])->name('comics.search');
+Route::get('/comics/calendario', [ComicController::class, 'calendar'])->name('comics.calendar');
 
 // Route to access a comic by ID
 Route::get('/comics/id/{id}', [ComicController::class, 'showById'])->name('comics.showById');

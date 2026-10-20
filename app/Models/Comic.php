@@ -24,6 +24,9 @@ class Comic extends Model
     /** Days before release that members get to read a scheduled comic. */
     public const EARLY_ACCESS_DAYS = 7;
 
+    /** Days ahead whose scheduled comics may be identified publicly. */
+    public const SCHEDULE_PREVIEW_DAYS = 7;
+
     /** Days after release that a comic still carries the "Novo" ribbon. */
     public const NEW_WINDOW_DAYS = 7;
 
@@ -226,6 +229,16 @@ class Comic extends Model
     {
         return $this->isScheduled()
             && $this->published_at->lessThanOrEqualTo(now()->addDays(self::EARLY_ACCESS_DAYS));
+    }
+
+    /**
+     * Scheduled comics beyond the public preview window stay anonymous in
+     * public schedule surfaces, preventing long-range release spoilers.
+     */
+    public function isFarAhead(): bool
+    {
+        return $this->isScheduled()
+            && $this->published_at->greaterThan(now()->addDays(self::SCHEDULE_PREVIEW_DAYS));
     }
 
     /**

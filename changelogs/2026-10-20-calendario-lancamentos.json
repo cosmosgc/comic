@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Calendário público de lançamentos",
+    "date": "2026-10-20",
+    "category": "Added",
+    "tags": ["comics", "agenda", "lançamentos"],
+    "summary": "A nova página de calendário mostra os próximos lançamentos sem revelar detalhes de comics ainda muito distantes.",
+    "body": "Acesse o Calendário de lançamentos para ver os comics agendados em ordem de data. Os lançamentos dentro da janela de prévia mostram capa e nome normalmente. Para evitar spoilers, os que estão além da janela aparecem com a capa desfocada e sem o título até a data se aproximar."
+}

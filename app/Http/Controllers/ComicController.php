@@ -93,6 +93,21 @@ class ComicController extends Controller
         ]);
     }
 
+    /**
+     * Public release schedule. Far-off items intentionally remain in the
+     * timeline while their identifying details are hidden in the view.
+     */
+    public function calendar(): View
+    {
+        $scheduledComics = Comic::query()
+            ->scheduled()
+            ->orderBy('published_at')
+            ->orderBy('id')
+            ->paginate(20);
+
+        return view('comics.calendar', compact('scheduledComics'));
+    }
+
     public function show($id): View
     {
         // Legacy entry point kept for old links: the reader is

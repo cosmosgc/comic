@@ -36,6 +36,36 @@ class ComicScheduleTest extends TestCase
             ->assertDontSee('Future Hidden XYZ');
     }
 
+    public function test_calendar_lists_scheduled_comics_inside_the_public_preview_window(): void
+    {
+        $this->travelTo('2026-10-20 10:00:00');
+        Comic::factory()->create([
+            'title' => 'Calendário Visível XYZ',
+            'published_at' => '2026-10-23 09:00:00',
+        ]);
+
+        $this->get(route('comics.calendar'))
+            ->assertOk()
+            ->assertSee('Calendário de lançamentos')
+            ->assertSee('Calendário Visível XYZ')
+            ->assertSee('23/10/2026 · 09:00');
+    }
+
+    public function test_calendar_obscures_far_ahead_scheduled_comics(): void
+    {
+        $this->travelTo('2026-10-20 10:00:00');
+        Comic::factory()->create([
+            'title' => 'Spoiler Distante XYZ',
+            'published_at' => now()->addDays(Comic::SCHEDULE_PREVIEW_DAYS + 1),
+        ]);
+
+        $this->get(route('comics.calendar'))
+            ->assertOk()
+            ->assertSee('Comic em breve')
+            ->assertSee('blur-sm', false)
+            ->assertDontSee('Spoiler Distante XYZ');
+    }
+
     public function test_guest_gets_404_on_scheduled_reader(): void
     {
         $comic = Comic::factory()->create(['published_at' => now()->addDay()]);

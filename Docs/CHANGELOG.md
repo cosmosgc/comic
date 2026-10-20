@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- **Calendário de lançamentos**: nova página pública para acompanhar os próximos comics por data; títulos e capas de lançamentos distantes ficam ocultos para evitar spoilers
 - **Importação — aviso de duplicatas**: ao buscar uma galeria, a pré-visualização procura o mesmo gid e títulos parecidos no banco; a galeria já importada é bloqueada e os títulos prováveis aparecem com percentual de semelhança e link para conferir antes de publicar
 - **Login social e contatos**: entrar/cadastrar com Google, Discord, GitHub e X/Twitter (OAuth 2.0), conectar/desconectar provedores em **Editar perfil → Contas conectadas**, várias formas de contato salvas (WhatsApp, Telegram, Discord, e-mail e redes) com opção de ocultar do perfil público, e seleção de múltiplos contatos no passo **6 · Contato** do anúncio do Mercado
 - **Mercado**: área de classificados separada do site, com comics à venda, itens físicos/digitais, serviços, fotos, tags, favoritos, chat de contato, denúncias e painel de anúncios — preço apenas de referência, sem pagamento ou intermediação. Moderação completa em **Admin → Mercado** (categorias, aprovação, destaques, denúncias e configurações)
