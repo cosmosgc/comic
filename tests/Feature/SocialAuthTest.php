@@ -45,6 +45,9 @@ class SocialAuthTest extends TestCase
         $this->assertSame($pending['state'], $query['state']);
         $this->assertNotEmpty($query['code_challenge']);
         $this->assertSame('S256', $query['code_challenge_method']);
+        $this->assertStringNotContainsString('openid', $query['scope']);
+        $this->assertStringContainsString('userinfo.email', $query['scope']);
+        $this->assertStringContainsString('userinfo.profile', $query['scope']);
     }
 
     public function test_google_callback_creates_a_verified_account_and_logs_in(): void
