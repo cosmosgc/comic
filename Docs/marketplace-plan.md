@@ -1,7 +1,10 @@
 # Marketplace — Implementation Plan
 
-> Status: **planning** (not started). Tables are prefixed `marketplace_` so
-> they sort together and are easy to spot/manage by hand.
+> Status: **phase 1 shipped** — public marketplace, listing CRUD, images,
+> tags, watches, contact chat, reports and the Admin → Mercado panel are in.
+> Deferred: scheduled expiry/bump jobs, seller-profile tab and paid boosts
+> (no payments exist by design). Tables are prefixed `marketplace_` so they
+> sort together and are easy to spot/manage by hand.
 > Shipped work moves to [CHANGELOG.md](CHANGELOG.md).
 
 ## 1. Goals
