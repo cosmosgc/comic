@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Comic;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -51,6 +52,52 @@ class ComicDuplicateFinder
             'exact' => $exact,
             'matches' => $this->titleMatches($title, $exact?->id),
         ];
+    }
+
+    /**
+     * Find every comic that has at least one likely title duplicate.
+     *
+     * @param  Collection<int, Comic>  $comics
+     * @return array<int, int>
+     */
+    public function potentialDuplicateIds(Collection $comics): array
+    {
+        $titles = [];
+        $comicIdsByKey = [];
+
+        foreach ($comics as $comic) {
+            $titles[$comic->id] = $comic->title;
+
+            foreach ($this->candidateKeys($comic->title) as $key) {
+                $comicIdsByKey[$key][] = $comic->id;
+            }
+        }
+
+        $duplicateIds = [];
+
+        foreach ($titles as $comicId => $title) {
+            $candidateIds = [];
+
+            foreach ($this->candidateKeys($title) as $key) {
+                foreach ($comicIdsByKey[$key] ?? [] as $candidateId) {
+                    if ($candidateId > $comicId) {
+                        $candidateIds[$candidateId] = true;
+                    }
+                }
+            }
+
+            foreach (array_keys($candidateIds) as $candidateId) {
+                if ($this->score($title, $titles[$candidateId]) >= self::PROBABLE_SCORE) {
+                    $duplicateIds[$comicId] = true;
+                    $duplicateIds[$candidateId] = true;
+                }
+            }
+        }
+
+        $ids = array_map('intval', array_keys($duplicateIds));
+        sort($ids);
+
+        return $ids;
     }
 
     /**
@@ -235,6 +282,24 @@ class ComicDuplicateFinder
         usort($tokens, fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
 
         return $tokens;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function candidateKeys(string $title): array
+    {
+        $keys = [];
+
+        foreach ($this->variants($title) as $variant) {
+            $keys[] = 'title:'.$variant;
+
+            foreach ($this->tokens($variant) as $token) {
+                $keys[] = 'token:'.$token;
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     protected function label(float $score): string

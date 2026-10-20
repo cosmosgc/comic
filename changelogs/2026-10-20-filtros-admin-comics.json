@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Filtros de atenção no admin de comics",
+    "date": "2026-10-20",
+    "category": "Added",
+    "tags": ["admin", "comics", "moderacao"],
+    "summary": "O admin de comics agora pode filtrar comics sem tags e possíveis duplicatas por título. Denúncias de comics não estão disponíveis porque as denúncias existentes são de posts.",
+    "body": "Em **Admin → Comics**, use os filtros para localizar comics sem tags ou títulos que parecem duplicados. A comparação reaproveita o detector de títulos do importador. A fila de denúncias não se aplica a comics: o sistema atual registra denúncias de posts."
+}

@@ -39,9 +39,46 @@
         </div>
     </div>
 
+    <div class="admin-card mb-6">
+        <div class="admin-card-header">
+            <span>Filtrar comics que precisam de atenção</span>
+        </div>
+        <div class="admin-card-body">
+            <nav class="flex flex-wrap gap-2" aria-label="Filtros de comics">
+                <a href="{{ route('admin.comics') }}"
+                   class="admin-btn admin-btn-sm {{ $attentionFilter === null ? 'admin-btn-success' : '' }}"
+                   @if ($attentionFilter === null) aria-current="page" @endif>
+                    Todos
+                </a>
+                <a href="{{ route('admin.comics', ['attention' => 'untagged']) }}"
+                   class="admin-btn admin-btn-sm {{ $attentionFilter === 'untagged' ? 'admin-btn-success' : '' }}"
+                   @if ($attentionFilter === 'untagged') aria-current="page" @endif>
+                    Sem tags
+                </a>
+                <a href="{{ route('admin.comics', ['attention' => 'duplicates']) }}"
+                   class="admin-btn admin-btn-sm {{ $attentionFilter === 'duplicates' ? 'admin-btn-success' : '' }}"
+                   @if ($attentionFilter === 'duplicates') aria-current="page" @endif>
+                    Possíveis duplicatas
+                </a>
+            </nav>
+            <p class="mt-3 text-xs opacity-70">
+                Denúncias de comics não estão disponíveis: as denúncias atuais se referem a posts.
+            </p>
+        </div>
+    </div>
+
     <div class="admin-card">
         <div class="admin-card-header">
-            <span>Todos os comics</span>
+            <span>
+                @if ($attentionFilter === 'untagged')
+                    Comics sem tags
+                @elseif ($attentionFilter === 'duplicates')
+                    Possíveis duplicatas
+                @else
+                    Todos os comics
+                @endif
+                <span class="ml-1 text-xs font-normal opacity-60">({{ $comics->count() }})</span>
+            </span>
         </div>
         <div class="admin-table-wrap">
             <table id="comicsTable" class="admin-table admin-table-compact table-fixed">

@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- **Admin de comics**: filtros para encontrar comics sem tags e possíveis duplicatas por título; denúncias não aparecem porque o sistema atual só registra denúncias de posts
 - **Calendário de lançamentos**: nova página pública para acompanhar os próximos comics por data; títulos e capas de lançamentos distantes ficam ocultos para evitar spoilers
 - **Importação — aviso de duplicatas**: ao buscar uma galeria, a pré-visualização procura o mesmo gid e títulos parecidos no banco; a galeria já importada é bloqueada e os títulos prováveis aparecem com percentual de semelhança e link para conferir antes de publicar
 - **Login social e contatos**: entrar/cadastrar com Google, Discord, GitHub e X/Twitter (OAuth 2.0), conectar/desconectar provedores em **Editar perfil → Contas conectadas**, várias formas de contato salvas (WhatsApp, Telegram, Discord, e-mail e redes) com opção de ocultar do perfil público, e seleção de múltiplos contatos no passo **6 · Contato** do anúncio do Mercado

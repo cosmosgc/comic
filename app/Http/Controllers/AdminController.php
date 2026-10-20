@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\Widget;
 use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
+use App\Services\ComicDuplicateFinder;
 use App\Services\ComicPackageException;
 use App\Services\ComicPackageService;
 use App\Services\ComicTransferService;
@@ -344,8 +345,13 @@ class AdminController extends Controller
         ]);
     }
 
-    public function comics(): View
+    public function comics(Request $request, ComicDuplicateFinder $duplicates): View
     {
+        $validated = $request->validate([
+            'attention' => ['nullable', 'in:untagged,duplicates'],
+        ]);
+        $attentionFilter = $validated['attention'] ?? null;
+
         // Only the columns the table renders: the admin list would
         // otherwise hydrate every comic with all of its text columns.
         $columns = ['id', 'title', 'author', 'slug', 'created_at', 'published_at', 'view_count', 'image_path'];
@@ -354,11 +360,21 @@ class AdminController extends Controller
             $columns[] = 'is_exclusive';
         }
 
-        $comics = Comic::with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
+        $query = Comic::query();
+
+        if ($attentionFilter === 'untagged') {
+            $query->whereDoesntHave('tags');
+        } elseif ($attentionFilter === 'duplicates') {
+            $duplicateIds = $duplicates->potentialDuplicateIds(Comic::query()->get(['id', 'title']));
+            $query->whereIn('comics.id', $duplicateIds);
+        }
+
+        $comics = $query->with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
             ->get($columns);
 
         return view('admin.comics', [
             'comics' => $comics,
+            'attentionFilter' => $attentionFilter,
             'transferConfigured' => trim((string) config('transfer.remote_url')) !== ''
                 && trim((string) config('transfer.remote_token')) !== '',
         ]);
