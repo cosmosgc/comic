@@ -337,6 +337,7 @@ Route::prefix('admin/marketplace')->name('admin.marketplace.')->middleware(['aut
     Route::post('/moderation/{id}/resolve', [AdminMarketplaceController::class, 'resolveReport'])->name('moderation.resolve');
     Route::get('/settings', [AdminMarketplaceController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminMarketplaceController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/expire', [AdminMarketplaceController::class, 'expireNow'])->name('expire');
 });
 
 // Admin → Fórum.

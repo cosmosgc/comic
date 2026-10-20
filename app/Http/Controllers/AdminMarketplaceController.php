@@ -10,6 +10,7 @@ use App\Notifications\MarketplaceNotification;
 use App\Support\Marketplace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -350,6 +351,17 @@ class AdminMarketplaceController extends Controller
         Marketplace::applySettings();
 
         return redirect()->route('admin.marketplace.settings')->with('success', 'Configurações do Mercado salvas.');
+    }
+
+    /**
+     * Run the expiry sweep on demand, for hosts where the scheduler is
+     * not wired up. Same command the daily schedule calls.
+     */
+    public function expireNow(): RedirectResponse
+    {
+        Artisan::call('marketplace:expire');
+
+        return back()->with('success', trim(Artisan::output()));
     }
 
     /**

@@ -172,6 +172,21 @@ class AdminMarketplaceTest extends TestCase
         $this->assertDatabaseMissing('marketplace_categories', ['id' => $category->id]);
     }
 
+    public function test_admin_can_run_the_expiry_sweep_on_demand(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $listing = MarketplaceListing::factory()->create([
+            'status' => MarketplaceListing::STATUS_ACTIVE,
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($admin)->post('/admin/marketplace/expire')
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame(MarketplaceListing::STATUS_EXPIRED, $listing->fresh()->status);
+    }
+
     public function test_admin_can_update_marketplace_settings(): void
     {
         config(['marketplace.enabled' => true]);

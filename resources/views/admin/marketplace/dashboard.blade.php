@@ -111,5 +111,9 @@
         <a href="{{ route('admin.marketplace.listings') }}" class="admin-btn admin-btn-secondary">Anúncios</a>
         <a href="{{ route('admin.marketplace.moderation') }}" class="admin-btn admin-btn-secondary">Moderação</a>
         <a href="{{ route('admin.marketplace.settings') }}" class="admin-btn admin-btn-secondary">Configurações</a>
+        <form method="POST" action="{{ route('admin.marketplace.expire') }}">
+            @csrf
+            <button type="submit" class="admin-btn admin-btn-secondary">Rodar expiração agora</button>
+        </form>
     </div>
 @endsection
