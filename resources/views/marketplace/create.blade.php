@@ -11,8 +11,8 @@
     </nav>
 
     <header class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight">Criar anúncio</h1>
-        <p class="text-sm text-zinc-400">
+        <h1 class="text-2xl font-semibold tracking-tight">Criar anúncio</h1>
+        <p class="mt-1 text-sm text-zinc-500">
             Leva poucos minutos. Você pode salvar como rascunho e publicar depois.
         </p>
     </header>

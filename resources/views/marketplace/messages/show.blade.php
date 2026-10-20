@@ -13,9 +13,9 @@
         <span class="truncate text-zinc-300">{{ $conversation->listing?->title }}</span>
     </nav>
 
-    <header class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+    <header class="mk-panel mb-4 flex flex-wrap items-center justify-between gap-3 p-3">
         <div class="flex min-w-0 items-center gap-3">
-            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
+            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950">
                 @if ($conversation->listing?->coverUrl())
                     <img src="{{ $conversation->listing->coverUrl() }}" alt="" class="h-full w-full object-cover">
                 @else
@@ -33,11 +33,11 @@
         <a href="{{ route('marketplace.messages') }}" class="mk-btn-ghost">← Inbox</a>
     </header>
 
-    <div class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+    <div class="space-y-3 rounded-lg border border-zinc-800 bg-zinc-950 p-4">
         @forelse ($conversation->messages as $message)
             @php($mine = (int) $message->sender_id === (int) $me->id)
             <div class="flex {{ $mine ? 'justify-end' : 'justify-start' }}">
-                <div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm {{ $mine ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800 text-zinc-100' }}">
+                <div class="max-w-[80%] rounded-lg px-3 py-2 text-sm {{ $mine ? 'bg-amber-400 text-zinc-950' : 'border border-zinc-800 bg-zinc-900 text-zinc-100' }}">
                     @unless ($mine)
                         <p class="text-[11px] font-bold text-amber-300">{{ $message->sender?->name }}</p>
                     @endunless
@@ -53,7 +53,7 @@
     </div>
 
     @if ($conversation->status === 'blocked')
-        <p class="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+        <p class="mt-3 rounded-md border border-rose-900 bg-rose-950 px-3 py-2 text-sm text-rose-200">
             Esta conversa está bloqueada.
         </p>
     @else

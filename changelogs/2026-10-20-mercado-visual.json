@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Mercado: visual mais sóbrio e moderno",
+    "date": "2026-10-20",
+    "category": "Changed",
+    "tags": ["mercado", "visual", "interface"],
+    "summary": "O Mercado ganhou um visual mais contido: superfícies sólidas, bordas finas, cantos menores e o âmbar usado só como acento. Gradientes, translucidez e pills saíram; o layout e as funções continuam os mesmos.",
+    "body": "## Um Mercado menos “gerado por IA”\n\nA área do Mercado foi repintada para parecer mais um classificado editorial e menos um painel de vidro colorido:\n\n- **Superfícies sólidas:** cards, filtros, anúncio e formulários usam fundo opaco com borda de 1px, sem `gradient`, `backdrop-blur` ou painéis translúcidos.\n- **Cantos menores:** cards e painéis em `rounded-lg`, botões/inputs/chips em `rounded-md`; as pills deram lugar a etiquetas compactas e abas com sublinhado.\n- **Âmbar como acento:** o destaque fica para preço, CTA principal e detalhes de segurança; títulos e números usam branco/cinza para uma leitura mais calma.\n- **Tipografia mais contida:** títulos em semibold em vez de extrabold, labels menores e mais espaço entre título, descrição e metadados.\n- **Cards mais informativos:** a capa continua protagonista, mas o tipo de oferta virou etiqueta discreta, o preço ganhou hierarquia e a linha de categoria/favoritos foi separada por uma borda fina.\n- **Navbar e banner:** navbar opaca, item ativo sólido e banner do Mercado sem degradê, com um ponto âmbar como marcador.\n- **Formulários:** seções numeradas com o mesmo painel sólido, inputs escuros, foco âmbar discreto e contatos salvos em cartões de borda fina.\n\nNada mudou no fluxo: criar/editar anúncio, filtros, favoritos, mensagens, contatos e moderação continuam iguais."
+}

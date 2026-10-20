@@ -11,7 +11,7 @@
 @endphp
 
 @if ($errors->any())
-    <div class="mb-5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-200">
+    <div class="mb-5 rounded-md border border-rose-900 bg-rose-950 p-4 text-sm text-rose-200">
         <p class="font-semibold">Confira os campos destacados:</p>
         <ul class="mt-1 list-inside list-disc space-y-0.5">
             @foreach ($errors->all() as $error)
@@ -29,9 +29,9 @@
         @method('PUT')
     @endif
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">1 · O que você está anunciando?</h2>
-        <p class="text-sm text-zinc-400">Título, descrição e categoria ajudam as pessoas a encontrar seu anúncio.</p>
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">1 · O que você está anunciando?</h2>
+        <p class="mt-1 text-sm text-zinc-500">Título, descrição e categoria ajudam as pessoas a encontrar seu anúncio.</p>
 
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
@@ -110,9 +110,9 @@
         </div>
     </section>
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">2 · Preço de referência</h2>
-        <p class="text-sm text-zinc-400">O site não processa pagamentos. Este valor é só um combinado inicial entre as pessoas.</p>
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">2 · Preço de referência</h2>
+        <p class="mt-1 text-sm text-zinc-500">O site não processa pagamentos. Este valor é só um combinado inicial entre as pessoas.</p>
 
         <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
@@ -130,16 +130,16 @@
         </div>
     </section>
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">3 · Fotos</h2>
-        <p class="text-sm text-zinc-400">A primeira foto é a capa do anúncio. Máximo de {{ $maxImages }} imagens.</p>
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">3 · Fotos</h2>
+        <p class="mt-1 text-sm text-zinc-500">A primeira foto é a capa do anúncio. Máximo de {{ $maxImages }} imagens.</p>
 
         @if ($editing && $listing->images->isNotEmpty())
             <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 @foreach ($listing->images as $image)
-                    <label class="group relative overflow-hidden rounded-lg border border-zinc-700">
+                    <label class="group relative overflow-hidden rounded-md border border-zinc-800">
                         <img src="{{ $image->url() }}" alt="" class="aspect-square w-full object-cover">
-                        <span class="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-zinc-950/80 px-2 py-1 text-xs">
+                        <span class="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-zinc-950 px-2 py-1 text-xs">
                             <input type="checkbox" name="remove_images[]" value="{{ $image->id }}"
                                    class="h-3.5 w-3.5 rounded border-zinc-600 bg-zinc-900 text-rose-500">
                             Remover
@@ -152,7 +152,7 @@
         <div class="mt-4">
             <label for="listing-images" class="mk-label">Adicionar imagens</label>
             <input id="listing-images" name="images[]" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple
-                   class="block w-full cursor-pointer rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-400 file:mr-3 file:rounded-md file:border-0 file:bg-amber-500 file:px-3 file:py-1 file:text-xs file:font-bold file:text-zinc-950">
+                   class="block w-full cursor-pointer rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-500 file:mr-3 file:rounded file:border-0 file:bg-amber-400 file:px-3 file:py-1 file:text-xs file:font-bold file:text-zinc-950">
             @error('images')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
             @error('images.*')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
         </div>
@@ -160,15 +160,15 @@
         <div id="image-preview" class="mt-3 grid grid-cols-4 gap-2"></div>
     </section>
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">4 · Comics do site (opcional)</h2>
-        <p class="text-sm text-zinc-400">
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">4 · Comics do site (opcional)</h2>
+        <p class="mt-1 text-sm text-zinc-500">
             Vincule comics que você publicou aqui — eles aparecem com capa e link no anúncio.
             Para o tipo “Comic do site”, escolha ao menos um.
         </p>
 
         @if ($comics->isEmpty())
-            <p class="mt-3 rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-500">
+            <p class="mt-3 rounded-md border border-dashed border-zinc-700 p-4 text-sm text-zinc-500">
                 Você ainda não publicou comics. <a href="{{ route('comics.create') }}" class="text-amber-300 hover:underline">Publicar um comic</a>
             </p>
         @else
@@ -191,8 +191,8 @@
         @error('comics.*')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
     </section>
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">5 · Local e entrega</h2>
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">5 · Local e entrega</h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-3">
             <div>
                 <label for="listing-city" class="mk-label">Cidade</label>
@@ -222,9 +222,9 @@
         <p class="mt-2 text-xs text-zinc-500">Nunca informe endereço completo. Cidade/região bastam para combinar.</p>
     </section>
 
-    <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <h2 class="text-lg font-extrabold">6 · Contato</h2>
-        <p class="text-sm text-zinc-400">
+    <section class="mk-panel p-5">
+        <h2 class="text-base font-semibold tracking-tight">6 · Contato</h2>
+        <p class="mt-1 text-sm text-zinc-500">
             Escolha como as pessoas podem falar com você. Você pode mostrar várias formas salvas no perfil.
         </p>
 
@@ -257,7 +257,7 @@
             </div>
 
             @if ($contactMethods->isEmpty())
-                <p class="mt-2 rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-500">
+                <p class="mt-2 rounded-md border border-dashed border-zinc-700 p-4 text-sm text-zinc-500">
                     Você ainda não salvou nenhuma forma de contato.
                     <a href="{{ route('profile.edit').'#contatos' }}" class="text-amber-300 hover:underline">Adicionar no perfil</a>
                     para usar WhatsApp, Telegram, Discord e mais.
@@ -266,7 +266,7 @@
                 <div class="mt-2 space-y-2">
                     @foreach ($contactMethods as $method)
                         @php($methodId = (int) $method->id)
-                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3 transition hover:border-zinc-700">
+                        <label class="flex cursor-pointer items-start gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-3 transition-colors hover:border-zinc-600">
                             <input type="checkbox"
                                    name="contact_methods[]"
                                    value="{{ $methodId }}"

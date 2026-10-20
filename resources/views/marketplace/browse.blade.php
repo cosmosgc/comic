@@ -5,10 +5,10 @@
 @section('content')
 <div class="mx-auto w-full max-w-6xl px-4 py-8">
 
-    <header class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <header class="mb-6 flex flex-col gap-2 border-b border-zinc-800 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <h1 class="text-2xl font-extrabold tracking-tight">{{ $heading ?? 'Explorar o mercado' }}</h1>
-            <p class="text-sm text-zinc-400">
+            <h1 class="text-2xl font-semibold tracking-tight">{{ $heading ?? 'Explorar o mercado' }}</h1>
+            <p class="mt-1 text-sm text-zinc-500">
                 {{ $listings->total() }} anúncio(s)
                 @if ($searchQuery !== '')
                     para “{{ $searchQuery }}”
@@ -25,7 +25,7 @@
 
     <div class="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <aside class="lg:sticky lg:top-24 lg:self-start">
-            <form method="GET" action="{{ route('marketplace.browse') }}" class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+            <form method="GET" action="{{ route('marketplace.browse') }}" class="mk-panel space-y-4 p-4">
                 <div>
                     <label for="filter-q" class="mk-label">Buscar</label>
                     <input id="filter-q" name="q" type="search" value="{{ $filters['q'] ?? '' }}" class="mk-input" placeholder="Título, tag, vendedor…">
@@ -116,9 +116,9 @@
 
         <section>
             @if ($listings->isEmpty())
-                <div class="rounded-xl border border-dashed border-zinc-800 p-10 text-center">
-                    <p class="text-lg font-semibold">Nada encontrado com esses filtros.</p>
-                    <p class="mt-1 text-sm text-zinc-400">Tente remover algum filtro ou buscar por outro termo.</p>
+                <div class="rounded-lg border border-dashed border-zinc-800 p-10 text-center">
+                    <p class="text-base font-semibold">Nada encontrado com esses filtros.</p>
+                    <p class="mt-1 text-sm text-zinc-500">Tente remover algum filtro ou buscar por outro termo.</p>
                     <a href="{{ route('marketplace.browse') }}" class="mk-btn-outline mt-4">Ver todos os anúncios</a>
                 </div>
             @else

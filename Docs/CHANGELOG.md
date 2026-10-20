@@ -70,6 +70,7 @@ Example:
 - Novas migrations: `edited_at` em `posts`, `mutes`, `forum_polls` + `forum_poll_options` + `forum_poll_votes` e `forum_digest` em `users`
 
 ### Changed
+- **Mercado — visual**: superfícies sólidas, bordas finas, cantos menores, tipografia mais contida e âmbar só como acento; saíram gradientes, translucidez e pills, mantendo o layout e os fluxos de anúncio, filtros, favoritos, mensagens e moderação
 - Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
 - Navbar e painéis laterais reorganizados: menu completo só a partir de 1024px (abaixo disso vira o botão de hambúrguer, que antes aparecia só até 768px), busca adaptável e painéis laterais **encostados nas bordas da tela** — o layout virou full-width (o limite de 1280px deixava ~120px de margem em cada lado em telas largas), com os painéis fixos ao rolar e rolagem própria
 - Descrição de comic importado: em vez do carimbo de origem, fica só o **link da galeria com o nome de quem publicou**; qualquer URL solta numa descrição agora também vira link clicável

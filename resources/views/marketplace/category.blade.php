@@ -13,18 +13,18 @@
         <span class="text-zinc-300">{{ $category->name }}</span>
     </nav>
 
-    <header class="mb-6 rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6">
+    <header class="mk-panel mb-6 p-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-4">
-                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-3xl" aria-hidden="true">
+                <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-3xl" aria-hidden="true">
                     {{ $category->icon ?: '🏷️' }}
                 </span>
                 <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight">{{ $category->name }}</h1>
+                    <h1 class="text-2xl font-semibold tracking-tight">{{ $category->name }}</h1>
                     @if ($category->description)
-                        <p class="mt-1 max-w-2xl text-sm text-zinc-400">{{ $category->description }}</p>
+                        <p class="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">{{ $category->description }}</p>
                     @endif
-                    <p class="mt-2 text-xs text-zinc-500">{{ $listings->total() }} anúncio(s) ativo(s)</p>
+                    <p class="mt-2 text-[11px] uppercase tracking-wide text-zinc-500">{{ $listings->total() }} anúncio(s) ativo(s)</p>
                 </div>
             </div>
             @auth
@@ -33,9 +33,9 @@
         </div>
 
         @if ($children->isNotEmpty())
-            <div class="mt-4 flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
+            <div class="mt-5 flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
                 @foreach ($children as $child)
-                    <a href="{{ $child->url() }}" class="mk-chip hover:border-amber-500/60 hover:text-amber-200">
+                    <a href="{{ $child->url() }}" class="mk-chip">
                         {{ $child->icon }} {{ $child->name }}
                     </a>
                 @endforeach
@@ -44,9 +44,9 @@
     </header>
 
     @if ($listings->isEmpty())
-        <div class="rounded-xl border border-dashed border-zinc-800 p-10 text-center">
-            <p class="text-lg font-semibold">Nenhum anúncio nesta categoria ainda.</p>
-            <p class="mt-1 text-sm text-zinc-400">Que tal ser a primeira pessoa a anunciar?</p>
+        <div class="rounded-lg border border-dashed border-zinc-800 p-10 text-center">
+            <p class="text-base font-semibold">Nenhum anúncio nesta categoria ainda.</p>
+            <p class="mt-1 text-sm text-zinc-500">Que tal ser a primeira pessoa a anunciar?</p>
             @auth
                 <a href="{{ route('marketplace.create') }}" class="mk-btn-primary mt-4">Criar anúncio</a>
             @endauth
