@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Weekly forum digest for members who opted in (profile → Editar perfil).
 Schedule::command('forum:digest')->weeklyOn(1, '08:00');
+
+// Hide/expire marketplace listings past their reference date and ping sellers.
+Schedule::command('marketplace:expire')->dailyAt('00:15');

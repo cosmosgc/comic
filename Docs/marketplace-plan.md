@@ -1,10 +1,11 @@
 # Marketplace — Implementation Plan
 
 > Status: **phase 1 shipped** — public marketplace, listing CRUD, images,
-> tags, watches, contact chat, reports and the Admin → Mercado panel are in.
-> Deferred: scheduled expiry/bump jobs, seller-profile tab and paid boosts
-> (no payments exist by design). Tables are prefixed `marketplace_` so they
-> sort together and are easy to spot/manage by hand.
+> tags, watches, contact chat, reports, a seller block on public profiles,
+> admin panel and the daily expiry command are in. Deferred: expiry
+> reminders, cleanup/retention jobs and paid boosts (no payments exist by
+> design). Tables are prefixed `marketplace_` so they sort together and are
+> easy to spot/manage by hand.
 > Shipped work moves to [CHANGELOG.md](CHANGELOG.md).
 
 ## 1. Goals
