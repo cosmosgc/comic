@@ -22,7 +22,7 @@ _Nothing open._
 - [x] add comics/calendario route link in "explorar" hamburger, in "Recentes Mais curtidos 🔒 Exclusivos" above the comic listing in the default page
 - [x] On the main page, add blur or obscure comics that guests cannot access and prevent guests who are not logged in from opening them; provide an appropriate prompt or link to log in.
 - [x] Make upcoming comics easy to discover by linking to the calendar/list from the default page, Novidades, and other relevant public entry points. (only if user cant have access to the upcoming comic, if so, keep the default link to comic view)
-- [ ] Add an upcoming-comics list to the sidebar, applying the same far-ahead visibility rules as the calendar/list.
+- [x] Add an upcoming-comics list to the sidebar, applying the same far-ahead visibility rules as the calendar/list.
 - [ ] Add admin filters in `admin/comics` for comics that need attention:
   - Comics without tags.
   - Potential duplicate comics.

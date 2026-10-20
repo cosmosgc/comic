@@ -69,6 +69,21 @@ class SidebarPanelsTest extends TestCase
         $this->assertContains($old->id, $latest->pluck('id'));
     }
 
+    public function test_upcoming_comics_are_ordered_and_limited(): void
+    {
+        $first = Comic::factory()->create(['published_at' => now()->addDay()]);
+        $second = Comic::factory()->create(['published_at' => now()->addDays(2)]);
+        Comic::factory()->create(['published_at' => now()->subDay()]);
+        Comic::factory()->count(SidebarComposer::SIDEBAR_COMICS_LIMIT + 1)->create([
+            'published_at' => now()->addDays(3),
+        ]);
+
+        $upcoming = SidebarComposer::upcoming();
+
+        $this->assertCount(SidebarComposer::SIDEBAR_COMICS_LIMIT, $upcoming);
+        $this->assertSame([$first->id, $second->id], $upcoming->take(2)->pluck('id')->all());
+    }
+
     public function test_recommended_prefers_liked_and_falls_back(): void
     {
         // Empty site falls back to an empty collection, not an error.
@@ -134,5 +149,21 @@ class SidebarPanelsTest extends TestCase
             ->assertSee('Recomendados')
             ->assertSee('Panel Comic')
             ->assertDontSee('Coming soon');
+    }
+
+    public function test_index_obscures_far_ahead_comics_in_the_upcoming_sidebar(): void
+    {
+        $comic = Comic::factory()->create([
+            'title' => 'Spoiler da lateral XYZ',
+            'image_path' => 'comics/spoiler-da-lateral.jpg',
+            'published_at' => now()->addDays(Comic::SCHEDULE_PREVIEW_DAYS + 1),
+        ]);
+
+        $this->get('/comics')
+            ->assertSee('Próximos lançamentos')
+            ->assertSee('data-upcoming-sidebar="'.$comic->id.'"', false)
+            ->assertSee('Comic em breve')
+            ->assertSee('blur-sm', false)
+            ->assertDontSee('Spoiler da lateral XYZ');
     }
 }

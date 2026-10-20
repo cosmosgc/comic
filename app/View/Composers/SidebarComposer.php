@@ -34,7 +34,7 @@ class SidebarComposer
         $request = request();
         $shared = $request->attributes->get(self::CACHE_KEY) ?? [];
 
-        foreach (['widgets', 'tags', 'latestComics', 'recommendedComics', 'trendingHashtags'] as $key) {
+        foreach (['widgets', 'tags', 'upcomingComics', 'latestComics', 'recommendedComics', 'trendingHashtags'] as $key) {
             if ($view->offsetExists($key)) {
                 continue;
             }
@@ -54,6 +54,7 @@ class SidebarComposer
         return match ($key) {
             'widgets' => Widget::all(),
             'tags' => self::popularTags(),
+            'upcomingComics' => self::upcoming(),
             'latestComics' => self::latestUploads(),
             'recommendedComics' => self::recommended(),
             'trendingHashtags' => Hashtag::trending(),
@@ -141,6 +142,20 @@ class SidebarComposer
         $query = Comic::query()->published()->withCount(self::engagementCounts())->latest();
 
         return $query->limit($limit)->get();
+    }
+
+    /**
+     * The next releases in timeline order. The panel view uses Comic's
+     * isFarAhead() rule so it stays in lockstep with the public calendar.
+     */
+    public static function upcoming(int $limit = self::SIDEBAR_COMICS_LIMIT): Collection
+    {
+        return Comic::query()
+            ->scheduled()
+            ->orderBy('published_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
     }
 
     /**

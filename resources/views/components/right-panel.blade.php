@@ -26,6 +26,47 @@
         </div>
     @endif
 
+    <!-- Upcoming releases: far-off comics stay anonymous, matching calendar. -->
+    @if (($upcomingComics ?? collect())->isNotEmpty())
+        <div class="px-4 pb-4">
+            <div class="mb-3 flex items-center justify-between gap-2">
+                <h5 class="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+                    Próximos lançamentos
+                </h5>
+                <a href="{{ route('comics.calendar') }}" class="text-xs font-semibold text-amber-300 transition hover:text-amber-200">
+                    Ver todos
+                </a>
+            </div>
+            <ul class="space-y-3">
+                @foreach ($upcomingComics as $upcoming)
+                    @php
+                        $isFarAhead = $upcoming->isFarAhead();
+                        $upcomingUrl = $upcoming->isVisibleTo(auth()->user())
+                            ? route('comics.showBySlug', $upcoming->slug)
+                            : route('comics.calendar');
+                    @endphp
+                    <li data-upcoming-sidebar="{{ $upcoming->id }}">
+                        <a href="{{ $upcomingUrl }}" class="flex items-center gap-2 rounded-lg p-1 transition hover:bg-zinc-800">
+                            @if ($upcoming->image_path)
+                                <img src="{{ asset('storage/'.$upcoming->image_path) }}"
+                                     alt="{{ $isFarAhead ? 'Capa de um comic futuro' : 'Capa de '.$upcoming->title }}"
+                                     class="h-12 w-9 shrink-0 rounded object-cover {{ $isFarAhead ? 'blur-sm' : '' }}">
+                            @endif
+                            <span class="min-w-0">
+                                <span class="block truncate text-sm font-medium text-zinc-200">
+                                    {{ $isFarAhead ? 'Comic em breve' : $upcoming->title }}
+                                </span>
+                                <span class="block text-xs text-amber-300">
+                                    {{ $upcoming->published_at?->format('d/m H:i') }}
+                                </span>
+                            </span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- Latest Uploads -->
     <div class="px-4 pb-4">
         <h5 class="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-300">
