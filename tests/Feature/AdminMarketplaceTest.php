@@ -49,6 +49,10 @@ class AdminMarketplaceTest extends TestCase
             ->assertOk()
             ->assertSee('Nova categoria');
 
+        $this->actingAs($admin)->get('/admin/marketplace/categories/'.$category->id.'/edit')
+            ->assertOk()
+            ->assertSee('Editar categoria');
+
         $this->actingAs($admin)->get('/admin/marketplace/listings')
             ->assertOk()
             ->assertSee('Figure do admin');
