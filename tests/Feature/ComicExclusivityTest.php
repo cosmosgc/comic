@@ -59,7 +59,11 @@ class ComicExclusivityTest extends TestCase
     {
         $comic = Comic::factory()->create(['title' => 'Soon XYZ', 'published_at' => now()->addDays(3)]);
 
-        $this->get('/')->assertOk()->assertDontSee('Soon XYZ');
+        $this->get('/')->assertOk()
+            ->assertSee('data-comic-card="'.$comic->id.'"', false)
+            ->assertSee('Soon XYZ')
+            ->assertSee('blur-sm', false)
+            ->assertSee(route('login'), false);
         $this->get("/comics/id/{$comic->id}")->assertNotFound();
 
         $this->actingAs(User::factory()->create(['admin_level' => 0]))

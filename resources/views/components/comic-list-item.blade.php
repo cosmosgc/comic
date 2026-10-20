@@ -20,7 +20,7 @@
             src="{{ asset('storage/' . $comic->image_path) }}"
             alt="{{ $comic->title }} cover"
             loading="lazy"
-            class="aspect-[3/4] h-36 w-24 rounded-lg object-cover sm:h-44 sm:w-32"
+            class="aspect-[3/4] h-36 w-24 rounded-lg object-cover {{ $locked ? 'blur-sm' : '' }} sm:h-44 sm:w-32"
         >
         <x-comic-ribbons :comic="$comic" variant="overlay" />
         @if ($locked)

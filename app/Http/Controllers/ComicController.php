@@ -43,10 +43,24 @@ class ComicController extends Controller
         // doubles as the pitch to sign up.
         $filter = $request->input('filter') === 'exclusivo' ? 'exclusivo' : null;
 
-        // visibleTo() is the whole visibility matrix: released comics for
-        // everyone, the last week before release plus exclusives for
-        // members, and every queue for owners/admins.
-        $query = Comic::withCount($counts)->visibleTo(Auth::user());
+        $query = Comic::withCount($counts);
+        if (Auth::check()) {
+            // Members see the standard visibility matrix: released comics,
+            // the last week before release, their own queue, and admins'
+            // full queue.
+            $query->visibleTo(Auth::user());
+        } else {
+            // The home page teases upcoming releases in the public preview
+            // window. Their cards remain locked and point to login; search
+            // and profile lists still use visibleTo() and do not expose them.
+            $query->where(function ($visibility) {
+                $visibility->published()
+                    ->orWhere(function ($scheduled) {
+                        $scheduled->scheduled()
+                            ->where('comics.published_at', '<=', now()->addDays(Comic::SCHEDULE_PREVIEW_DAYS));
+                    });
+            });
+        }
         if ($filter === 'exclusivo' && Schema::hasColumn('comics', 'is_exclusive')) {
             $query->where('is_exclusive', true);
         }

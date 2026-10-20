@@ -21,15 +21,19 @@ class ComicScheduleTest extends TestCase
         $this->artisan('migrate');
     }
 
-    public function test_scheduled_comic_hidden_from_index_and_search(): void
+    public function test_scheduled_comic_is_a_locked_teaser_on_index_and_hidden_from_search(): void
     {
         Comic::factory()->create(['title' => 'Visible Now XYZ', 'published_at' => null]);
         Comic::factory()->create(['title' => 'Future Hidden XYZ', 'published_at' => now()->addDay()]);
 
-        // Guests get no early access (ComicExclusivityTest covers members).
+        // Guests get no early access: the home card is a blurred teaser that
+        // points to login, while search does not expose scheduled comics.
         $this->get('/')->assertOk()
             ->assertSee('Visible Now XYZ')
-            ->assertDontSee('Future Hidden XYZ');
+            ->assertSee('Future Hidden XYZ')
+            ->assertSee('blur-sm', false)
+            ->assertSee(route('login'), false)
+            ->assertSee('Entre para ler');
 
         $this->get('/comics/search?search=XYZ')->assertOk()
             ->assertSee('Visible Now XYZ')
@@ -241,9 +245,12 @@ class ComicScheduleTest extends TestCase
 
         $this->assertTrue($comic->fresh()->isScheduled());
 
-        // Hidden from the public index, flagged as "Em breve" in the admin list.
+        // The public index shows a locked teaser, while the admin list can
+        // still identify and manage the scheduled comic.
         Auth::logout();
-        $this->get('/')->assertOk()->assertDontSee('Admin Scheduled One');
+        $this->get('/')->assertOk()
+            ->assertSee('Admin Scheduled One')
+            ->assertSee('Entre para ler');
 
         $this->actingAs($admin)->get('/admin/comics')->assertOk()
             ->assertSee('Admin Scheduled One')

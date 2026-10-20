@@ -5,9 +5,8 @@
 >
 
     @php
-        // Exclusive comics stay in the grid for guests, but as locked
-        // teasers: the card links to the login form instead of a reader
-        // that would answer 404.
+        // Locked teasers (exclusive or scheduled) point guests to the login
+        // form instead of a reader that would answer 404.
         $locked = $comic->isLockedFor(auth()->user());
         $comicUrl = $locked ? route('login') : route('comics.showBySlug', ['slug' => $comic->slug]);
     @endphp
@@ -39,7 +38,7 @@
                 src="{{ asset('storage/' . $comic->image_path) }}"
                 alt="{{ $comic->title }} cover"
                 loading="lazy"
-                class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-[1.02] {{ $locked ? 'blur-sm' : '' }}"
             >
 
             <x-comic-ribbons :comic="$comic" variant="overlay" />

@@ -256,12 +256,12 @@ class Comic extends Model
     }
 
     /**
-     * Shown to this viewer as a locked card: exclusive content and no
-     * signed-in account to unlock it.
+     * Shown to a guest as a locked card: member-only content and scheduled
+     * releases cannot be read until the visitor signs in.
      */
     public function isLockedFor(?User $user): bool
     {
-        return $this->isExclusive() && $user === null;
+        return $user === null && ($this->isExclusive() || $this->isScheduled());
     }
 
     /**
