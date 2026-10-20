@@ -25,11 +25,13 @@ return [
             'redirect' => env('GOOGLE_REDIRECT_URI'),
             'authorize_url' => 'https://accounts.google.com/o/oauth2/v2/auth',
             'token_url' => 'https://oauth2.googleapis.com/token',
-            // OAuth 2.0 userinfo endpoint (not the OIDC one). The OIDC
-            // `openid` scope makes Google add `iss=https://accounts.google.com`
-            // to the callback query string, which the host's Mod_Security
-            // blocks with a 406 before Laravel can handle it.
             'user_url' => 'https://www.googleapis.com/oauth2/v3/userinfo',
+            // Google's redirect callback includes `iss=https://accounts.google.com`
+            // in the query string, which the host's Mod_Security rejects with a
+            // 406. The UI therefore uses Google Identity Services (GIS) and posts
+            // the ID token to /auth/google/credential, where the token is checked
+            // against this endpoint.
+            'tokeninfo_url' => 'https://oauth2.googleapis.com/tokeninfo',
             'scopes' => [
                 'https://www.googleapis.com/auth/userinfo.email',
                 'https://www.googleapis.com/auth/userinfo.profile',

@@ -7,7 +7,13 @@
             <span class="h-px flex-1 bg-zinc-800"></span>
         </div>
 
+        @if (isset($providers['google']))
+            @include('auth.google-button', ['intent' => 'login', 'action' => $action ?? 'Entrar'])
+        @endif
+
         @foreach ($providers as $providerKey => $provider)
+            @continue($providerKey === 'google')
+
             <a href="{{ route('oauth.redirect', ['provider' => $providerKey]) }}"
                class="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition {{ $provider['button'] ?? 'border border-zinc-700 bg-zinc-900 text-white hover:bg-zinc-800' }}">
                 <span aria-hidden="true">{{ $provider['icon'] ?? '🔗' }}</span>

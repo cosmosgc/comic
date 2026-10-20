@@ -370,6 +370,14 @@
                                     Desconectar
                                 </button>
                             </form>
+                        @elseif ($providerKey === 'google')
+                            @include('auth.google-button', [
+                                'intent' => 'link',
+                                'action' => 'Conectar',
+                                'width' => 220,
+                                'text' => 'continue_with',
+                                'formClass' => 'w-full sm:w-auto',
+                            ])
                         @else
                             <a href="{{ route('oauth.redirect', ['provider' => $providerKey]) }}"
                                class="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800">

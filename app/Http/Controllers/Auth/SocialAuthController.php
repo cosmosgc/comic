@@ -82,6 +82,42 @@ class SocialAuthController extends Controller
             : $this->loginOrRegister($request, $provider, $profile);
     }
 
+    /**
+     * Google Identity Services posts the ID token here instead of using the
+     * redirect callback, whose `iss=https://...` query parameter is blocked by
+     * the host's web application firewall.
+     */
+    public function googleCredential(Request $request): RedirectResponse
+    {
+        abort_unless(OAuthProviders::isConfigured('google'), 404);
+
+        $data = $request->validate([
+            'credential' => ['required', 'string', 'max:8192'],
+            'intent' => ['nullable', 'in:login,link'],
+        ]);
+
+        try {
+            $profile = $this->oauth->verifyGoogleIdToken($data['credential']);
+        } catch (Throwable $exception) {
+            Log::warning('Google credential verification failed.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $this->failure('Não foi possível validar a conta do Google. Tente novamente.');
+        }
+
+        if (($data['intent'] ?? 'login') === 'link') {
+            abort_unless($request->user() !== null, 403);
+
+            return $this->linkAccount($request, 'google', $profile);
+        }
+
+        return $request->user() !== null
+            ? $this->linkAccount($request, 'google', $profile)
+            : $this->loginOrRegister($request, 'google', $profile);
+    }
+
     public function unlink(Request $request, string $provider): RedirectResponse
     {
         abort_unless(OAuthProviders::get($provider) !== null, 404);

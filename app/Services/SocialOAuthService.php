@@ -88,13 +88,91 @@ class SocialOAuthService
     public function fetchProfile(string $providerName, string $accessToken): array
     {
         $provider = $this->provider($providerName);
-        $map = (array) ($provider['map'] ?? []);
 
         $payload = $this->getJson((string) $provider['user_url'], $accessToken);
 
         if ($providerName === 'github') {
             $payload = $this->withGitHubEmail($payload, $provider, $accessToken);
         }
+
+        return $this->normalizeProfile($providerName, $payload);
+    }
+
+    /**
+     * Verify a Google Identity Services ID token with Google's tokeninfo
+     * endpoint and normalise its claims.
+     *
+     * @return array{id: string, name: string, nickname: string|null, email: string|null, email_verified: bool|null, avatar_url: string|null}
+     */
+    public function verifyGoogleIdToken(string $credential): array
+    {
+        $provider = $this->provider('google');
+        $clientId = (string) ($provider['client_id'] ?? '');
+        $tokenInfoUrl = (string) ($provider['tokeninfo_url'] ?? '');
+
+        if ($clientId === '' || $tokenInfoUrl === '') {
+            throw new RuntimeException('Google sign-in is not configured.');
+        }
+
+        $payload = Http::acceptJson()
+            ->withHeaders(['User-Agent' => 'Comic Social Login'])
+            ->get($tokenInfoUrl, ['id_token' => $credential])
+            ->throw()
+            ->json();
+
+        if (! is_array($payload)) {
+            throw new RuntimeException('Google returned an unexpected token payload.');
+        }
+
+        $audience = $payload['aud'] ?? null;
+        if (! is_string($audience) || ! hash_equals($clientId, $audience)) {
+            throw new RuntimeException('The Google token was issued for another application.');
+        }
+
+        $issuer = $payload['iss'] ?? null;
+        if (! in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true)) {
+            throw new RuntimeException('The Google token has an invalid issuer.');
+        }
+
+        $expiresAt = (int) ($payload['exp'] ?? 0);
+        if ($expiresAt > 0 && $expiresAt < time()) {
+            throw new RuntimeException('The Google token has expired.');
+        }
+
+        return $this->normalizeProfile('google', $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $provider
+     * @return array<string, mixed>
+     */
+    protected function withGitHubEmail(array $payload, array $provider, string $accessToken): array
+    {
+        $emailUrl = $provider['email_url'] ?? null;
+
+        if (filled($emailUrl)) {
+            $emails = $this->getJson((string) $emailUrl, $accessToken);
+
+            if (array_is_list($emails)) {
+                $primary = collect($emails)->first(
+                    fn (array $row) => ($row['primary'] ?? false) && ($row['verified'] ?? false)
+                );
+                $verified = collect($emails)->first(fn (array $row) => (bool) ($row['verified'] ?? false));
+                $payload['email'] = $primary['email'] ?? $verified['email'] ?? null;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{id: string, name: string, nickname: string|null, email: string|null, email_verified: bool|null, avatar_url: string|null}
+     */
+    protected function normalizeProfile(string $providerName, array $payload): array
+    {
+        $provider = $this->provider($providerName);
+        $map = (array) ($provider['map'] ?? []);
 
         $id = data_get($payload, $map['id'] ?? 'id');
         if (! is_scalar($id) || (string) $id === '') {
@@ -113,7 +191,7 @@ class SocialOAuthService
 
         $emailVerified = null;
         if (filled($map['email_verified'] ?? null)) {
-            $emailVerified = (bool) data_get($payload, $map['email_verified']);
+            $emailVerified = $this->booleanValue(data_get($payload, $map['email_verified']));
         }
 
         if ($providerName === 'github') {
@@ -139,29 +217,6 @@ class SocialOAuthService
             'email_verified' => $emailVerified,
             'avatar_url' => $avatar !== null ? mb_substr($avatar, 0, 500) : null,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $provider
-     * @return array<string, mixed>
-     */
-    protected function withGitHubEmail(array $payload, array $provider, string $accessToken): array
-    {
-        $emailUrl = $provider['email_url'] ?? null;
-
-        if (filled($emailUrl)) {
-            $emails = $this->getJson((string) $emailUrl, $accessToken);
-
-            if (array_is_list($emails)) {
-                $primary = collect($emails)->first(
-                    fn (array $row) => ($row['primary'] ?? false) && ($row['verified'] ?? false)
-                );
-                $verified = collect($emails)->first(fn (array $row) => (bool) ($row['verified'] ?? false));
-                $payload['email'] = $primary['email'] ?? $verified['email'] ?? null;
-            }
-        }
-
-        return $payload;
     }
 
     /**
@@ -211,5 +266,22 @@ class SocialOAuthService
         $value = trim((string) $value);
 
         return $value !== '' ? $value : null;
+    }
+
+    protected function booleanValue(mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value)) {
+            return $value !== 0;
+        }
+
+        if (is_string($value)) {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+
+        return null;
     }
 }

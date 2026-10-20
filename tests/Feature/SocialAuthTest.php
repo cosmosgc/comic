@@ -223,6 +223,75 @@ class SocialAuthTest extends TestCase
         $this->assertSame(0, User::count());
     }
 
+    public function test_google_credential_creates_a_verified_account_and_logs_in(): void
+    {
+        $this->fakeGoogleToken();
+
+        $this->post(route('oauth.google.credential'), [
+            'credential' => 'google-id-token',
+            'intent' => 'login',
+        ])->assertRedirect(route('comics.index'));
+
+        $user = User::where('email', 'jane@example.com')->firstOrFail();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_user_id' => 'google-credential-123',
+        ]);
+
+        Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://oauth2.googleapis.com/tokeninfo')
+            && $request['id_token'] === 'google-id-token');
+    }
+
+    public function test_authenticated_user_can_link_google_with_an_id_token(): void
+    {
+        $user = User::factory()->create();
+
+        $this->fakeGoogleToken(['email' => 'other@example.com']);
+
+        $this->actingAs($user)
+            ->post(route('oauth.google.credential'), [
+                'credential' => 'google-id-token',
+                'intent' => 'link',
+            ])
+            ->assertRedirect(route('profile.edit').'#contas');
+
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'google',
+            'provider_user_id' => 'google-credential-123',
+        ]);
+    }
+
+    public function test_google_credential_rejects_an_unverified_email(): void
+    {
+        $this->fakeGoogleToken(['email_verified' => 'false']);
+
+        $this->post(route('oauth.google.credential'), [
+            'credential' => 'google-id-token',
+            'intent' => 'login',
+        ])->assertRedirect(route('login'))->assertSessionHas('error');
+
+        $this->assertGuest();
+        $this->assertSame(0, User::count());
+    }
+
+    public function test_google_credential_rejects_a_token_for_another_client(): void
+    {
+        $this->fakeGoogleToken(['aud' => 'another-client']);
+
+        $this->post(route('oauth.google.credential'), [
+            'credential' => 'google-id-token',
+            'intent' => 'login',
+        ])->assertRedirect(route('login'))->assertSessionHas('error');
+
+        $this->assertGuest();
+        $this->assertSame(0, User::count());
+    }
+
     public function test_login_page_only_shows_providers_with_credentials(): void
     {
         $this->configureProvider('discord', [
@@ -234,8 +303,30 @@ class SocialAuthTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Entrar com Google')
+            ->assertSee('data-google-button', false)
+            ->assertDontSee(route('oauth.redirect', ['provider' => 'google']), false)
             ->assertSee('Entrar com Discord')
             ->assertDontSee('Entrar com GitHub');
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    protected function fakeGoogleToken(array $overrides = []): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/tokeninfo*' => Http::response(array_merge([
+                'aud' => 'google-id',
+                'iss' => 'https://accounts.google.com',
+                'sub' => 'google-credential-123',
+                'name' => 'Jane Doe',
+                'given_name' => 'jane',
+                'email' => 'jane@example.com',
+                'email_verified' => 'true',
+                'picture' => 'https://example.com/jane.png',
+                'exp' => (string) (time() + 300),
+            ], $overrides)),
+        ]);
     }
 
     /**
