@@ -320,6 +320,33 @@ class MarketplaceTest extends TestCase
         $this->get(route('marketplace.show', ['listing' => $listing->slug]))->assertNotFound();
     }
 
+    public function test_comic_page_shows_the_marketplace_badge_for_a_visible_listing(): void
+    {
+        $comic = Comic::factory()->create([
+            'user_id' => $this->seller->id,
+            'title' => 'Comic à venda',
+            'slug' => 'comic-a-venda',
+        ]);
+
+        $listing = MarketplaceListing::factory()->comic()->create([
+            'marketplace_category_id' => $this->category->id,
+            'user_id' => $this->seller->id,
+            'title' => 'Comic à venda no mercado',
+        ]);
+        $listing->comics()->attach($comic, ['position' => 1]);
+
+        $this->get(route('comics.showBySlug', ['slug' => $comic->slug]))
+            ->assertOk()
+            ->assertSee('À venda no Mercado', false)
+            ->assertSee($listing->priceShort(), false);
+
+        $listing->update(['status' => MarketplaceListing::STATUS_HIDDEN]);
+
+        $this->get(route('comics.showBySlug', ['slug' => $comic->slug]))
+            ->assertOk()
+            ->assertDontSee('À venda no Mercado', false);
+    }
+
     public function test_authenticated_marketplace_screens_render(): void
     {
         $listing = MarketplaceListing::factory()->create([
