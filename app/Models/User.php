@@ -129,6 +129,27 @@ class User extends Authenticatable
         return $this->hasMany(MarketplaceListing::class);
     }
 
+    /**
+     * Saved contact channels, public or hidden. Ordered for profile display.
+     */
+    public function contactMethods(): HasMany
+    {
+        return $this->hasMany(UserContactMethod::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * Only the channels shown on the public profile.
+     */
+    public function publicContactMethods(): HasMany
+    {
+        return $this->contactMethods()->where('is_public', true);
+    }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
     public function marketplaceWatches(): HasMany
     {
         return $this->hasMany(MarketplaceWatch::class);

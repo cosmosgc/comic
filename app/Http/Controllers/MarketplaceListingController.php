@@ -13,6 +13,7 @@ use App\Models\MarketplaceListingImage;
 use App\Models\MarketplaceReport;
 use App\Models\MarketplaceTag;
 use App\Models\MarketplaceWatch;
+use App\Models\UserContactMethod;
 use App\Notifications\MarketplaceNotification;
 use App\Support\ActivityLogger;
 use App\Support\ImageStore;
@@ -38,6 +39,7 @@ class MarketplaceListingController extends Controller
         return view('marketplace.create', [
             'categories' => $this->categoriesForForm(),
             'comics' => $this->comicsForForm($request),
+            'contactMethods' => $request->user()->contactMethods()->get(),
             'maxImages' => Marketplace::maxImages(),
         ]);
     }
@@ -88,6 +90,7 @@ class MarketplaceListingController extends Controller
             $this->storeImages($listing, $request->file('images', []));
             $this->syncComics($listing, $data['comics'] ?? []);
             $this->syncTags($listing, $data['tags'] ?? null);
+            $this->syncContactMethods($listing, $data['contact_methods'] ?? []);
             $listing->category?->refreshCounters();
 
             return $listing;
@@ -120,12 +123,13 @@ class MarketplaceListingController extends Controller
         $this->ensureEnabled();
         $this->authorize('update', $listing);
 
-        $listing->load(['images', 'comics', 'tags']);
+        $listing->load(['images', 'comics', 'tags', 'contactMethods']);
 
         return view('marketplace.edit', [
             'listing' => $listing,
             'categories' => $this->categoriesForForm(),
             'comics' => $this->comicsForForm($request),
+            'contactMethods' => $request->user()->contactMethods()->get(),
             'maxImages' => Marketplace::maxImages(),
         ]);
     }
@@ -190,6 +194,7 @@ class MarketplaceListingController extends Controller
             $this->storeImages($listing, $request->file('images', []));
             $this->syncComics($listing, $data['comics'] ?? []);
             $this->syncTags($listing, $data['tags'] ?? null);
+            $this->syncContactMethods($listing, $data['contact_methods'] ?? []);
             $listing->category?->refreshCounters();
         });
 
@@ -473,6 +478,31 @@ class MarketplaceListingController extends Controller
             $sync[(int) $comicId] = ['position' => $index];
         }
         $listing->comics()->sync($sync);
+    }
+
+    /**
+     * @param  array<int, int>  $ids
+     */
+    protected function syncContactMethods(MarketplaceListing $listing, array $ids): void
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        $owned = $ids === []
+            ? []
+            : UserContactMethod::query()
+                ->where('user_id', $listing->user_id)
+                ->whereIn('id', $ids)
+                ->pluck('id')
+                ->all();
+
+        $sync = [];
+        foreach ($ids as $id) {
+            if (in_array($id, $owned, true)) {
+                $sync[$id] = ['sort_order' => count($sync)];
+            }
+        }
+
+        $listing->contactMethods()->sync($sync);
     }
 
     protected function syncTags(MarketplaceListing $listing, ?string $raw): void

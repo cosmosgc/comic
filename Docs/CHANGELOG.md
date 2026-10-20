@@ -28,6 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
+- **Login social e contatos**: entrar/cadastrar com Google, Discord, GitHub e X/Twitter (OAuth 2.0), conectar/desconectar provedores em **Editar perfil → Contas conectadas**, várias formas de contato salvas (WhatsApp, Telegram, Discord, e-mail e redes) com opção de ocultar do perfil público, e seleção de múltiplos contatos no passo **6 · Contato** do anúncio do Mercado
 - **Mercado**: área de classificados separada do site, com comics à venda, itens físicos/digitais, serviços, fotos, tags, favoritos, chat de contato, denúncias e painel de anúncios — preço apenas de referência, sem pagamento ou intermediação. Moderação completa em **Admin → Mercado** (categorias, aprovação, destaques, denúncias e configurações)
 - Comics **exclusivos para membros** (marca-se na edição do comic ou na lista do admin; visitante vê o card com cadeado e cai no login) e **pré-estreia de uma semana**: membros leem os agendados até 7 dias antes do lançamento
 - Selos nos cards: **Novo** (últimos 7 dias), **Em breve** (agendado) e **Exclusivo**, mais a aba **Exclusivos** na home para membros; os admins passam a ver todo o agendamento nas listas do site

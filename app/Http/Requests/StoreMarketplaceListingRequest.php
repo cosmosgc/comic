@@ -40,6 +40,18 @@ class StoreMarketplaceListingRequest extends FormRequest
             'shipping' => ['required', Rule::in(array_keys(MarketplaceListing::shippingOptions()))],
             'contact_mode' => ['required', Rule::in($contactModes)],
             'contact_email' => 'nullable|required_if:contact_mode,in_app_and_email,email_only|email|max:190',
+            'contact_methods' => [
+                'nullable',
+                'array',
+                'max:10',
+                Rule::requiredIf(fn () => ! $this->boolean('draft')
+                    && in_array($this->input('contact_mode'), ['in_app_and_contacts', 'contacts_only'], true)),
+            ],
+            'contact_methods.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('user_contact_methods', 'id')->where('user_id', (int) $this->user()?->id),
+            ],
             'tags' => 'nullable|string|max:240',
             'images' => 'nullable|array|max:'.Marketplace::maxImages(),
             'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:4096',
@@ -61,6 +73,8 @@ class StoreMarketplaceListingRequest extends FormRequest
         return [
             'marketplace_category_id.required' => 'Escolha uma categoria.',
             'contact_email.required_if' => 'Informe o e-mail que os compradores devem usar.',
+            'contact_methods.required' => 'Escolha ao menos uma forma de contato para este anúncio.',
+            'contact_methods.*.exists' => 'Você só pode usar formas de contato da sua conta.',
             'comics.*.exists' => 'Você só pode vincular comics seus.',
             'images.*.image' => 'Cada arquivo precisa ser uma imagem.',
             'images.*.max' => 'Cada imagem pode ter no máximo 4 MB.',

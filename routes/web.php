@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CollectionController;
@@ -212,6 +213,12 @@ Route::post('/login', [LoginController::class, 'login']);
 
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
+
+// Social login / account linking (OAuth 2.0).
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
+Route::post('/auth/{provider}/unlink', [SocialAuthController::class, 'unlink'])
+    ->middleware('auth')->name('oauth.unlink');
 
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 

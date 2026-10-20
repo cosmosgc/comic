@@ -6,6 +6,8 @@ use App\Http\Requests\UpdateProfileRequest;
 use App\Models\Collection;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\UserContactMethod;
+use App\Support\ContactMethod;
 use App\Support\ImageStore;
 use App\Support\Marketplace;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +29,7 @@ class ProfileController extends Controller
     public function show(Request $request): View
     {
         $user = Auth::user(); // Authenticated user
-        $user->loadMissing('badges');
+        $user->loadMissing(['badges', 'contactMethods']);
         $tab = in_array($request->input('tab'), ['likes', 'collections', 'followers', 'following'], true)
             ? $request->input('tab')
             : 'comics';
@@ -95,7 +97,7 @@ class ProfileController extends Controller
      */
     protected function publicProfile(User $user, $comics): View
     {
-        $user->loadMissing('badges');
+        $user->loadMissing(['badges', 'contactMethods']);
         $tab = in_array(request()->input('tab'), ['likes', 'collections', 'followers', 'following'], true)
             ? request()->input('tab')
             : 'comics';
@@ -224,7 +226,7 @@ class ProfileController extends Controller
     public function edit(): View
     {
         $user = Auth::user();
-        $user->loadMissing('badges');
+        $user->loadMissing(['badges', 'contactMethods', 'socialAccounts']);
 
         return view('profile.edit', [
             'user' => $user,
@@ -240,48 +242,100 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
-        // Update user data
-        $user->name = $request->input('name');
-        $user->email = $request->input('email');
+        DB::transaction(function () use ($request, $user) {
+            // Update user data
+            $user->name = $request->input('name');
+            $user->email = $request->input('email');
 
-        // Handle avatar image upload (the previous file is replaced,
-        // never left orphaned on disk).
-        if ($request->hasFile('avatar_image')) {
-            $this->deleteStoredFile($user->avatar_image_path);
-            $user->avatar_image_path = ImageStore::put($request->file('avatar_image'), 'avatars');
-        }
+            // Handle avatar image upload (the previous file is replaced,
+            // never left orphaned on disk).
+            if ($request->hasFile('avatar_image')) {
+                $this->deleteStoredFile($user->avatar_image_path);
+                $user->avatar_image_path = ImageStore::put($request->file('avatar_image'), 'avatars');
+            }
 
-        // Handle banner image upload (profile header background)
-        if ($request->hasFile('banner_image')) {
-            $this->deleteStoredFile($user->banner_image_path);
-            $user->banner_image_path = ImageStore::put($request->file('banner_image'), 'banners');
-        } elseif ($request->boolean('remove_banner')) {
-            $this->deleteStoredFile($user->banner_image_path);
-            $user->banner_image_path = null;
-        }
+            // Handle banner image upload (profile header background)
+            if ($request->hasFile('banner_image')) {
+                $this->deleteStoredFile($user->banner_image_path);
+                $user->banner_image_path = ImageStore::put($request->file('banner_image'), 'banners');
+            } elseif ($request->boolean('remove_banner')) {
+                $this->deleteStoredFile($user->banner_image_path);
+                $user->banner_image_path = null;
+            }
 
-        $user->bio = $request->input('bio');
-        $user->links = $request->input('links') ?: []; // Store links as an array
-        $user->show_liked_posts = $request->boolean('show_liked_posts');
-        $user->forum_digest = $request->boolean('forum_digest');
+            $user->bio = $request->input('bio');
+            $user->links = $request->input('links') ?: []; // Store links as an array
+            $user->show_liked_posts = $request->boolean('show_liked_posts');
+            $user->forum_digest = $request->boolean('forum_digest');
 
-        // Featured badges: keep only badges the user actually earned,
-        // most featured first, capped at the configured limit.
-        $earned = $user->badges()->pluck('badge')->all();
-        $showcase = array_values(array_intersect(
-            array_unique($request->input('showcase_badges', [])),
-            $earned
-        ));
-        $user->showcase_badges = array_slice($showcase, 0, (int) config('gamification.showcase_limit', 3)) ?: null;
+            // Featured badges: keep only badges the user actually earned,
+            // most featured first, capped at the configured limit.
+            $earned = $user->badges()->pluck('badge')->all();
+            $showcase = array_values(array_intersect(
+                array_unique($request->input('showcase_badges', [])),
+                $earned
+            ));
+            $user->showcase_badges = array_slice($showcase, 0, (int) config('gamification.showcase_limit', 3)) ?: null;
 
-        // Update password if provided
-        if ($request->filled('password')) {
-            $user->password = Hash::make($request->input('password'));
-        }
+            // Update password if provided
+            if ($request->filled('password')) {
+                $user->password = Hash::make($request->input('password'));
+            }
 
-        $user->save();
+            $user->save();
+
+            $this->syncContactMethods($user, (array) $request->input('contact_methods', []));
+        });
 
         return redirect()->route('profile.show')->with('success', 'Perfil atualizado com sucesso.');
+    }
+
+    /**
+     * Replace the user's contact list with the submitted rows. Missing IDs
+     * are removed, which is also how the "Remover" button works in the form.
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    protected function syncContactMethods(User $user, array $rows): void
+    {
+        $keptIds = [];
+
+        foreach (array_values($rows) as $index => $row) {
+            $type = (string) ($row['type'] ?? '');
+            $rawValue = trim((string) ($row['value'] ?? ''));
+
+            if (! ContactMethod::exists($type) || $rawValue === '') {
+                continue;
+            }
+
+            $attributes = [
+                'type' => $type,
+                'value' => ContactMethod::normalize($type, $rawValue),
+                'label' => filled($row['label'] ?? null) ? mb_substr(trim((string) $row['label']), 0, 60) : null,
+                'is_public' => filter_var($row['is_public'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'sort_order' => $index,
+            ];
+
+            $method = filled($row['id'] ?? null)
+                ? $user->contactMethods()->whereKey((int) $row['id'])->first()
+                : null;
+
+            if ($method instanceof UserContactMethod) {
+                $method->update($attributes);
+            } else {
+                $method = $user->contactMethods()->create($attributes);
+            }
+
+            $keptIds[] = $method->id;
+        }
+
+        $query = $user->contactMethods();
+
+        if ($keptIds !== []) {
+            $query->whereNotIn('id', $keptIds);
+        }
+
+        $query->delete();
     }
 
     /**

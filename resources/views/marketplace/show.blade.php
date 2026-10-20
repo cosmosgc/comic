@@ -219,7 +219,7 @@
                             </form>
                         @endauth
 
-                        @if ($listing->contact_mode !== 'email_only')
+                        @if (! in_array($listing->contact_mode, ['email_only', 'contacts_only'], true))
                             @auth
                                 @if ($canContact)
                                     @if ($conversation)
@@ -270,6 +270,40 @@
                     </div>
                 @endif
             </section>
+
+            @if ($listing->contactMethods->isNotEmpty())
+                <section class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-300">Formas de contato</p>
+                    <div class="mt-3 space-y-2">
+                        @foreach ($listing->contactMethods as $method)
+                            @php($url = $method->url($listing->title))
+                            @php($label = $method->label ?: $method->typeLabel())
+                            @if ($url)
+                                <a href="{{ $url }}"
+                                   @if (\App\Support\ContactMethod::isExternalUrl($url)) target="_blank" rel="noopener" @endif
+                                   class="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm transition hover:border-amber-500/60">
+                                    <span class="flex min-w-0 items-center gap-2">
+                                        <span aria-hidden="true">{{ \App\Support\ContactMethod::icon($method->type) }}</span>
+                                        <span class="truncate font-semibold">{{ $label }}</span>
+                                    </span>
+                                    <span class="shrink-0 text-xs text-amber-300">Abrir →</span>
+                                </a>
+                            @else
+                                <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm">
+                                    <span class="flex min-w-0 items-center gap-2">
+                                        <span aria-hidden="true">{{ \App\Support\ContactMethod::icon($method->type) }}</span>
+                                        <span class="truncate font-semibold">{{ $label }}</span>
+                                    </span>
+                                    <span class="shrink-0 text-xs text-zinc-400">{{ $method->displayValue() }}</span>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-[11px] text-zinc-500">
+                        Contato combinado diretamente com o vendedor. O site não intermedeia pagamentos.
+                    </p>
+                </section>
+            @endif
 
             <section class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
                 <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Vendedor</p>

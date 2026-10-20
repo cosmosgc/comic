@@ -92,6 +92,51 @@
             @endif
         </div>
 
+        {{-- Public contact channels. Hidden methods stay visible to the owner
+             with an "oculto" hint so the setting is easy to understand. --}}
+        @php($contactMethods = $user->relationLoaded('contactMethods') ? $user->contactMethods : $user->contactMethods()->get())
+        @php($visibleContacts = $contactMethods->filter(fn ($method) => $method->is_public || auth()->id() === $user->id))
+        @if ($visibleContacts->isNotEmpty())
+            <div class="mt-4 w-full max-w-md">
+                <h3 class="mb-2 text-sm font-semibold text-zinc-300">Contato</h3>
+                <div class="flex flex-wrap justify-center gap-2">
+                    @foreach ($visibleContacts as $method)
+                        @php($url = $method->url())
+                        @php($label = $method->label ?: $method->typeLabel())
+                        @if ($url)
+                            <a href="{{ $url }}"
+                               @if (\App\Support\ContactMethod::isExternalUrl($url)) target="_blank" rel="noopener" @endif
+                               class="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800/70 px-3 py-1 text-xs text-zinc-200 transition hover:border-indigo-500/60 hover:text-white">
+                                <span aria-hidden="true">{{ \App\Support\ContactMethod::icon($method->type) }}</span>
+                                <span class="font-semibold">{{ $label }}</span>
+                                <span class="text-zinc-400">{{ $method->displayValue() }}</span>
+                                @unless ($method->is_public)
+                                    <span class="rounded bg-zinc-950 px-1 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">oculto</span>
+                                @endunless
+                            </a>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800/70 px-3 py-1 text-xs text-zinc-200">
+                                <span aria-hidden="true">{{ \App\Support\ContactMethod::icon($method->type) }}</span>
+                                <span class="font-semibold">{{ $label }}</span>
+                                <span class="text-zinc-400">{{ $method->displayValue() }}</span>
+                                @unless ($method->is_public)
+                                    <span class="rounded bg-zinc-950 px-1 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">oculto</span>
+                                @endunless
+                            </span>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        @elseif (auth()->id() === $user->id)
+            <div class="mt-4 w-full max-w-md">
+                <h3 class="mb-1 text-sm font-semibold text-zinc-300">Contato</h3>
+                <p class="text-sm text-zinc-500">
+                    Nenhuma forma de contato pública.
+                    <a href="{{ route('profile.edit').'#contatos' }}" class="text-indigo-400 hover:underline">Adicionar</a>
+                </p>
+            </div>
+        @endif
+
         @php($followsTab = $followsTab ?? false)
         @if ($followsTab)
             <div class="mt-4 flex items-center gap-5 text-sm">

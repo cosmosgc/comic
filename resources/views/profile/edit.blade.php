@@ -3,9 +3,30 @@
 @section('title', 'Editar perfil')
 
 @section('content')
+@php
+    $contactRows = old('contact_methods', $user->contactMethods->map(fn ($method) => [
+        'id' => $method->id,
+        'type' => $method->type,
+        'value' => $method->value,
+        'label' => $method->label,
+        'is_public' => $method->is_public,
+    ])->all());
+    $contactTypes = \App\Support\ContactMethod::types();
+@endphp
 <div class="mx-auto max-w-3xl">
 
     <h1 class="mb-6 text-2xl font-bold">Editar perfil</h1>
+
+    @if (session('success'))
+        <div class="mb-6 rounded-lg border border-emerald-700 bg-emerald-900/40 px-4 py-3 text-sm text-emerald-200">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-6 rounded-lg border border-rose-700 bg-rose-900/40 px-4 py-3 text-sm text-rose-200">
+            {{ session('error') }}
+        </div>
+    @endif
 
     <form action="{{ route('profile.update') }}"
           method="POST"
@@ -159,6 +180,49 @@
             </button>
         </div>
 
+        <!-- Contact methods -->
+        <div id="contatos" class="rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-300">Formas de contato</label>
+                    <p class="mt-0.5 text-xs text-zinc-500">
+                        WhatsApp, Telegram, Discord, e-mail e redes. Marque quais podem aparecer no perfil público.
+                    </p>
+                </div>
+                <button type="button"
+                        id="add-contact"
+                        class="inline-flex rounded-lg border border-zinc-700 px-3 py-2 text-sm hover:bg-zinc-800">
+                    Adicionar contato
+                </button>
+            </div>
+
+            <p class="mt-2 text-xs text-zinc-500">
+                Formas ocultas continuam disponíveis para você escolher em um anúncio do Mercado.
+            </p>
+
+            @error('contact_methods')
+                <p class="mt-2 text-xs text-rose-400">{{ $message }}</p>
+            @enderror
+
+            <div id="contact-list" class="mt-3 space-y-3">
+                @foreach ($contactRows as $index => $row)
+                    @include('profile.partials.contact-method-row', [
+                        'index' => $index,
+                        'row' => $row,
+                        'types' => $contactTypes,
+                    ])
+                @endforeach
+            </div>
+
+            <template id="contact-row-template">
+                @include('profile.partials.contact-method-row', [
+                    'index' => '__INDEX__',
+                    'row' => [],
+                    'types' => $contactTypes,
+                ])
+            </template>
+        </div>
+
         <!-- Liked posts visibility -->
         <div class="flex items-start gap-3">
             <input type="checkbox"
@@ -272,6 +336,51 @@
         </div>
 
     </form>
+
+    @if (\App\Support\OAuthProviders::configured() !== [])
+        <section id="contas" class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-lg">
+            <h2 class="text-lg font-bold">Contas conectadas</h2>
+            <p class="mt-1 text-sm text-zinc-400">
+                Entre com um toque usando Google, Discord, GitHub ou X/Twitter. Você pode desconectar quando quiser.
+            </p>
+
+            @php($linkedAccounts = $user->socialAccounts->keyBy('provider'))
+
+            <div class="mt-4 space-y-2">
+                @foreach (\App\Support\OAuthProviders::configured() as $providerKey => $provider)
+                    @php($linked = $linkedAccounts->get($providerKey))
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-sm font-bold">
+                                {{ $provider['icon'] ?? '🔗' }}
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold">{{ $provider['label'] }}</p>
+                                <p class="truncate text-xs text-zinc-500">
+                                    {{ $linked ? 'Conectado como '.$linked->displayName() : 'Não conectado' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        @if ($linked)
+                            <form method="POST" action="{{ route('oauth.unlink', ['provider' => $providerKey]) }}">
+                                @csrf
+                                <button type="submit"
+                                        class="rounded-lg border border-rose-800/60 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-950/40">
+                                    Desconectar
+                                </button>
+                            </form>
+                        @else
+                            <a href="{{ route('oauth.redirect', ['provider' => $providerKey]) }}"
+                               class="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800">
+                                Conectar
+                            </a>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 </div>
 @endsection
 @push('scripts')
@@ -320,5 +429,40 @@ function livePreview(inputId, imgId) {
 }
 livePreview('avatar_image', 'avatarPreview');
 livePreview('banner_image', document.getElementById('bannerPreview') ? 'bannerPreview' : 'bannerPreviewNew');
+
+(function () {
+    var list = document.getElementById('contact-list');
+    var add = document.getElementById('add-contact');
+    var template = document.getElementById('contact-row-template');
+    if (!list || !add || !template) return;
+
+    var contactIndex = {{ count($contactRows) }};
+    var placeholders = @js(collect($contactTypes)->mapWithKeys(fn ($definition, $key) => [$key => $definition['placeholder']])->all());
+
+    add.addEventListener('click', function () {
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = template.innerHTML.replace(/__INDEX__/g, String(contactIndex++));
+        var row = wrapper.firstElementChild;
+        if (row) {
+            list.appendChild(row);
+            var value = row.querySelector('input[name$="[value]"]');
+            if (value) value.focus();
+        }
+    });
+
+    list.addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-contact')) {
+            var row = event.target.closest('[data-contact-row]');
+            if (row) row.remove();
+        }
+    });
+
+    list.addEventListener('change', function (event) {
+        if (!event.target.matches('select[name$="[type]"]')) return;
+        var row = event.target.closest('[data-contact-row]');
+        var value = row ? row.querySelector('input[name$="[value]"]') : null;
+        if (value) value.placeholder = placeholders[event.target.value] || '';
+    });
+})();
 </script>
 @endpush

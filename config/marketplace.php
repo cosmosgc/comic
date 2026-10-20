@@ -29,7 +29,9 @@ return [
     'allowed_mime' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
 
     // Contact happens off-platform: these are the modes a seller may pick.
-    'contact_modes' => ['in_app', 'in_app_and_email', 'email_only'],
+    // The first three use saved contact methods; the last two are legacy
+    // modes kept so old listings can still be edited.
+    'contact_modes' => ['in_app', 'in_app_and_contacts', 'contacts_only', 'in_app_and_email', 'email_only'],
 
     // Words rejected in titles/descriptions/tags.
     'prohibited_words' => [],

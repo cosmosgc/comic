@@ -200,6 +200,7 @@ class MarketplaceController extends Controller
                 'images',
                 'comics' => fn ($query) => $query->withCount('pages'),
                 'tags',
+                'contactMethods',
             ])
             ->firstOrFail();
 

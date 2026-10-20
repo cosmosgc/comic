@@ -2,6 +2,12 @@
     $editing = isset($listing) && $listing !== null;
     $selectedComics = old('comics', $editing ? $listing->comics->pluck('id')->all() : []);
     $tagValue = old('tags', $editing ? $listing->tags->pluck('name')->implode(', ') : '');
+    $contactMethods = $contactMethods ?? collect();
+    $selectedContactMethods = array_map('intval', (array) old(
+        'contact_methods',
+        $editing ? $listing->contactMethods->pluck('id')->all() : []
+    ));
+    $contactMode = old('contact_mode', $editing ? $listing->contact_mode : 'in_app');
 @endphp
 
 @if ($errors->any())
@@ -218,25 +224,79 @@
 
     <section class="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
         <h2 class="text-lg font-extrabold">6 · Contato</h2>
-        <div class="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-                <label for="listing-contact-mode" class="mk-label">Como quer ser contatado? *</label>
-                <select id="listing-contact-mode" name="contact_mode" required class="mk-input">
-                    @foreach (\App\Models\MarketplaceListing::contactOptions() as $value => $label)
-                        <option value="{{ $value }}" @selected(old('contact_mode', $editing ? $listing->contact_mode : 'in_app') === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                @error('contact_mode')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
-            </div>
-            <div>
-                <label for="listing-contact-email" class="mk-label">E-mail (se escolher e-mail)</label>
-                <input id="listing-contact-email" name="contact_email" type="email" maxlength="190"
-                       value="{{ old('contact_email', $editing ? $listing->contact_email : '') }}" class="mk-input"
-                       placeholder="voce@exemplo.com">
-                @error('contact_email')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
-            </div>
+        <p class="text-sm text-zinc-400">
+            Escolha como as pessoas podem falar com você. Você pode mostrar várias formas salvas no perfil.
+        </p>
+
+        <div class="mt-4">
+            <label for="listing-contact-mode" class="mk-label">Como quer ser contatado? *</label>
+            <select id="listing-contact-mode" name="contact_mode" required class="mk-input">
+                @foreach (\App\Models\MarketplaceListing::contactOptions() as $value => $label)
+                    <option value="{{ $value }}" @selected($contactMode === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('contact_mode')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
         </div>
-        <p class="mt-2 text-xs text-zinc-500">O chat do site sempre funciona. Exibir o e-mail é opcional e fica sob sua escolha.</p>
+
+        <div id="listing-contact-email-wrap"
+             class="{{ in_array($contactMode, ['in_app_and_email', 'email_only'], true) ? '' : 'hidden' }} mt-4">
+            <label for="listing-contact-email" class="mk-label">E-mail (modos antigos)</label>
+            <input id="listing-contact-email" name="contact_email" type="email" maxlength="190"
+                   value="{{ old('contact_email', $editing ? $listing->contact_email : '') }}" class="mk-input"
+                   placeholder="voce@exemplo.com">
+            @error('contact_email')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
+        </div>
+
+        <div class="mt-5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="mk-label">Formas de contato neste anúncio</span>
+                <a href="{{ route('profile.edit').'#contatos' }}" target="_blank" rel="noopener"
+                   class="text-xs font-semibold text-amber-300 hover:text-amber-200">
+                    Gerenciar meus contatos
+                </a>
+            </div>
+
+            @if ($contactMethods->isEmpty())
+                <p class="mt-2 rounded-lg border border-dashed border-zinc-700 p-4 text-sm text-zinc-500">
+                    Você ainda não salvou nenhuma forma de contato.
+                    <a href="{{ route('profile.edit').'#contatos' }}" class="text-amber-300 hover:underline">Adicionar no perfil</a>
+                    para usar WhatsApp, Telegram, Discord e mais.
+                </p>
+            @else
+                <div class="mt-2 space-y-2">
+                    @foreach ($contactMethods as $method)
+                        @php($methodId = (int) $method->id)
+                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-950/40 p-3 transition hover:border-zinc-700">
+                            <input type="checkbox"
+                                   name="contact_methods[]"
+                                   value="{{ $methodId }}"
+                                   @checked(in_array($methodId, $selectedContactMethods, true))
+                                   class="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500">
+                            <span class="min-w-0">
+                                <span class="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-zinc-200">
+                                    <span aria-hidden="true">{{ \App\Support\ContactMethod::icon($method->type) }}</span>
+                                    {{ $method->label ?: $method->typeLabel() }}
+                                    @unless ($method->is_public)
+                                        <span class="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">oculto no perfil</span>
+                                    @endunless
+                                </span>
+                                <span class="mt-0.5 block break-all text-xs text-zinc-500">{{ $method->displayValue() }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-2 text-xs text-zinc-500">
+                    Marque uma ou mais. Formas ocultas no perfil continuam disponíveis para este anúncio.
+                </p>
+            @endif
+
+            @error('contact_methods')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
+            @error('contact_methods.*')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
+        </div>
+
+        <p class="mt-3 text-xs text-zinc-500">
+            O chat do site aparece nos modos com chat. Os contatos escolhidos viram botões no anúncio.
+        </p>
     </section>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -272,6 +332,20 @@
                 preview.appendChild(img);
             });
         });
+    })();
+
+    (function () {
+        var mode = document.getElementById('listing-contact-mode');
+        var email = document.getElementById('listing-contact-email-wrap');
+        if (!mode || !email) return;
+
+        function syncEmailField() {
+            var legacy = ['in_app_and_email', 'email_only'].indexOf(mode.value) !== -1;
+            email.classList.toggle('hidden', !legacy);
+        }
+
+        mode.addEventListener('change', syncEmailField);
+        syncEmailField();
     })();
 </script>
 @endpush

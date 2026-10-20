@@ -31,6 +31,17 @@
             Entrar
         </h1>
 
+        @if (session('error'))
+            <div class="mb-4 rounded-lg border border-rose-700 bg-rose-900/40 px-3 py-2 text-sm text-rose-200">
+                {{ session('error') }}
+            </div>
+        @endif
+        @if (session('success'))
+            <div class="mb-4 rounded-lg border border-emerald-700 bg-emerald-900/40 px-3 py-2 text-sm text-emerald-200">
+                {{ session('success') }}
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login') }}" class="space-y-4">
             @csrf
 
@@ -99,6 +110,8 @@
                 </div>
             </div>
         </form>
+
+        @include('auth.social-buttons', ['action' => 'Entrar'])
     </div>
 </div>
 

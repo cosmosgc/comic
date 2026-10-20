@@ -171,8 +171,11 @@ class MarketplaceListing extends Model
     {
         return [
             'in_app' => 'Somente chat do site',
-            'in_app_and_email' => 'Chat + e-mail',
-            'email_only' => 'Somente e-mail',
+            'in_app_and_contacts' => 'Chat + contatos escolhidos',
+            'contacts_only' => 'Somente contatos escolhidos',
+            // Kept for listings created before saved contact methods existed.
+            'in_app_and_email' => 'Chat + e-mail (antigo)',
+            'email_only' => 'Somente e-mail (antigo)',
         ];
     }
 
@@ -222,6 +225,19 @@ class MarketplaceListing extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(MarketplaceTag::class, 'marketplace_listing_tag')->withTimestamps();
+    }
+
+    /**
+     * Contact channels explicitly selected by the seller for this listing.
+     */
+    public function contactMethods(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            UserContactMethod::class,
+            'marketplace_listing_contact_method',
+            'marketplace_listing_id',
+            'user_contact_method_id'
+        )->withPivot('sort_order')->withTimestamps()->orderByPivot('sort_order');
     }
 
     public function watchers(): BelongsToMany

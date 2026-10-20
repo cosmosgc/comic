@@ -7,6 +7,12 @@
     <div class="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/90 p-6 shadow-xl backdrop-blur">
         <h1 class="mb-6 text-center text-2xl font-bold tracking-tight">Criar conta</h1>
 
+        @if (session('error'))
+            <div class="mb-4 rounded-lg border border-rose-700 bg-rose-900/40 px-3 py-2 text-sm text-rose-200">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('register') }}" class="space-y-4">
             @csrf
 
@@ -48,6 +54,8 @@
                 Cadastrar
             </button>
         </form>
+
+        @include('auth.social-buttons', ['action' => 'Cadastrar'])
 
         <p class="pt-4 text-center text-sm text-zinc-400">
             Já tem conta?
