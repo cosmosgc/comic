@@ -54,7 +54,7 @@ class MarketplaceReport extends Model
 
     public function listing(): BelongsTo
     {
-        return $this->belongsTo(MarketplaceListing::class, 'marketplace_listing_id');
+        return $this->belongsTo(MarketplaceListing::class, 'marketplace_listing_id')->withTrashed();
     }
 
     public function reviewer(): BelongsTo

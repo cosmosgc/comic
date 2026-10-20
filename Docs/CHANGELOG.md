@@ -28,7 +28,7 @@ Example:
 ## [Unreleased]
 
 ### Added
-- **Mercado**: área de classificados separada do site, com comics à venda, itens físicos/digitais, serviços, fotos, tags, favoritos, chat de contato, denúncias e painel de anúncios — preço apenas de referência, sem pagamento ou intermediação
+- **Mercado**: área de classificados separada do site, com comics à venda, itens físicos/digitais, serviços, fotos, tags, favoritos, chat de contato, denúncias e painel de anúncios — preço apenas de referência, sem pagamento ou intermediação. Moderação completa em **Admin → Mercado** (categorias, aprovação, destaques, denúncias e configurações)
 - Comics **exclusivos para membros** (marca-se na edição do comic ou na lista do admin; visitante vê o card com cadeado e cai no login) e **pré-estreia de uma semana**: membros leem os agendados até 7 dias antes do lançamento
 - Selos nos cards: **Novo** (últimos 7 dias), **Em breve** (agendado) e **Exclusivo**, mais a aba **Exclusivos** na home para membros; os admins passam a ver todo o agendamento nas listas do site
 - Manutenção no painel (Admin → Migrações): botão **Limpar caches**, que roda `view:clear`, `config:clear`, `route:clear`, `cache:clear` e `event:clear` no servidor sem SSH — é o que destrava o erro 500 depois de um deploy que remove um pacote, quando as views compiladas do host continuam chamando as classes antigas (os manifests de pacotes/serviços são preservados)

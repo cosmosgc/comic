@@ -213,6 +213,10 @@ class MarketplaceTest extends TestCase
         $this->assertSame(1, $conversation->seller_unread_count);
         $this->assertSame(1, MarketplaceMessage::count());
         $this->assertSame(1, $listing->fresh()->inquiry_count);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $this->seller->id,
+            'notifiable_type' => User::class,
+        ]);
 
         // A second contact reuses the thread instead of creating a new one.
         $this->actingAs($this->buyer)->post(route('marketplace.contact', ['listing' => $listing->slug]), [
@@ -233,6 +237,10 @@ class MarketplaceTest extends TestCase
             'body' => 'Está sim! Pode vir buscar.',
         ])->assertRedirect();
         $this->assertSame(1, $conversation->fresh()->buyer_unread_count);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $this->buyer->id,
+            'notifiable_type' => User::class,
+        ]);
     }
 
     public function test_report_and_category_page_work(): void

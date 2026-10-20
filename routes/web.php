@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminForumController;
 use App\Http\Controllers\AdminGamificationController;
 use App\Http\Controllers\AdminImportController;
+use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -318,6 +319,24 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
 
     Route::get('/{listing:slug}', [MarketplaceController::class, 'show'])
         ->where('listing', '[A-Za-z0-9\-]+')->name('show');
+});
+
+// Admin → Mercado.
+Route::prefix('admin/marketplace')->name('admin.marketplace.')->middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::get('/', [AdminMarketplaceController::class, 'dashboard'])->name('dashboard');
+    Route::get('/categories', [AdminMarketplaceController::class, 'categories'])->name('categories');
+    Route::get('/categories/create', [AdminMarketplaceController::class, 'categoryCreate'])->name('categories.create');
+    Route::post('/categories', [AdminMarketplaceController::class, 'categoryStore'])->name('categories.store');
+    Route::get('/categories/{id}/edit', [AdminMarketplaceController::class, 'categoryEdit'])->name('categories.edit');
+    Route::put('/categories/{id}', [AdminMarketplaceController::class, 'categoryUpdate'])->name('categories.update');
+    Route::delete('/categories/{id}', [AdminMarketplaceController::class, 'categoryDestroy'])->name('categories.destroy');
+    Route::post('/categories/{id}/toggle', [AdminMarketplaceController::class, 'categoryToggle'])->name('categories.toggle');
+    Route::get('/listings', [AdminMarketplaceController::class, 'listings'])->name('listings');
+    Route::post('/listings/{id}/action', [AdminMarketplaceController::class, 'listingAction'])->name('listings.action');
+    Route::get('/moderation', [AdminMarketplaceController::class, 'moderation'])->name('moderation');
+    Route::post('/moderation/{id}/resolve', [AdminMarketplaceController::class, 'resolveReport'])->name('moderation.resolve');
+    Route::get('/settings', [AdminMarketplaceController::class, 'settings'])->name('settings');
+    Route::post('/settings', [AdminMarketplaceController::class, 'updateSettings'])->name('settings.update');
 });
 
 // Admin → Fórum.

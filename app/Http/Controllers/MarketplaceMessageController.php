@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreMarketplaceMessageRequest;
 use App\Models\MarketplaceConversation;
+use App\Notifications\MarketplaceNotification;
 use App\Support\Marketplace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,6 +88,16 @@ class MarketplaceMessageController extends Controller
             $conversation->buyer_unread_count = (int) $conversation->buyer_unread_count + 1;
         }
         $conversation->save();
+
+        $other = $conversation->otherParty($sender);
+        if ($other !== null) {
+            $other->notify(new MarketplaceNotification(
+                'marketplace.message',
+                'Nova mensagem no Mercado',
+                $sender->name.' respondeu sobre "'.$conversation->listing?->title.'".',
+                route('marketplace.messages.show', ['conversation' => $conversation]),
+            ));
+        }
 
         return redirect()->route('marketplace.messages.show', ['conversation' => $conversation])
             ->with('success', 'Mensagem enviada.');

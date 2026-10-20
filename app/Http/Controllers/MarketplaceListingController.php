@@ -13,6 +13,7 @@ use App\Models\MarketplaceListingImage;
 use App\Models\MarketplaceReport;
 use App\Models\MarketplaceTag;
 use App\Models\MarketplaceWatch;
+use App\Notifications\MarketplaceNotification;
 use App\Support\ActivityLogger;
 use App\Support\ImageStore;
 use App\Support\Marketplace;
@@ -375,6 +376,13 @@ class MarketplaceListingController extends Controller
             'metadata' => ['conversation_id' => $conversation->id],
             'ip' => $request->ip(),
         ]);
+
+        $seller->notify(new MarketplaceNotification(
+            'marketplace.inquiry',
+            'Novo contato no Mercado',
+            $buyer->name.' está interessado em "'.$listing->title.'".',
+            route('marketplace.messages.show', ['conversation' => $conversation]),
+        ));
 
         return redirect()->route('marketplace.messages.show', ['conversation' => $conversation])
             ->with('success', 'Mensagem enviada ao vendedor.');
