@@ -8,6 +8,7 @@ use App\Models\EhImportPage;
 use App\Models\EhImportSetting;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ComicDuplicateFinder;
 use App\Services\EhComicImporter;
 use App\Services\EhImportException;
 use Illuminate\Http\Client\Factory as HttpClientFactory;
@@ -173,6 +174,25 @@ class EhImportTest extends TestCase
                 ->assertSee('Nenhum comic parecido encontrado')
                 ->assertDontSee('Possível duplicata')
                 ->assertDontSee('Esta galeria já foi importada');
+        } finally {
+            $this->deleteComicTree($existing->id);
+        }
+    }
+
+    public function test_duplicate_finder_ignores_brackets_language_and_accents(): void
+    {
+        $existing = Comic::factory()->create([
+            'title' => 'O Último Desejo do Lobo',
+            'user_id' => $this->admin->id,
+        ]);
+
+        try {
+            $result = app(ComicDuplicateFinder::class)
+                ->find('[Zourik] O Ultimo DESEJO do Lobo (Zootopia) [Português-BR]');
+
+            $this->assertCount(1, $result['matches']);
+            $this->assertSame($existing->id, $result['matches'][0]['comic']->id);
+            $this->assertSame(100, $result['matches'][0]['score']);
         } finally {
             $this->deleteComicTree($existing->id);
         }
