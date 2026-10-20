@@ -86,7 +86,7 @@ class SocialAuthTest extends TestCase
 
     public function test_guest_with_matching_verified_email_links_the_provider_to_the_existing_account(): void
     {
-        $user = User::factory()->create(['email' => 'jane@example.com']);
+        $user = User::factory()->unverified()->create(['email' => 'jane@example.com']);
 
         Http::fake([
             'https://oauth.test/google/token' => Http::response(['access_token' => 'access-token']),
@@ -112,6 +112,7 @@ class SocialAuthTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $this->assertSame(1, User::count());
+        $this->assertNotNull($user->fresh()->email_verified_at);
         $this->assertDatabaseHas('social_accounts', [
             'user_id' => $user->id,
             'provider_user_id' => 'google-123',

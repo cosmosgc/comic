@@ -186,6 +186,12 @@ class SocialAuthController extends Controller
             ]);
         }
 
+        // A verified provider e-mail also confirms a previously unverified
+        // local address (e.g. an account created through the old form).
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+
         SocialAccount::updateOrCreate(
             ['user_id' => $user->id, 'provider' => $provider],
             $this->accountAttributes($profile)
