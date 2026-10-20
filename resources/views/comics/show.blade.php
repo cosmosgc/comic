@@ -396,6 +396,12 @@
             ⏳ Pré-estreia para membros - liberação pública em {{ $comic->published_at->format('d/m/Y H:i') }}
         </p>
     @endif
+    @if ($marketplaceListing = $comic->activeMarketplaceListing())
+        <a href="{{ $marketplaceListing->url() }}"
+           style="display:inline-block;margin:10px 0 0;padding:6px 14px;border-radius:999px;background:#78350f;color:#fde68a;font-size:0.85em;text-decoration:none;">
+            🏷️ À venda no Mercado — {{ $marketplaceListing->priceShort() }}
+        </a>
+    @endif
     <div class="comic-meta">
         <p>By {{ $comic->author ?? 'Unknown Author' }}</p>
         @if ($comic->user)

@@ -37,6 +37,9 @@ return [
         'forum.post.replied' => 8,
         'forum.post.reacted' => 2,
         'forum.thread.solved' => 10,
+        'marketplace.listing.created' => 15,
+        'marketplace.listing.sold' => 30,
+        'marketplace.inquiry.sent' => 2,
     ],
 
     /*

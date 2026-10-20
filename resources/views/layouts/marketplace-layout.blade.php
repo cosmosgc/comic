@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>@yield('title', 'Mercado — '.config('app.site_title'))</title>
+
+    <meta name="description" content="Mercado da comunidade: anuncie, troque e encontre comics, figures, arte e serviços.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#f59e0b">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
+</head>
+
+<body class="min-h-screen bg-zinc-950 text-zinc-100">
+
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-amber-500 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-zinc-950">
+    Pular para o conteúdo
+</a>
+
+{{-- Detached-mode banner: make it obvious this is a separate area. --}}
+<div class="border-b border-zinc-800 bg-gradient-to-r from-amber-500/25 via-orange-500/10 to-transparent">
+    <div class="flex w-full flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-xs">
+        <span class="text-zinc-300">🧭 Você está no <strong class="text-amber-300">Mercado</strong> — anúncios da comunidade. Combine tudo pelo chat; o site não processa pagamentos.</span>
+        <a href="{{ route('marketplace.exit') }}" class="font-semibold text-amber-300 transition hover:text-amber-200">Voltar ao site →</a>
+    </div>
+</div>
+
+{{-- MARKETPLACE NAVBAR (distinct from the main site and the forum) --}}
+<nav x-data="{ open: false }" class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur" aria-label="Navegação do mercado">
+    <div class="w-full px-4">
+        <div class="flex h-16 items-center justify-between gap-4">
+
+            <a href="{{ route('marketplace.index') }}" class="flex items-center gap-2">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 text-lg shadow-lg shadow-amber-900/40" aria-hidden="true">🏷️</span>
+                <span class="flex flex-col leading-none">
+                    <span class="text-base font-extrabold tracking-wide text-white">Mercado</span>
+                    <span class="text-[10px] uppercase tracking-widest text-zinc-500">{{ config('app.site_title') }}</span>
+                </span>
+            </a>
+
+            <div class="hidden items-center gap-1 lg:flex">
+                <a href="{{ route('marketplace.index') }}"
+                   class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.index') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                    Início
+                </a>
+                <a href="{{ route('marketplace.browse') }}"
+                   class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.browse', 'marketplace.category') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                    Explorar
+                </a>
+                <a href="{{ route('marketplace.search') }}"
+                   class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.search') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                    Buscar
+                </a>
+                @auth
+                    <a href="{{ route('marketplace.mine') }}"
+                       class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.mine') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                        Meus anúncios
+                    </a>
+                    <a href="{{ route('marketplace.watching') }}"
+                       class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.watching') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                        Favoritos
+                    </a>
+                    <a href="{{ route('marketplace.messages') }}"
+                       class="rounded-lg px-3 py-2 text-sm font-semibold transition {{ request()->routeIs('marketplace.messages*') ? 'bg-amber-500/15 text-amber-200' : 'text-zinc-300 hover:bg-zinc-900 hover:text-white' }}">
+                        Mensagens
+                    </a>
+                @endauth
+            </div>
+
+            <div class="hidden items-center gap-2 lg:flex">
+                @auth
+                    <a href="{{ route('marketplace.create') }}" class="mk-btn-primary">Vender</a>
+                @endauth
+                <a href="{{ route('marketplace.exit') }}" class="mk-btn-outline">← Voltar ao site</a>
+
+                @auth
+                    @include('components.notification-bell')
+
+                    <div x-data="{ userOpen: false }" class="relative">
+                        <button type="button" @click="userOpen = !userOpen" :aria-expanded="userOpen.toString()" aria-haspopup="menu"
+                                class="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm" aria-label="Menu da conta">
+                            <span class="hidden max-w-28 truncate sm:inline">{{ Auth::user()->name }}</span>
+                            <svg class="h-4 w-4 opacity-70" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/>
+                            </svg>
+                        </button>
+                        <div x-show="userOpen" x-transition @click.outside="userOpen = false" x-cloak role="menu"
+                             class="absolute right-0 mt-2 w-52 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+                            <a href="{{ route('marketplace.mine') }}" role="menuitem" class="dropdown-link">Meus anúncios</a>
+                            <a href="{{ route('marketplace.watching') }}" role="menuitem" class="dropdown-link">Favoritos</a>
+                            <a href="{{ route('marketplace.messages') }}" role="menuitem" class="dropdown-link">Mensagens</a>
+                            <a href="{{ route('profile.show') }}" role="menuitem" class="dropdown-link">Perfil no site</a>
+                            @if (Auth::user()->admin_level >= 1)
+                                <a href="{{ route('admin.dashboard') }}" role="menuitem" class="dropdown-link">Painel admin</a>
+                            @endif
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem" class="dropdown-link">Sair</button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <a href="{{ route('login') }}" class="mk-btn-primary">Entrar</a>
+                    <a href="{{ route('register') }}" class="mk-btn-outline">Cadastrar</a>
+                @endauth
+            </div>
+
+            <button type="button" @click="open = !open" :aria-expanded="open.toString()" aria-controls="marketplace-mobile-menu" aria-label="Alternar menu"
+                    class="rounded-lg p-2 hover:bg-zinc-800 lg:hidden">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+
+        <div x-show="open" id="marketplace-mobile-menu" x-cloak class="space-y-1 py-4 lg:hidden">
+            <a href="{{ route('marketplace.index') }}" class="mobile-link">Início</a>
+            <a href="{{ route('marketplace.browse') }}" class="mobile-link">Explorar</a>
+            <a href="{{ route('marketplace.search') }}" class="mobile-link">Buscar</a>
+            @auth
+                <a href="{{ route('marketplace.create') }}" class="mobile-link text-amber-300">+ Vender</a>
+                <a href="{{ route('marketplace.mine') }}" class="mobile-link">Meus anúncios</a>
+                <a href="{{ route('marketplace.watching') }}" class="mobile-link">Favoritos</a>
+                <a href="{{ route('marketplace.messages') }}" class="mobile-link">Mensagens</a>
+                <a href="{{ route('profile.show') }}" class="mobile-link">Perfil no site</a>
+                @if (Auth::user()->admin_level >= 1)
+                    <a href="{{ route('admin.dashboard') }}" class="mobile-link">Painel admin</a>
+                @endif
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="mobile-link w-full text-left">Sair</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="mobile-link">Entrar</a>
+                <a href="{{ route('register') }}" class="mobile-link">Cadastrar</a>
+            @endauth
+            <a href="{{ route('marketplace.exit') }}" class="mobile-link text-amber-300">← Voltar ao site</a>
+        </div>
+    </div>
+</nav>
+
+<main id="main-content">
+    @yield('content')
+</main>
+
+<footer class="mt-12 border-t border-zinc-800 bg-zinc-950">
+    <div class="flex w-full flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-zinc-500 sm:flex-row">
+        <span class="flex items-center gap-2"><span aria-hidden="true">🏷️</span> Mercado · {{ config('app.site_title') }}</span>
+        <nav class="flex items-center gap-5" aria-label="Rodapé do mercado">
+            <a href="{{ route('marketplace.index') }}" class="transition hover:text-zinc-200">Início</a>
+            <a href="{{ route('marketplace.browse') }}" class="transition hover:text-zinc-200">Explorar</a>
+            @auth
+                <a href="{{ route('marketplace.create') }}" class="transition hover:text-zinc-200">Vender</a>
+            @endauth
+            <a href="{{ route('marketplace.exit') }}" class="font-semibold text-amber-400 transition hover:text-amber-300">Voltar ao site</a>
+        </nav>
+    </div>
+</footer>
+
+@include('layouts.partials.interactions')
+
+@stack('scripts')
+
+</body>
+</html>

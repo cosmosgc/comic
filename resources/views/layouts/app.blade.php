@@ -77,6 +77,7 @@
                     <x-nav-dropdown label="Comunidade" id="nav-community">
                         <a href="{{ route('posts.index') }}" role="menuitem" class="dropdown-link">Comunidade</a>
                         <a href="{{ route('forum.index') }}" role="menuitem" class="dropdown-link">Fórum</a>
+                        <a href="{{ route('marketplace.index') }}" role="menuitem" class="dropdown-link">Mercado</a>
                     </x-nav-dropdown>
 
                     <a href="{{ route('comics.create') }}" class="btn-primary">Publicar</a>
@@ -139,6 +140,7 @@
                     <x-nav-dropdown label="Comunidade" id="nav-community">
                         <a href="{{ route('posts.index') }}" role="menuitem" class="dropdown-link">Comunidade</a>
                         <a href="{{ route('forum.index') }}" role="menuitem" class="dropdown-link">Fórum</a>
+                        <a href="{{ route('marketplace.index') }}" role="menuitem" class="dropdown-link">Mercado</a>
                     </x-nav-dropdown>
 
                     <a href="{{ route('login') }}" class="btn-primary">Entrar</a>
@@ -185,6 +187,7 @@
             <p class="nav-menu-label">Comunidade</p>
             <a href="{{ route('posts.index') }}" class="mobile-link">Comunidade</a>
             <a href="{{ route('forum.index') }}" class="mobile-link">Fórum</a>
+            <a href="{{ route('marketplace.index') }}" class="mobile-link">Mercado</a>
             <a href="{{ route('changelog.index') }}" class="mobile-link">Novidades</a>
             @auth
                 <p class="nav-menu-label">Conta</p>
@@ -239,6 +242,7 @@
         <nav class="flex items-center gap-5" aria-label="Rodapé">
             <a href="{{ route('comics.index') }}" class="transition hover:text-zinc-200">Comics</a>
             <a href="{{ route('posts.index') }}" class="transition hover:text-zinc-200">Comunidade</a>
+            <a href="{{ route('marketplace.index') }}" class="transition hover:text-zinc-200">Mercado</a>
             <a href="{{ route('changelog.index') }}" class="transition hover:text-zinc-200">Novidades</a>
         </nav>
     </div>

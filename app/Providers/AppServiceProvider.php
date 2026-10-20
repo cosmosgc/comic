@@ -10,6 +10,7 @@ use App\Services\ChangelogReader;
 use App\Services\ChangelogWriter;
 use App\Services\Deploy\FtpDeployer;
 use App\Services\Deploy\ProjectVerifier;
+use App\Support\Marketplace;
 use App\View\Composers\NotificationComposer;
 use App\View\Composers\SidebarComposer;
 use Illuminate\Auth\Events\Login;
@@ -58,13 +59,14 @@ class AppServiceProvider extends ServiceProvider
         );
 
         View::composer(
-            ['layouts.app', 'layouts.forum-layout'],
+            ['layouts.app', 'layouts.forum-layout', 'layouts.marketplace-layout'],
             NotificationComposer::class
         );
 
         $this->overlayImportSettings();
         $this->overlayGamificationSettings();
         $this->overlayForumSettings();
+        $this->overlayMarketplaceSettings();
     }
 
     /**
@@ -127,6 +129,23 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
             ForumSetting::applyToConfig();
+        } catch (\Throwable) {
+            // Booting (e.g. migrate) without the table: keep file defaults.
+        }
+    }
+
+    /**
+     * Marketplace tuning edited in Admin → Mercado overlays the file
+     * config. Skipped silently on fresh/unmigrated databases and tests.
+     */
+    protected function overlayMarketplaceSettings(): void
+    {
+        if ($this->app->environment('testing')) {
+            return;
+        }
+
+        try {
+            Marketplace::applySettings();
         } catch (\Throwable) {
             // Booting (e.g. migrate) without the table: keep file defaults.
         }

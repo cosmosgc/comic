@@ -277,6 +277,29 @@ class Comic extends Model
     }
 
     /**
+     * Commercial listings that reference this comic (marketplace).
+     */
+    public function marketplaceListings(): BelongsToMany
+    {
+        return $this->belongsToMany(MarketplaceListing::class, 'marketplace_listing_comics')
+            ->withPivot('position')
+            ->withTimestamps();
+    }
+
+    /**
+     * The single active, approved listing shown as "À venda" on the
+     * comic page, if any.
+     */
+    public function activeMarketplaceListing(): ?MarketplaceListing
+    {
+        if (! Schema::hasTable('marketplace_listings')) {
+            return null;
+        }
+
+        return $this->marketplaceListings()->visible()->first();
+    }
+
+    /**
      * Outgoing server-to-server transfer state (local side only).
      */
     public function transfer(): HasOne

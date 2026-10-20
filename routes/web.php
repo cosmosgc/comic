@@ -23,6 +23,9 @@ use App\Http\Controllers\ForumThreadController;
 use App\Http\Controllers\HashtagController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\LikeController;
+use App\Http\Controllers\MarketplaceController;
+use App\Http\Controllers\MarketplaceListingController;
+use App\Http\Controllers\MarketplaceMessageController;
 use App\Http\Controllers\MuteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
@@ -279,6 +282,42 @@ Route::prefix('forum')->name('forum.')->group(function () {
         Route::delete('/threads/{thread}', [ForumThreadController::class, 'destroy'])->name('threads.destroy');
         Route::post('/posts/{post}/approve', [ForumPostController::class, 'approve'])->name('posts.approve');
     });
+});
+
+// Marketplace: public read, auth to create/contact. A detached area,
+// like the forum, with its own layout and navigation.
+Route::prefix('marketplace')->name('marketplace.')->group(function () {
+    Route::get('/', [MarketplaceController::class, 'index'])->name('index');
+    Route::get('/browse', [MarketplaceController::class, 'browse'])->name('browse');
+    Route::get('/search', [MarketplaceController::class, 'search'])->name('search');
+    Route::get('/category/{categorySlug}', [MarketplaceController::class, 'category'])
+        ->where('categorySlug', '[A-Za-z0-9\-]+')->name('category');
+
+    // Leave the detached marketplace area and return to the normal site.
+    Route::get('/exit', fn () => redirect()->route('comics.index'))->name('exit');
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/create', [MarketplaceListingController::class, 'create'])->name('create');
+        Route::post('/', [MarketplaceListingController::class, 'store'])->name('store');
+        Route::get('/mine', [MarketplaceController::class, 'mine'])->name('mine');
+        Route::get('/watching', [MarketplaceController::class, 'watching'])->name('watching');
+
+        Route::get('/messages', [MarketplaceMessageController::class, 'index'])->name('messages');
+        Route::get('/messages/{conversation}', [MarketplaceMessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{conversation}', [MarketplaceMessageController::class, 'store'])->name('messages.store');
+
+        Route::get('/{listing:slug}/edit', [MarketplaceListingController::class, 'edit'])->name('edit');
+        Route::put('/{listing:slug}', [MarketplaceListingController::class, 'update'])->name('update');
+        Route::delete('/{listing:slug}', [MarketplaceListingController::class, 'destroy'])->name('destroy');
+        Route::post('/{listing:slug}/status', [MarketplaceListingController::class, 'updateStatus'])->name('status');
+        Route::post('/{listing:slug}/watch', [MarketplaceListingController::class, 'toggleWatch'])->name('watch');
+        Route::post('/{listing:slug}/report', [MarketplaceListingController::class, 'report'])->name('report');
+        Route::post('/{listing:slug}/contact', [MarketplaceListingController::class, 'contact'])
+            ->middleware('throttle:20,1')->name('contact');
+    });
+
+    Route::get('/{listing:slug}', [MarketplaceController::class, 'show'])
+        ->where('listing', '[A-Za-z0-9\-]+')->name('show');
 });
 
 // Admin → Fórum.

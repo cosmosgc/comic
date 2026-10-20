@@ -124,6 +124,36 @@ class User extends Authenticatable
         return $this->belongsToMany(Post::class, 'bookmarks')->withTimestamps();
     }
 
+    public function marketplaceListings(): HasMany
+    {
+        return $this->hasMany(MarketplaceListing::class);
+    }
+
+    public function marketplaceWatches(): HasMany
+    {
+        return $this->hasMany(MarketplaceWatch::class);
+    }
+
+    public function marketplaceBuyerConversations(): HasMany
+    {
+        return $this->hasMany(MarketplaceConversation::class, 'buyer_id');
+    }
+
+    public function marketplaceSellerConversations(): HasMany
+    {
+        return $this->hasMany(MarketplaceConversation::class, 'seller_id');
+    }
+
+    /**
+     * Drafts + active + reserved — the count capped by the marketplace.
+     */
+    public function activeListingsCount(): int
+    {
+        return $this->marketplaceListings()
+            ->whereIn('status', ['draft', 'active', 'reserved'])
+            ->count();
+    }
+
     /**
      * Accounts this user has muted.
      */
