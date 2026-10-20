@@ -66,6 +66,16 @@ class ComicScheduleTest extends TestCase
             ->assertDontSee('Spoiler Distante XYZ');
     }
 
+    public function test_homepage_renders_calendar_links_in_navigation_and_listing_filters(): void
+    {
+        $calendarUrl = route('comics.calendar');
+
+        $this->get('/')
+            ->assertSee('href="'.$calendarUrl.'"', false)
+            ->assertSeeText('Calendário')
+            ->assertSeeText('Lançamentos');
+    }
+
     public function test_guest_gets_404_on_scheduled_reader(): void
     {
         $comic = Comic::factory()->create(['published_at' => now()->addDay()]);

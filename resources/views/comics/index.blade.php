@@ -51,6 +51,11 @@
                             🔒 Exclusivos
                         </a>
                     @endauth
+                    <a href="{{ route('comics.calendar') }}"
+                       class="rounded-full border border-amber-400/30 px-3 py-1.5 text-amber-200 transition hover:border-amber-300 hover:bg-amber-400/10"
+                       title="Calendário de lançamentos">
+                        📅 Lançamentos
+                    </a>
                 </div>
 
                 <div class="flex items-center gap-1" role="group" aria-label="Layout dos comics">

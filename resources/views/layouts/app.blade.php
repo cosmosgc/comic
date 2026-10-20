@@ -70,6 +70,7 @@
                     <!-- Nav menus: one hamburger per section, like the profile dropdown -->
                     <x-nav-dropdown label="Explorar" id="nav-explore">
                         <a href="{{ route('comics.index') }}" role="menuitem" class="dropdown-link">Comics</a>
+                        <a href="{{ route('comics.calendar') }}" role="menuitem" class="dropdown-link">Calendário</a>
                         <a href="{{ route('leaderboard.index') }}" role="menuitem" class="dropdown-link">Ranking</a>
                         <a href="{{ route('changelog.index') }}" role="menuitem" class="dropdown-link">Novidades</a>
                     </x-nav-dropdown>
@@ -133,6 +134,7 @@
                     <!-- Nav menus for guests: one hamburger per section -->
                     <x-nav-dropdown label="Explorar" id="nav-explore">
                         <a href="{{ route('comics.index') }}" role="menuitem" class="dropdown-link">Comics</a>
+                        <a href="{{ route('comics.calendar') }}" role="menuitem" class="dropdown-link">Calendário</a>
                         <a href="{{ route('leaderboard.index') }}" role="menuitem" class="dropdown-link">Ranking</a>
                         <a href="{{ route('changelog.index') }}" role="menuitem" class="dropdown-link">Novidades</a>
                     </x-nav-dropdown>
@@ -180,6 +182,7 @@
             </div>
             <p class="nav-menu-label">Explorar</p>
             <a href="{{ route('comics.index') }}" class="mobile-link">Comics</a>
+            <a href="{{ route('comics.calendar') }}" class="mobile-link">Calendário</a>
             <a href="{{ route('leaderboard.index') }}" class="mobile-link">Ranking</a>
             @auth
                 <a href="{{ route('bookmarks.index') }}" class="mobile-link">Salvos</a>
