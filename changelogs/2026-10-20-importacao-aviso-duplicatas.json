@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importação: aviso de galeria já publicada",
+    "date": "2026-10-20",
+    "category": "Added",
+    "tags": ["importacao", "duplicatas", "admin"],
+    "summary": "Ao buscar uma galeria para importar, a pré-visualização agora procura no banco pelo mesmo gid e por títulos parecidos. A galeria já importada é bloqueada; títulos prováveis aparecem com percentual de semelhança e link para conferir antes de publicar.",
+    "body": "## Aviso de duplicata na importação\n\nDepois de buscar a galeria em **Admin → Importar**, a tela de revisão passa a conferir se o comic já está no site:\n\n- **Mesma galeria (gid):** mostra um aviso vermelho com o comic existente e o atalho para abrir a importação. O botão de criar um novo comic é bloqueado no envio, para não importar a mesma galeria duas vezes.\n- **Título provável:** quando o título não é exatamente igual, o importador compara os títulos ignorando maiúsculas/minúsculas, acentos, pontuação, grupos entre `[ ]`/`( )` e palavras de idioma/formato (`[English]`, `[PT-BR]`, `Completo`, etc.). Os candidatos aparecem com percentual de semelhança e link para o comic existente.\n- **Semelhante não bloqueia:** o aviso de título é só um alerta — o admin ainda pode importar se confirmar que é outro trabalho. A trava vale apenas para o mesmo gid.\n- Se nada parecido for encontrado, a tela mostra a confirmação **Nenhum comic parecido encontrado no banco**.\n\nO algoritmo usa interseção de palavras e semelhança textual, então nomes com pequenas diferenças (por exemplo, “Imported Title” e “Imported Title Deluxe”) também são sinalizados."
+}

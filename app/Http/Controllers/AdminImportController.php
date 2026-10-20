@@ -8,6 +8,7 @@ use App\Models\EhImportPage;
 use App\Models\EhImportSetting;
 use App\Models\Page;
 use App\Models\Tag;
+use App\Services\ComicDuplicateFinder;
 use App\Services\EhComicImporter;
 use App\Services\EhImportException;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class AdminImportController extends Controller
 {
-    public function __construct(protected EhComicImporter $importer) {}
+    public function __construct(
+        protected EhComicImporter $importer,
+        protected ComicDuplicateFinder $duplicates,
+    ) {}
 
     /**
      * Step 1: URL form + upcoming schedule queue + tuning.
@@ -76,12 +80,16 @@ class AdminImportController extends Controller
             now()->addSeconds(max(300, (int) config('ehimport.preview_ttl', 3600)))
         );
 
+        $duplicates = $this->duplicates->find($preview['title'], $preview['gid'] ?? null);
+
         return view('admin.import', [
             'stage' => 'edit',
             'preview' => $preview,
             'previewToken' => $token,
             'defaultDate' => Comic::defaultScheduledDate()->format('Y-m-d\\TH:i'),
             'suggestedDescription' => $this->suggestedDescription($preview),
+            'duplicateExact' => $duplicates['exact'],
+            'duplicateMatches' => $duplicates['matches'],
         ]);
     }
 
@@ -104,6 +112,14 @@ class AdminImportController extends Controller
         if (! is_array($cached) || ($cached['page_urls'] ?? []) === []) {
             return redirect()->route('admin.import')
                 ->with('error', 'A pré-visualização expirou. Busque a galeria novamente.');
+        }
+
+        $gid = (int) ($cached['meta']['gid'] ?? 0);
+        $existing = $gid > 0 ? $this->duplicates->findByGallery($gid) : null;
+
+        if ($existing !== null) {
+            return redirect()->route('admin.import.progress', $existing)
+                ->with('error', 'Esta galeria já foi importada como “'.$existing->title.'”. Use “Baixar tudo de novo” na página de progresso se precisar baixar as páginas outra vez.');
         }
 
         $comic = Comic::create([

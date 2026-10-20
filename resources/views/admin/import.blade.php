@@ -114,6 +114,55 @@
     @endif
 
     @if ($stage === 'edit')
+        @if ($duplicateExact !== null)
+            <div class="admin-card mb-6 max-w-2xl border-red-500/30 bg-red-500/10">
+                <div class="admin-card-body text-sm text-red-700 dark:text-red-200">
+                    <p class="font-semibold">⚠️ Esta galeria já foi importada</p>
+                    <p class="mt-1">
+                        Ela já está no site como
+                        <a href="{{ route('comics.showById', $duplicateExact->id) }}" class="font-medium underline">{{ $duplicateExact->title }}</a>.
+                    </p>
+                    <p class="mt-1 text-xs opacity-80">
+                        Para baixar as páginas de novo, abra a importação existente e use “Baixar todas as páginas novamente”.
+                    </p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <a href="{{ route('comics.showById', $duplicateExact->id) }}" class="admin-btn admin-btn-sm">Ver comic</a>
+                        @if ($duplicateExact->ehImport)
+                            <a href="{{ route('admin.import.progress', $duplicateExact) }}" class="admin-btn admin-btn-sm">Abrir importação</a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @elseif ($duplicateMatches !== [])
+            <div class="admin-card mb-6 max-w-2xl border-amber-500/30 bg-amber-500/10">
+                <div class="admin-card-body text-sm text-amber-800 dark:text-amber-100">
+                    <p class="font-semibold">⚠️ Possível duplicata</p>
+                    <p class="mt-1 text-xs opacity-80">
+                        Encontramos comics com título parecido. Confira antes de importar para não publicar o mesmo trabalho duas vezes.
+                    </p>
+                    <ul class="mt-3 space-y-2">
+                        @foreach ($duplicateMatches as $match)
+                            @php($matchComic = $match['comic'])
+                            <li class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                <a href="{{ route('comics.showById', $matchComic->id) }}" class="font-medium underline">{{ $matchComic->title }}</a>
+                                <span class="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold">{{ $match['score'] }}% · {{ $match['label'] }}</span>
+                                @if ($matchComic->author)
+                                    <span class="text-xs opacity-70">{{ $matchComic->author }}</span>
+                                @endif
+                                <span class="text-xs opacity-70">{{ $matchComic->isScheduled() ? 'Agendado' : 'Publicado' }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        @else
+            <div class="admin-card mb-6 max-w-2xl border-emerald-500/30 bg-emerald-500/10">
+                <div class="admin-card-body text-sm text-emerald-700 dark:text-emerald-200">
+                    ✓ Nenhum comic parecido encontrado no banco.
+                </div>
+            </div>
+        @endif
+
         <div class="admin-card mb-6 max-w-2xl">
             <div class="admin-card-header">
                 <span>2 · Revisar e agendar</span>
@@ -192,9 +241,14 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2">
-                        <button type="submit" class="admin-btn admin-btn-success">Criar e baixar páginas</button>
+                        <button type="submit" class="admin-btn admin-btn-success" @disabled($duplicateExact !== null)>Criar e baixar páginas</button>
                         <a href="{{ route('admin.import') }}" class="admin-btn">Voltar</a>
                     </div>
+                    @if ($duplicateExact !== null)
+                        <p class="text-xs text-red-600 dark:text-red-300">
+                            Esta galeria já está no banco — use a importação existente para baixar as páginas novamente.
+                        </p>
+                    @endif
                 </form>
             </div>
         </div>

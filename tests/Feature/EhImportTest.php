@@ -113,6 +113,100 @@ class EhImportTest extends TestCase
             ->assertDontSee('Importado do E-Hentai', false);
     }
 
+    public function test_preview_warns_when_the_gallery_was_already_imported(): void
+    {
+        $existing = Comic::factory()->create([
+            'title' => 'Already Imported',
+            'user_id' => $this->admin->id,
+        ]);
+        EhImport::create([
+            'comic_id' => $existing->id,
+            'gid' => 123,
+            'token' => 'abcdef1234',
+            'status' => EhImport::STATUS_COMPLETE,
+            'total_pages' => 2,
+        ]);
+
+        try {
+            $this->actingAs($this->admin)
+                ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/'])
+                ->assertOk()
+                ->assertSee('Esta galeria já foi importada')
+                ->assertSee('Already Imported')
+                ->assertSee(route('admin.import.progress', $existing), false);
+        } finally {
+            $this->deleteComicTree($existing->id);
+        }
+    }
+
+    public function test_preview_warns_about_a_probable_title_match_without_an_exact_gid(): void
+    {
+        $existing = Comic::factory()->create([
+            'title' => 'Imported Title Deluxe',
+            'user_id' => $this->admin->id,
+        ]);
+
+        try {
+            $this->actingAs($this->admin)
+                ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/'])
+                ->assertOk()
+                ->assertSee('Possível duplicata')
+                ->assertSee('Imported Title Deluxe')
+                ->assertSee('Título muito parecido')
+                ->assertDontSee('Esta galeria já foi importada');
+        } finally {
+            $this->deleteComicTree($existing->id);
+        }
+    }
+
+    public function test_preview_reports_when_no_comic_title_looks_similar(): void
+    {
+        $existing = Comic::factory()->create([
+            'title' => 'Totally Unrelated',
+            'user_id' => $this->admin->id,
+        ]);
+
+        try {
+            $this->actingAs($this->admin)
+                ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/'])
+                ->assertOk()
+                ->assertSee('Nenhum comic parecido encontrado')
+                ->assertDontSee('Possível duplicata')
+                ->assertDontSee('Esta galeria já foi importada');
+        } finally {
+            $this->deleteComicTree($existing->id);
+        }
+    }
+
+    public function test_store_rejects_a_gallery_that_was_already_imported(): void
+    {
+        $existing = Comic::factory()->create([
+            'title' => 'Existing Gallery',
+            'user_id' => $this->admin->id,
+        ]);
+        EhImport::create([
+            'comic_id' => $existing->id,
+            'gid' => 123,
+            'token' => 'abcdef1234',
+            'status' => EhImport::STATUS_COMPLETE,
+            'total_pages' => 2,
+        ]);
+
+        try {
+            $token = $this->previewToken();
+
+            $this->actingAs($this->admin)->post('/admin/import', [
+                'preview_token' => $token,
+                'title' => 'Duplicate Import',
+            ])->assertRedirect(route('admin.import.progress', $existing))
+                ->assertSessionHas('error');
+
+            $this->assertDatabaseMissing('comics', ['title' => 'Duplicate Import']);
+        } finally {
+            $this->deleteComicTree($existing->id);
+        }
+    }
+
     public function test_default_date_follows_latest_scheduled(): void
     {
         Comic::factory()->create(['user_id' => $this->admin->id, 'published_at' => now()->addDays(2)]);
