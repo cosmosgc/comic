@@ -264,6 +264,8 @@ Route::prefix('forum')->name('forum.')->group(function () {
         Route::post('/posts/{post}/report', [ForumPostController::class, 'report'])->name('posts.report');
 
         Route::post('/threads/{thread}/subscribe', [ForumThreadController::class, 'subscribe'])->name('threads.subscribe');
+        // Owner-editable topic banner (premium feature in the future; public for now).
+        Route::put('/threads/{thread}', [ForumThreadController::class, 'update'])->name('threads.update');
         Route::post('/threads/{thread}/poll/vote', [ForumPollController::class, 'vote'])
             ->middleware('throttle:20,1')->name('polls.vote');
         Route::post('/threads/{thread}/report', [ForumThreadController::class, 'report'])->name('threads.report');
@@ -291,6 +293,10 @@ Route::prefix('admin/forum')->name('admin.forum.')->middleware(['auth', AdminMid
     Route::delete('/categories/{id}', [AdminForumController::class, 'categoryDestroy'])->name('categories.destroy');
     Route::post('/categories/{id}/toggle', [AdminForumController::class, 'categoryToggle'])->name('categories.toggle');
     Route::get('/threads', [AdminForumController::class, 'threads'])->name('threads');
+    Route::get('/threads/{id}/edit', [AdminForumController::class, 'threadEdit'])->name('threads.edit');
+    Route::put('/threads/{id}', [AdminForumController::class, 'threadUpdate'])->name('threads.update');
+    Route::delete('/threads/{id}', [AdminForumController::class, 'threadDestroy'])->name('threads.destroy');
+    Route::post('/threads/{id}/restore', [AdminForumController::class, 'threadRestore'])->name('threads.restore');
     Route::get('/moderation', [AdminForumController::class, 'moderation'])->name('moderation');
     Route::post('/moderation/{report}/resolve', [AdminForumController::class, 'resolveReport'])->name('reports.resolve');
     Route::get('/moderators', [AdminForumController::class, 'moderators'])->name('moderators');

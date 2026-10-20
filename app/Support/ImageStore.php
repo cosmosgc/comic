@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use RuntimeException;
 use Throwable;
 
@@ -44,8 +45,12 @@ class ImageStore
         $directory = trim($directory, '/');
         $target = public_path('storage/'.$directory);
 
-        if (! is_dir($target) && ! @mkdir($target, 0755, true) && ! is_dir($target)) {
-            throw new RuntimeException("Não foi possível criar a pasta {$target}.");
+        // Create the target directory (and any missing parents) so new
+        // upload folders like storage/forum/banners work on a fresh host.
+        try {
+            File::ensureDirectoryExists($target, 0755, true);
+        } catch (Throwable $e) {
+            throw new RuntimeException("Não foi possível criar a pasta {$target}.", 0, $e);
         }
 
         $name = bin2hex(random_bytes(12)).'.'.self::extension($file);

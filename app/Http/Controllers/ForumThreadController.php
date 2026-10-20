@@ -14,6 +14,7 @@ use App\Services\Gamification;
 use App\Support\ActivityLogger;
 use App\Support\Forum;
 use App\Support\ForumNotifier;
+use App\Support\ImageStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,8 @@ class ForumThreadController extends Controller
                 'title' => $data['title'],
                 'slug' => ForumThread::uniqueSlug($category->id, $data['title']),
                 'type' => $data['type'] ?? 'discussion',
+                'banner_position_x' => (int) ($data['banner_position_x'] ?? 50),
+                'banner_position_y' => (int) ($data['banner_position_y'] ?? 50),
                 'is_approved' => true,
             ]);
 
@@ -103,6 +106,13 @@ class ForumThreadController extends Controller
                 ForumAttachment::storeMany($opening, $request->file('attachments'), $user->id);
             }
 
+            // Topic banner (premium feature in the future; public for now).
+            if ($request->hasFile('banner')) {
+                $thread->update([
+                    'banner_image_path' => ImageStore::put($request->file('banner'), 'forum/banners'),
+                ]);
+            }
+
             $thread->refreshCounters();
             $category->refreshCounters();
 
@@ -129,6 +139,41 @@ class ForumThreadController extends Controller
             'categorySlug' => $category->slug,
             'threadSlug' => $thread->slug,
         ])->with('success', $message);
+    }
+
+    /**
+     * Owner-editable thread settings. For now this only covers the topic
+     * banner, which previews the upcoming premium feature (public for now).
+     */
+    public function update(Request $request, ForumThread $thread): RedirectResponse
+    {
+        abort_unless(Forum::enabled(), 404);
+        $this->authorize('update', $thread);
+
+        $request->validate([
+            'banner' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+            'banner_position_x' => 'nullable|integer|min:0|max:100',
+            'banner_position_y' => 'nullable|integer|min:0|max:100',
+            'remove_banner' => 'nullable|boolean',
+        ]);
+
+        // The focal point changes independently from the file upload.
+        $thread->update([
+            'banner_position_x' => $request->filled('banner_position_x') ? (int) $request->input('banner_position_x') : 50,
+            'banner_position_y' => $request->filled('banner_position_y') ? (int) $request->input('banner_position_y') : 50,
+        ]);
+
+        if ($request->hasFile('banner')) {
+            ImageStore::delete($thread->banner_image_path);
+            $thread->update([
+                'banner_image_path' => ImageStore::put($request->file('banner'), 'forum/banners'),
+            ]);
+        } elseif ($request->boolean('remove_banner')) {
+            ImageStore::delete($thread->banner_image_path);
+            $thread->update(['banner_image_path' => null]);
+        }
+
+        return back()->with('success', 'Banner do tópico atualizado.');
     }
 
     public function subscribe(Request $request, ForumThread $thread): JsonResponse|RedirectResponse
@@ -288,6 +333,7 @@ class ForumThreadController extends Controller
         $category = $thread->category;
         $this->record($request, $thread, 'deleted');
         ForumNotifier::threadModerated($thread, 'deleted', $request->user());
+        ImageStore::delete($thread->banner_image_path);
         $thread->delete();
         $category?->refreshCounters();
 

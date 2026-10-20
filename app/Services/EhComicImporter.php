@@ -41,10 +41,10 @@ class EhComicImporter
 
         $meta = $this->lookup->fetchMetadata([$gallery])[0] ?? [];
         if (isset($meta['error'])) {
-            throw new EhImportException('E-Hentai respondeu: '.(string) $meta['error']);
+            throw new EhImportException('A galeria respondeu: '.(string) $meta['error']);
         }
         if (! isset($meta['title']) && ! isset($meta['gid'])) {
-            throw new EhImportException('A API do E-Hentai não retornou essa galeria. Confira a URL.');
+            throw new EhImportException('A galeria não foi encontrada. Confira a URL.');
         }
 
         $tags = is_array($meta['tags'] ?? null) ? array_values($meta['tags']) : [];
@@ -267,7 +267,7 @@ class EhComicImporter
         }
 
         if (! $response->ok()) {
-            throw new EhImportException('E-Hentai retornou HTTP '.$response->status().' ao ler '.$url);
+            throw new EhImportException('A origem retornou HTTP '.$response->status().' ao ler '.$url);
         }
 
         return $response->body();

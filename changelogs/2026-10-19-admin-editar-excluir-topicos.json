@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Admin do fórum: editar e excluir tópicos",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "admin", "moderacao"],
+    "summary": "A lista Admin → Fórum → Tópicos ganhou ações de editar e excluir. A edição cobre título, quadro, tipo, banner e status (fixado, trancado, aprovado); a exclusão move o tópico para a lixeira, com restauração pelo filtro “Removidos”.",
+    "body": "## Editar e excluir tópicos\n\nEm **Admin → Fórum → Tópicos**, cada tópico agora tem os botões **Editar** e **Excluir**:\n\n- **Editar** abre um formulário com **título**, **quadro**, **tipo** (discussão ou pergunta), **banner**, e os status **fixado**, **trancado** e **aprovado**. O slug é recalculado automaticamente quando o título ou o quadro mudam.\n- **Excluir** move o tópico para a lixeira (exclusão reversível). O filtro **Status → Removidos** lista os tópicos excluídos e permite **Restaurar**.\n- A lista também ganhou filtros por **quadro** e **status** (publicados, pendentes ou removidos) e mostra uma miniatura do banner."
+}

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: anexos das respostas voltam a abrir",
+    "date": "2026-10-19",
+    "category": "Fixed",
+    "tags": ["forum", "anexos", "imagens", "correcao"],
+    "summary": "As imagens anexadas em tópicos e respostas eram gravadas em storage/app/public e a URL apontava para /storage/..., que não existe no servidor (não há symlink). Agora vão para public/storage como o resto das mídias, e os arquivos já enviados são movidos automaticamente pela migration.",
+    "body": "## Anexos do fórum em public/storage\n\nAs imagens anexadas em tópicos e respostas eram gravadas no disco `public` (`storage/app/public/forum/...`), mas o site serve as mídias de usuário direto de `public/storage/` — no host não existe symlink. O resultado era um link `…/storage/forum/2026/10/…` que dava 404.\n\n- Novos anexos passam a ser gravados em `public/storage/forum/AAAA/MM/`, com as mesmas regras de nome aleatório e extensão por MIME do resto do site.\n- A migration `move_forum_attachments_to_public_storage` move os arquivos já enviados para o novo local, então os anexos antigos voltam a abrir sem intervenção manual.\n- Largura e altura continuam sendo registradas para as miniaturas do tópico."
+}

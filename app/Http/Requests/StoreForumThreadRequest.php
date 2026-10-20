@@ -29,6 +29,10 @@ class StoreForumThreadRequest extends FormRequest
             'tags.*' => 'string|max:30',
             'attachments' => 'nullable|array|max:'.(int) config('forum.max_attachments', 4),
             'attachments.*' => 'image|max:4096',
+            // Premium (planned): topic banners will be a paid feature; public for now.
+            'banner' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+            'banner_position_x' => 'nullable|integer|min:0|max:100',
+            'banner_position_y' => 'nullable|integer|min:0|max:100',
         ];
     }
 }

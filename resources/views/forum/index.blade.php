@@ -32,9 +32,16 @@
                     @php($last = $board->threads->first())
                     <a href="{{ route('forum.category', ['categorySlug' => $board->slug]) }}"
                        class="flex items-center gap-4 px-4 py-3 transition hover:bg-zinc-900/40">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-lg" aria-hidden="true">
-                            {{ $board->icon ?: '💬' }}
-                        </div>
+                        @if ($board->banner_image_path)
+                            <div class="h-10 w-20 shrink-0 overflow-hidden rounded-lg border border-zinc-800" aria-hidden="true">
+                                <img src="{{ asset($board->banner_image_path) }}" alt="" class="h-full w-full object-cover"
+                                     style="object-position: {{ $board->bannerPosition() }};">
+                            </div>
+                        @else
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-lg" aria-hidden="true">
+                                {{ $board->icon ?: '💬' }}
+                            </div>
+                        @endif
                         <div class="min-w-0 flex-1">
                             <p class="truncate font-semibold">
                                 {{ $board->name }}

@@ -6,6 +6,7 @@
 @section('content')
     <form method="POST"
           action="{{ $category->exists ? route('admin.forum.categories.update', $category->id) : route('admin.forum.categories.store') }}"
+          enctype="multipart/form-data"
           class="admin-card max-w-2xl">
         @csrf
         @if ($category->exists) @method('PUT') @endif
@@ -37,6 +38,26 @@
             <div>
                 <label class="admin-label" for="description">Descrição</label>
                 <textarea id="description" name="description" rows="2" maxlength="1000" class="admin-input w-full">{{ old('description', $category->description) }}</textarea>
+            </div>
+
+            <div>
+                <label class="admin-label" for="banner">Banner do quadro</label>
+                <img id="category-banner-preview"
+                     src="{{ $category->banner_image_path ? asset($category->banner_image_path) : '' }}"
+                     alt="Prévia do banner do quadro"
+                     @class(['mb-2 h-28 w-full max-w-sm rounded-lg border border-zinc-800 object-cover', 'hidden' => ! $category->banner_image_path])
+                     style="object-position: {{ $category->bannerPosition() }};">
+                @if ($category->banner_image_path)
+                    <label class="mb-2 flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="remove_banner" value="1"> Remover banner atual
+                    </label>
+                @endif
+                <input id="banner" type="file" name="banner" accept="image/*" class="admin-input w-full">
+                <x-banner-crop preview-id="category-banner-preview"
+                               :x="old('banner_position_x', $category->banner_position_x ?? 50)"
+                               :y="old('banner_position_y', $category->banner_position_y ?? 50)" />
+                @error('banner')<p class="mt-1 text-xs text-rose-400">{{ $message }}</p>@enderror
+                <p class="mt-1 text-xs opacity-60">Aparece em destaque no topo do quadro, com degradê horizontal.</p>
             </div>
 
             <div class="grid grid-cols-3 gap-4">
@@ -79,3 +100,24 @@
         </div>
     </form>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var input = document.getElementById('banner');
+        var preview = document.getElementById('category-banner-preview');
+        if (!input || !preview) return;
+
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+</script>
+@endpush

@@ -1,7 +1,7 @@
 @extends('layouts.admin-layout')
 
-@section('title', 'Importar do E-Hentai')
-@section('page-title', 'Importar do E-Hentai')
+@section('title', 'Importar galeria')
+@section('page-title', 'Importar galeria')
 
 @section('content')
     @if (session('success'))
@@ -132,7 +132,7 @@
                             @endif
                         </p>
                         <a href="{{ $preview['source_url'] }}" target="_blank" rel="noopener"
-                           class="text-indigo-600 hover:underline dark:text-indigo-300">abrir no E-Hentai ↗</a>
+                           class="text-indigo-600 hover:underline dark:text-indigo-300">abrir galeria ↗</a>
                         @if ($preview['truncated'])
                             <p class="mt-1 text-xs text-amber-600 dark:text-amber-300">
                                 ⚠️ Nem todas as páginas foram listadas — só as encontradas serão importadas.
@@ -248,6 +248,22 @@
                     <a href="{{ route('comics.showById', $comic->id) }}" class="admin-btn admin-btn-success admin-btn-sm">Ver comic</a>
                     <a href="{{ route('comics.edit', $comic->id) }}" class="admin-btn admin-btn-sm">Editar</a>
                     <a href="{{ route('admin.import') }}" class="admin-btn admin-btn-sm">Importar outro</a>
+                    @if ($transferConfigured)
+                        @if ($comic->transfer?->isDone() && $comic->transfer->remote_view_url)
+                            <a href="{{ $comic->transfer->remote_view_url }}" target="_blank" rel="noopener"
+                               class="admin-btn admin-btn-sm" title="Comic {{ $comic->transfer->remote_comic_id }} no remoto">✓ No remoto ↗</a>
+                        @else
+                            <span id="import-transfer-box" class="inline-flex flex-wrap items-center gap-2">
+                                <button type="button"
+                                        data-import-transfer="{{ $comic->id }}"
+                                        data-transfer-url="{{ route('admin.comics.transfer', $comic) }}"
+                                        class="admin-btn admin-btn-success admin-btn-sm">
+                                    {{ $comic->transfer ? 'Continuar envio ('.min($comic->transfer->next_page - 1, $comic->transfer->total_pages).'/'.$comic->transfer->total_pages.')' : 'Enviar p/ remoto' }}
+                                </button>
+                                <span data-transfer-status="{{ $comic->id }}" class="text-xs opacity-70"></span>
+                            </span>
+                        @endif
+                    @endif
                 </div>
                 <div id="import-retry-row" class="mt-3 hidden">
                     <button type="button" id="import-retry" class="admin-btn admin-btn-success admin-btn-sm">Tentar falhadas de novo</button>
@@ -347,6 +363,7 @@
     var retryRow = document.getElementById('import-retry-row');
     var retryBtn = document.getElementById('import-retry');
     var pagesBox = document.getElementById('import-pages');
+    var transferBox = document.getElementById('import-transfer-box');
     var statsLine = document.getElementById('import-stats');
     var logBoxes = document.querySelectorAll('[data-import-log]');
     var modal = document.getElementById('import-modal');
@@ -503,6 +520,8 @@
             failed.classList.add('hidden');
             if (retryRow) retryRow.classList.add('hidden');
         }
+        // Only offer the remote transfer when every page is ready.
+        if (transferBox) transferBox.classList.toggle('hidden', fails.length > 0);
         status.textContent = 'Concluído: ' + data.done + ' página(s) importada(s).';
         done.classList.remove('hidden');
         done.classList.add('flex');
@@ -743,5 +762,67 @@
     });
 })();
 </script>
+@if ($transferConfigured)
+<script>
+// Send the finished import to the configured remote host (same flow as
+// Admin → Comics → Enviar p/ remoto).
+(function () {
+    var btn = document.querySelector('[data-import-transfer]');
+    if (!btn) return;
+
+    var label = document.querySelector('[data-transfer-status="' + btn.getAttribute('data-import-transfer') + '"]');
+
+    btn.addEventListener('click', function () {
+        btn.disabled = true;
+        if (label) label.textContent = 'criando no remoto…';
+        fetch(btn.getAttribute('data-transfer-url'), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+            if (!res.ok || !res.body.push_url) {
+                btn.disabled = false;
+                if (label) label.textContent = 'erro: ' + (res.body.message || res.status);
+                return;
+            }
+            pollPush(res.body.push_url, label, btn);
+        })
+        .catch(function () {
+            btn.disabled = false;
+            if (label) label.textContent = 'erro de rede';
+        });
+    });
+
+    function pollPush(url, label, btn) {
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+            if (!res.ok) {
+                btn.disabled = false;
+                if (label) label.textContent = 'erro: ' + (res.body.message || res.status) + ' — clique para tentar de novo';
+                return;
+            }
+            if (res.body.complete) {
+                if (label) {
+                    label.innerHTML = 'concluído (' + res.body.done + '/' + res.body.total + ')' +
+                        (res.body.url ? ' · <a class="underline" target="_blank" rel="noopener" href="' + res.body.url + '">abrir no remoto ↗</a>' : '');
+                }
+                return;
+            }
+            if (label) label.textContent = 'enviando ' + res.body.done + '/' + res.body.total + '…';
+            setTimeout(function () { pollPush(url, label, btn); }, 800);
+        })
+        .catch(function () {
+            btn.disabled = false;
+            if (label) label.textContent = 'erro de rede — clique para tentar de novo';
+        });
+    }
+})();
+</script>
+@endif
 @endif
 @endpush

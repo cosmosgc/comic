@@ -11,21 +11,31 @@
         <a href="{{ route('forum.category', ['categorySlug' => $category->slug]) }}" class="hover:text-zinc-300">{{ $category->name }}</a>
     </nav>
 
-    <header class="mb-4">
-        <h1 class="text-2xl font-extrabold tracking-tight">
-            @if ($thread->is_pinned)<span class="mr-1 text-indigo-400" title="Fixado">📌</span>@endif
-            @if ($thread->is_locked)<span class="mr-1" title="Trancado">🔒</span>@endif
-            @if ($thread->isSolved())<span class="mr-1" title="Resolvido">✅</span>@endif
-            {{ $thread->title }}
-        </h1>
-        <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-            <span class="rounded-full border border-zinc-700 px-2 py-0.5">{{ $thread->isPoll() ? 'Enquete' : ($thread->isQuestion() ? 'Pergunta' : 'Discussão') }}</span>
-            <span>{{ $thread->view_count }} visualizações</span>
-            <span>{{ $thread->reply_count }} respostas</span>
-            @foreach ($thread->tags as $tag)
-                <a href="{{ route('forum.category', ['categorySlug' => $category->slug, 'tag' => $tag->slug]) }}" class="rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700">#{{ $tag->name }}</a>
-            @endforeach
-        </p>
+    @php($bannerUrl = $thread->bannerUrl())
+    <header @class(['mb-4', 'relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 px-5 py-6 sm:px-6' => $bannerUrl])>
+        @if ($bannerUrl)
+            {{-- Topic banner behind the header, fading out horizontally. --}}
+            <img src="{{ $bannerUrl }}" alt="Banner do tópico {{ $thread->title }}" id="thread-banner-hero"
+                 class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                 style="object-position: {{ $thread->bannerPosition() }}; mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 100%); -webkit-mask-image: linear-gradient(to right, #000 0%, #000 40%, transparent 100%);">
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-950/85 via-zinc-950/40 to-transparent" aria-hidden="true"></div>
+        @endif
+        <div class="relative">
+            <h1 class="text-2xl font-extrabold tracking-tight">
+                @if ($thread->is_pinned)<span class="mr-1 text-indigo-400" title="Fixado">📌</span>@endif
+                @if ($thread->is_locked)<span class="mr-1" title="Trancado">🔒</span>@endif
+                @if ($thread->isSolved())<span class="mr-1" title="Resolvido">✅</span>@endif
+                {{ $thread->title }}
+            </h1>
+            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                <span class="rounded-full border border-zinc-700 px-2 py-0.5">{{ $thread->isPoll() ? 'Enquete' : ($thread->isQuestion() ? 'Pergunta' : 'Discussão') }}</span>
+                <span>{{ $thread->view_count }} visualizações</span>
+                <span>{{ $thread->reply_count }} respostas</span>
+                @foreach ($thread->tags as $tag)
+                    <a href="{{ route('forum.category', ['categorySlug' => $category->slug, 'tag' => $tag->slug]) }}" class="rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700">#{{ $tag->name }}</a>
+                @endforeach
+            </p>
+        </div>
     </header>
 
     <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
@@ -55,6 +65,38 @@
             </span>
         @endif
     </div>
+
+    @if ($canEditThread)
+        {{-- Premium (coming soon): custom topic banners will be a paid feature. Public for now. --}}
+        <details class="mb-4 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+            <summary class="cursor-pointer text-xs font-semibold text-zinc-400">Banner do tópico</summary>
+            <p class="mt-2 text-xs text-zinc-500">
+                A imagem aparece atrás do título, com um degradê horizontal. Recurso público por enquanto —
+                em breve os banners personalizados serão um recurso premium.
+            </p>
+            <form method="POST" action="{{ route('forum.threads.update', $thread) }}" enctype="multipart/form-data" class="mt-3 space-y-3">
+                @csrf
+                @method('PUT')
+                <img id="thread-banner-preview" src="{{ $thread->bannerUrl() ?? '' }}" alt="Prévia do banner do tópico"
+                     @class(['h-28 w-full max-w-md rounded-lg border border-zinc-800 object-cover', 'hidden' => ! $thread->banner_image_path])
+                     style="object-position: {{ $thread->bannerPosition() }};">
+                <div class="flex flex-wrap items-center gap-3">
+                    <input id="thread-banner-input" type="file" name="banner" accept="image/*" class="text-xs text-zinc-400">
+                    <button type="submit" class="rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-indigo-500">Salvar banner</button>
+                    @if ($thread->banner_image_path)
+                        <label class="inline-flex items-center gap-2 text-xs text-zinc-400">
+                            <input type="checkbox" name="remove_banner" value="1">
+                            Remover banner atual
+                        </label>
+                    @endif
+                </div>
+                <x-banner-crop preview-id="thread-banner-preview" hero-id="thread-banner-hero"
+                               :x="old('banner_position_x', $thread->banner_position_x ?? 50)"
+                               :y="old('banner_position_y', $thread->banner_position_y ?? 50)" />
+                @error('banner')<span class="text-xs text-rose-400">{{ $message }}</span>@enderror
+            </form>
+        </details>
+    @endif
 
     @include('forum.partials.poll', ['poll' => $poll ?? null, 'viewerPollVotes' => $viewerPollVotes ?? []])
 
@@ -139,5 +181,22 @@
             alert('Link copiado!');
         }
     };
+
+    (function () {
+        var input = document.getElementById('thread-banner-input');
+        var preview = document.getElementById('thread-banner-preview');
+        if (!input || !preview) return;
+
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
+    })();
 </script>
 @endsection

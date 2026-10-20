@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: ajuste do recorte dos banners",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "banner", "personalizacao", "admin"],
+    "summary": "Os banners de tópicos e de quadros agora têm controles de enquadramento (horizontal e vertical), com prévia ao vivo. O ponto escolhido é salvo e usado no recorte exibido no fórum.",
+    "body": "## Enquadramento dos banners\n\nBanners de **tópicos** e de **quadros** ganharam dois controles deslizantes:\n\n- **Horizontal** e **vertical** escolhem o ponto da imagem que fica visível quando ela é recortada (`object-position`).\n- A prévia muda na hora — no formulário de **Novo tópico**, no painel **Banner do tópico**, em **Admin → Fórum → Tópicos** e em **Admin → Fórum → Categorias**.\n- No tópico, o banner do cabeçalho também se ajusta ao vivo enquanto você arrasta.\n- O enquadramento é salvo junto com o banner e aplicado no cabeçalho do tópico, no herói do quadro e nas miniaturas."
+}

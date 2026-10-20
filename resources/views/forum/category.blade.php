@@ -11,23 +11,58 @@
         <span>{{ $category->name }}</span>
     </nav>
 
-    <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-extrabold tracking-tight">{{ $category->icon ? $category->icon.' ' : '' }}{{ $category->name }}</h1>
-            @if ($category->description)
-                <p class="text-sm text-zinc-400">{{ $category->description }}</p>
+    @php($bannerUrl = $category->bannerUrl())
+
+    @if ($bannerUrl)
+        {{-- Board hero: bigger and bolder than the thread banner. --}}
+        <header class="relative mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-indigo-950/30">
+            <img src="{{ $bannerUrl }}" alt="Banner de {{ $category->name }}"
+                 class="absolute inset-0 h-full w-full object-cover"
+                 style="object-position: {{ $category->bannerPosition() }}; mask-image: linear-gradient(to right, #000 0%, #000 65%, transparent 100%); -webkit-mask-image: linear-gradient(to right, #000 0%, #000 65%, transparent 100%);">
+            <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-950/95 via-zinc-950/55 to-zinc-950/10" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-zinc-950/90 to-transparent" aria-hidden="true"></div>
+            <div class="relative flex min-h-44 flex-col justify-end px-6 py-7 sm:min-h-60 sm:px-8">
+                <div class="flex flex-wrap items-end justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-zinc-950/70 text-3xl shadow-lg backdrop-blur sm:h-16 sm:w-16" aria-hidden="true">
+                            {{ $category->icon ?: '💬' }}
+                        </span>
+                        <div>
+                            <h1 class="text-3xl font-extrabold tracking-tight drop-shadow sm:text-4xl">{{ $category->name }}</h1>
+                            @if ($category->description)
+                                <p class="mt-1 max-w-2xl text-sm text-zinc-300">{{ $category->description }}</p>
+                            @endif
+                        </div>
+                    </div>
+                    @if ($canStartThread)
+                        <button type="button" onclick="document.getElementById('new-thread').classList.toggle('hidden')"
+                                class="rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-950/50 transition hover:bg-indigo-400">
+                            Novo tópico
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </header>
+    @else
+        <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-tight">{{ $category->icon ? $category->icon.' ' : '' }}{{ $category->name }}</h1>
+                @if ($category->description)
+                    <p class="text-sm text-zinc-400">{{ $category->description }}</p>
+                @endif
+            </div>
+            @if ($canStartThread)
+                <button type="button" onclick="document.getElementById('new-thread').classList.toggle('hidden')"
+                        class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-500">
+                    Novo tópico
+                </button>
             @endif
-        </div>
-        @if ($canStartThread)
-            <button type="button" onclick="document.getElementById('new-thread').classList.toggle('hidden')"
-                    class="rounded-full bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-500">
-                Novo tópico
-            </button>
-        @endif
-    </header>
+        </header>
+    @endif
 
     @if ($canStartThread)
-        <div id="new-thread" class="mb-6 hidden rounded-xl border border-zinc-800 p-4">
+        {{-- Keep the form open after a failed POST so the validation error is visible. --}}
+        <div id="new-thread" @class(['mb-6 rounded-xl border border-zinc-800 p-4', 'hidden' => ! $errors->any()])>
             <form method="POST" action="{{ route('forum.threads.store', ['categorySlug' => $category->slug]) }}" enctype="multipart/form-data" class="space-y-3">
                 @csrf
                 <div>
@@ -79,6 +114,17 @@
                 <div>
                     <label for="thread-attachments" class="mb-1 block text-xs font-semibold text-zinc-400">Anexos (imagens)</label>
                     <input id="thread-attachments" type="file" name="attachments[]" accept="image/*" multiple class="block w-full text-xs text-zinc-400">
+                </div>
+                <div>
+                    <label for="thread-banner" class="mb-1 block text-xs font-semibold text-zinc-400">Banner do tópico (opcional)</label>
+                    <input id="thread-banner" type="file" name="banner" accept="image/*" class="block w-full text-xs text-zinc-400">
+                    <img id="thread-banner-preview" alt="Prévia do banner do tópico"
+                         class="mt-2 hidden h-28 w-full max-w-md rounded-lg border border-zinc-800 object-cover">
+                    <x-banner-crop preview-id="thread-banner-preview"
+                                   :x="old('banner_position_x', 50)"
+                                   :y="old('banner_position_y', 50)" />
+                    {{-- Premium (coming soon): custom topic banners will be a paid feature. Public for now. --}}
+                    <p class="mt-1 text-[11px] text-zinc-500">Imagem de fundo atrás do título, com degradê horizontal. Recurso público por enquanto.</p>
                 </div>
                 @if ($errors->any())
                     <p class="text-xs text-rose-400">{{ $errors->first() }}</p>
@@ -161,6 +207,23 @@
         const sync = () => poll.classList.toggle('hidden', type.value !== 'poll');
         type.addEventListener('change', sync);
         sync();
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('thread-banner');
+        const preview = document.getElementById('thread-banner-preview');
+        if (!input || !preview) return;
+
+        input.addEventListener('change', function () {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
     });
 </script>
 @endpush

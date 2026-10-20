@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\ImageStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -38,7 +38,10 @@ class ForumAttachment extends Model
 
     public function url(): string
     {
-        return Storage::disk('public')->url($this->path);
+        // Attachments live in the real `public/storage` directory (there is
+        // no storage symlink on the shared host), so build the URL from the
+        // path used by ImageStore instead of the `public` disk.
+        return asset('storage/'.$this->path);
     }
 
     public function isImage(): bool
@@ -59,11 +62,14 @@ class ForumAttachment extends Model
                 if (! $file->isValid()) {
                     continue;
                 }
-                $path = $file->store('forum/'.date('Y/m'), 'public');
+
+                // Read size/name before moving the temp file off disk.
+                $size = (int) $file->getSize();
+                $path = ImageStore::putInStorage($file, 'forum/'.date('Y/m'));
 
                 $width = null;
                 $height = null;
-                $absolute = Storage::disk('public')->path($path);
+                $absolute = public_path('storage/'.$path);
                 if (is_file($absolute) && @getimagesize($absolute) !== false) {
                     [$width, $height] = @getimagesize($absolute);
                 }
@@ -73,7 +79,7 @@ class ForumAttachment extends Model
                     'path' => $path,
                     'original_name' => $file->getClientOriginalName(),
                     'mime' => $file->getClientMimeType(),
-                    'size' => (int) $file->getSize(),
+                    'size' => $size,
                     'image_width' => $width,
                     'image_height' => $height,
                 ]);

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: descrição só com o link da galeria",
+    "date": "2026-10-19",
+    "category": "Changed",
+    "tags": ["importacao", "descricao", "admin"],
+    "summary": "A descrição sugerida ao importar uma galeria deixa de citar a origem: agora é apenas o link para a galeria, usando o nome de quem publicou como texto. A tela de importação também trocou o título e o link de abertura por textos neutros.",
+    "body": "## Menos carimbo, mais link\n\nA descrição sugerida na etapa **Revisar e agendar** não começa mais com o carimbo de origem. Ela fica só assim:\n\n```\n[babolix](https://e-hentai.org/g/3812739/0a0552c092/)\n```\n\nO nome de quem publicou vira o texto do link; colchetes no nome são trocados por parênteses para não quebrar o Markdown. Quando a galeria não informa quem publicou, a descrição fica com a URL da galeria.\n\nNa mesma linha, a tela de importação passou a usar **Importar galeria** como título e **abrir galeria ↗** no link da prévia. Mensagens de erro do importador também ficaram neutras (sem citar a origem)."
+}

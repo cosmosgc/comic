@@ -130,7 +130,7 @@ class AdminImportController extends Controller
      */
     public function progress(Comic $comic): View
     {
-        $comic = $comic->fresh();
+        $comic = $comic->fresh()->load('transfer');
         $import = $comic->ehImport;
 
         return view('admin.import', [
@@ -144,6 +144,8 @@ class AdminImportController extends Controller
             'details' => $import ? $this->pageDetails($import) : [],
             'totalSize' => $import ? (int) $import->pages()->where('status', EhImportPage::STATUS_DONE)->sum('file_size') : 0,
             'logLines' => $this->logLines($import),
+            'transferConfigured' => trim((string) config('transfer.remote_url')) !== ''
+                && trim((string) config('transfer.remote_token')) !== '',
         ]);
     }
 
@@ -648,28 +650,22 @@ class AdminImportController extends Controller
     }
 
     /**
-     * Import stamp: where it came from, plus a link to the gallery with
-     * the E-Hentai uploader as the link text (DescriptionText renders it).
+     * Suggested description: a link to the gallery labelled with the
+     * uploader name (DescriptionText renders it as Markdown).
      *
      * @param  array{category?: string|null, uploader?: string|null, source_url: string, filecount: int}  $preview
      */
     protected function suggestedDescription(array $preview): string
     {
-        $parts = ['Importado do E-Hentai'];
-        if (! empty($preview['category'])) {
-            $parts[] = '('.$preview['category'].')';
-        }
-
-        $stamp = implode(' ', $parts);
         $uploader = trim((string) ($preview['uploader'] ?? ''));
 
         if ($uploader === '') {
-            return $stamp.' — '.$preview['source_url'];
+            return $preview['source_url'];
         }
 
         // Brackets in the name would break the [label](url) link.
         $label = trim(str_replace(['[', ']'], ['(', ')'], $uploader));
 
-        return $stamp.' — ['.$label.']('.$preview['source_url'].')';
+        return '['.$label.']('.$preview['source_url'].')';
     }
 }

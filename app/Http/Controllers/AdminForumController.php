@@ -11,6 +11,7 @@ use App\Models\ForumSetting;
 use App\Models\ForumThread;
 use App\Models\User;
 use App\Support\ForumNotifier;
+use App\Support\ImageStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,7 +88,8 @@ class AdminForumController extends Controller
         $data = $this->validateCategory($request);
         $data['slug'] = $this->uniqueSlug($data['slug'] ?? $data['name']);
 
-        ForumCategory::create($data);
+        $category = ForumCategory::create($data);
+        $this->syncBanner($request, $category);
 
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria criada.');
     }
@@ -113,6 +115,7 @@ class AdminForumController extends Controller
         }
 
         $category->update($data);
+        $this->syncBanner($request, $category);
 
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria atualizada.');
     }
@@ -120,6 +123,14 @@ class AdminForumController extends Controller
     public function categoryDestroy(int $id): RedirectResponse
     {
         $category = ForumCategory::findOrFail($id);
+
+        // Child boards go with the section (FK cascade), so clean their
+        // banner files before deleting the tree.
+        $category->children()->get()->each(
+            fn (ForumCategory $child) => ImageStore::delete($child->banner_image_path)
+        );
+        ImageStore::delete($category->banner_image_path);
+
         $category->delete();
 
         return redirect()->route('admin.forum.categories')->with('success', 'Categoria removida.');
@@ -163,13 +174,19 @@ class AdminForumController extends Controller
         $validated = $request->validate([
             'q' => 'nullable|string|max:100',
             'category' => 'nullable|integer',
+            'status' => 'nullable|in:all,active,pending,removed',
         ]);
         $query = trim((string) ($validated['q'] ?? ''));
+        $status = $validated['status'] ?? 'all';
 
-        $threads = ForumThread::with(['author', 'category'])
-            ->withCount('posts')
+        $threads = ForumThread::withTrashed()
+            ->with(['author', 'category'])
             ->when($query !== '', fn ($q) => $q->where('title', 'like', '%'.$query.'%'))
             ->when(! empty($validated['category']), fn ($q) => $q->where('forum_category_id', $validated['category']))
+            ->when($status === 'active', fn ($q) => $q->whereNull('deleted_at')->where('is_approved', true))
+            ->when($status === 'pending', fn ($q) => $q->whereNull('deleted_at')->where('is_approved', false))
+            ->when($status === 'removed', fn ($q) => $q->onlyTrashed())
+            ->when($status === 'all', fn ($q) => $q->whereNull('deleted_at'))
             ->latest()
             ->paginate(25)
             ->withQueryString();
@@ -178,8 +195,103 @@ class AdminForumController extends Controller
             'threads' => $threads,
             'query' => $query,
             'category' => $validated['category'] ?? null,
-            'categories' => ForumCategory::orderBy('name')->get(),
+            'status' => $status,
+            'boards' => ForumCategory::boards()->orderBy('name')->get(),
         ]);
+    }
+
+    public function threadEdit(int $id): View
+    {
+        $thread = ForumThread::with(['author', 'category'])->findOrFail($id);
+
+        return view('admin.forum.thread-form', [
+            'thread' => $thread,
+            'boards' => ForumCategory::boards()->orderBy('name')->get(),
+        ]);
+    }
+
+    public function threadUpdate(Request $request, int $id): RedirectResponse
+    {
+        $thread = ForumThread::with('category')->findOrFail($id);
+
+        $data = $request->validate([
+            'title' => 'required|string|min:3|max:150',
+            'forum_category_id' => 'required|integer|exists:forum_categories,id',
+            'type' => 'nullable|in:discussion,question',
+            'banner' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+            'banner_position_x' => 'nullable|integer|min:0|max:100',
+            'banner_position_y' => 'nullable|integer|min:0|max:100',
+            'remove_banner' => 'nullable|boolean',
+        ]);
+
+        $board = ForumCategory::boards()->findOrFail($data['forum_category_id']);
+        $oldCategoryId = (int) $thread->forum_category_id;
+        $newCategoryId = (int) $board->id;
+
+        $attributes = [
+            'forum_category_id' => $newCategoryId,
+            'title' => $data['title'],
+            'banner_position_x' => $request->filled('banner_position_x') ? (int) $request->input('banner_position_x') : 50,
+            'banner_position_y' => $request->filled('banner_position_y') ? (int) $request->input('banner_position_y') : 50,
+            'is_pinned' => $request->boolean('is_pinned'),
+            'is_locked' => $request->boolean('is_locked'),
+            'is_approved' => $request->boolean('is_approved'),
+        ];
+
+        // Polls keep their original type: changing it here would leave an
+        // orphan poll (or a poll thread without a poll).
+        if (! $thread->isPoll()) {
+            $attributes['type'] = $data['type'] ?? 'discussion';
+        }
+
+        if ($newCategoryId !== $oldCategoryId || $data['title'] !== $thread->title) {
+            $attributes['slug'] = ForumThread::uniqueSlug($newCategoryId, $data['title'], $thread->id);
+        }
+
+        $thread->update($attributes);
+
+        if ($newCategoryId !== $oldCategoryId) {
+            ForumCategory::find($oldCategoryId)?->refreshCounters();
+            $board->refreshCounters();
+        }
+
+        // Same banner flow as the topic page: replace or clear the current file.
+        if ($request->hasFile('banner')) {
+            ImageStore::delete($thread->banner_image_path);
+            $thread->update([
+                'banner_image_path' => ImageStore::put($request->file('banner'), 'forum/banners'),
+            ]);
+        } elseif ($request->boolean('remove_banner')) {
+            ImageStore::delete($thread->banner_image_path);
+            $thread->update(['banner_image_path' => null]);
+        }
+
+        return redirect()->route('admin.forum.threads')->with('success', 'Tópico atualizado.');
+    }
+
+    /**
+     * Soft delete so the thread and its banner can be restored from the
+     * “Removidos” filter.
+     */
+    public function threadDestroy(int $id): RedirectResponse
+    {
+        $thread = ForumThread::findOrFail($id);
+        $category = $thread->category;
+
+        $thread->delete();
+        $category?->refreshCounters();
+
+        return back()->with('success', 'Tópico movido para a lixeira. Use o filtro "Removidos" para restaurar.');
+    }
+
+    public function threadRestore(int $id): RedirectResponse
+    {
+        $thread = ForumThread::withTrashed()->findOrFail($id);
+
+        $thread->restore();
+        $thread->category?->refreshCounters();
+
+        return back()->with('success', 'Tópico restaurado.');
     }
 
     public function moderation(Request $request): View
@@ -363,6 +475,10 @@ class AdminForumController extends Controller
             'color' => 'nullable|string|max:32',
             'sort_order' => 'nullable|integer|min:0|max:100000',
             'min_role' => 'required|in:'.implode(',', array_keys(ForumCategory::roles())),
+            'banner' => 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:4096',
+            'banner_position_x' => 'nullable|integer|min:0|max:100',
+            'banner_position_y' => 'nullable|integer|min:0|max:100',
+            'remove_banner' => 'nullable|boolean',
         ]);
 
         return [
@@ -376,7 +492,25 @@ class AdminForumController extends Controller
             'min_role' => $validated['min_role'],
             'is_visible' => $request->boolean('is_visible'),
             'is_locked' => $request->boolean('is_locked'),
+            'banner_position_x' => $request->filled('banner_position_x') ? (int) $request->input('banner_position_x') : 50,
+            'banner_position_y' => $request->filled('banner_position_y') ? (int) $request->input('banner_position_y') : 50,
         ];
+    }
+
+    /**
+     * Store, replace or clear the board hero image.
+     */
+    protected function syncBanner(Request $request, ForumCategory $category): void
+    {
+        if ($request->hasFile('banner')) {
+            ImageStore::delete($category->banner_image_path);
+            $category->update([
+                'banner_image_path' => ImageStore::put($request->file('banner'), 'forum/categories'),
+            ]);
+        } elseif ($request->boolean('remove_banner')) {
+            ImageStore::delete($category->banner_image_path);
+            $category->update(['banner_image_path' => null]);
+        }
     }
 
     protected function uniqueSlug(string $source, ?int $ignoreId = null): string

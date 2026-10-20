@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: banner em destaque nos quadros",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "banner", "categorias", "admin"],
+    "summary": "Os quadros do fórum agora têm um banner configurável em Admin → Fórum → Categorias. Na página do quadro ele aparece como um herói grande atrás do nome, com degradê horizontal, e a lista do fórum mostra uma miniatura.",
+    "body": "## Banner dos quadros\n\nO banner dos quadros segue a mesma ideia do banner dos tópicos, mas com um visual **mais proeminente**.\n\n- Em **Admin → Fórum → Categorias**, o formulário de cada categoria ganhou o campo **Banner do quadro**, com prévia do banner atual e opção de remover.\n- Na página do quadro, a imagem vira um **herói grande** (com o ícone e o nome da categoria em destaque), com degradê horizontal para manter o texto legível.\n- Na página inicial do fórum, cada quadro com banner mostra uma **miniatura** na lista.\n- A imagem é guardada junto das demais mídias de usuário e é apagada ao trocar, remover ou excluir a categoria."
+}

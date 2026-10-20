@@ -25,6 +25,9 @@ class ForumThread extends Model
         'title',
         'slug',
         'type',
+        'banner_image_path',
+        'banner_position_x',
+        'banner_position_y',
         'is_pinned',
         'is_locked',
         'is_approved',
@@ -43,6 +46,8 @@ class ForumThread extends Model
             'is_locked' => 'boolean',
             'is_approved' => 'boolean',
             'last_post_at' => 'datetime',
+            'banner_position_x' => 'integer',
+            'banner_position_y' => 'integer',
         ];
     }
 
@@ -99,6 +104,26 @@ class ForumThread extends Model
     public function isPoll(): bool
     {
         return $this->type === 'poll';
+    }
+
+    /**
+     * Public URL of the topic banner, or null when none was uploaded.
+     *
+     * Premium (planned): custom banners will be gated behind a paid plan.
+     * For now they are public — any thread owner may set one.
+     */
+    public function bannerUrl(): ?string
+    {
+        return $this->banner_image_path ? asset($this->banner_image_path) : null;
+    }
+
+    /**
+     * CSS object-position for the banner focal point (e.g. "50% 50%").
+     */
+    public function bannerPosition(): string
+    {
+        return max(0, min(100, (int) ($this->banner_position_x ?? 50))).'% '
+            .max(0, min(100, (int) ($this->banner_position_y ?? 50))).'%';
     }
 
     public function poll(): HasOne

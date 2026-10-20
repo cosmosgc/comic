@@ -59,15 +59,21 @@ Example:
 - Posts: **excluir o próprio post** pelo menu de ações (autor ou admin, com confirmação) — as respostas/citações e as imagens do post somem junto; e **silenciar usuários** pelo perfil, escondendo os posts e as respostas da pessoa do feed, das hashtags e das listas de respostas, sem avisá-la
 - Fórum — enquetes: tópico do tipo **Enquete** com pergunta, 2 a 10 opções, escolha única ou múltipla e data de encerramento opcional; voto com resultado em barras e troca de voto enquanto a enquete estiver aberta
 - Fórum — **resumo semanal por e-mail** (opção no perfil, desligada por padrão) com os tópicos mais movimentados, e **reordenação por arrastar** de seções e quadros em Admin → Fórum → Categorias, com salvamento automático
+- Fórum — **banner do tópico**: o autor envia uma imagem na criação ou depois pelo próprio tópico, exibida atrás do título com degradê horizontal (recurso público por enquanto; será premium)
+- Fórum — **banner dos quadros**: configurado em Admin → Fórum → Categorias, aparece como herói grande na página do quadro e como miniatura na lista do fórum
+- Admin → Fórum → Tópicos: ações de **editar** (título, quadro, tipo, banner e status) e **excluir** (lixeira reversível, com restauração pelo filtro "Removidos")
+- Fórum — **enquadramento dos banners**: controles de horizontal/vertical com prévia ao vivo nos formulários de tópico e de quadro (admin), salvos como `object-position` no cabeçalho, no herói e nas miniaturas
+- Importar galeria: ao concluir o download, a tela de progresso mostra **Enviar p/ remoto** (mesma transferência de Admin → Comics), oculto enquanto houver páginas falhadas
 - Novas migrations: `edited_at` em `posts`, `mutes`, `forum_polls` + `forum_poll_options` + `forum_poll_votes` e `forum_digest` em `users`
 
 ### Changed
 - Listas do site (home, busca e painel dos mais vistos) passam a ordenar pela **data de lançamento**, não pela data de upload — um comic agendado semanas antes aparece no topo no dia em que é liberado
 - Navbar e painéis laterais reorganizados: menu completo só a partir de 1024px (abaixo disso vira o botão de hambúrguer, que antes aparecia só até 768px), busca adaptável e painéis laterais **encostados nas bordas da tela** — o layout virou full-width (o limite de 1280px deixava ~120px de margem em cada lado em telas largas), com os painéis fixos ao rolar e rolagem própria
-- Descrição de comic importado do E-Hentai: em vez da URL crua da galeria, mostra o **nome de quem publicou** a galeria como link para o post original; qualquer URL solta numa descrição agora também vira link clicável
+- Descrição de comic importado: em vez do carimbo de origem, fica só o **link da galeria com o nome de quem publicou**; qualquer URL solta numa descrição agora também vira link clicável
 - Lista de comics do admin: miniatura da capa ao lado do nome, com marcador “Sem capa” quando o comic ainda não tem imagem
 
 ### Fixed
+- Fórum — anexos: as imagens de tópicos e respostas eram gravadas em `storage/app/public` e a URL dava 404 no host (sem symlink); agora usam `public/storage`, e a migration move os arquivos antigos
 - Rolagem horizontal da página em telas médias: a navbar completa não cabia abaixo de ~1024px e os painéis de largura fixa ficavam presos dentro das colunas de 2/12 da grade
 - Zoom da página no leitor: agora amplia até a largura da coluna (antes continuava limitado a 820px pelo `max-width` do container e estourava 100vw em telas pequenas)
 - CSS morto/duplicado: `nav-link`, `admin-alert-info` e `admin-toggle-count` sem uso, componente `side-panel` nunca renderizado, estilos duplicados no leitor (`background-color` repetido, `100vw` na tela de login) e `px-4 py-6` repetido nas views que já recebem o container do layout

@@ -60,6 +60,23 @@ class ForumTest extends TestCase
         ]);
     }
 
+    public function test_failed_thread_creation_reopens_the_form_with_the_error(): void
+    {
+        $user = User::factory()->create();
+        $board = ForumCategory::factory()->board()->create();
+
+        $this->actingAs($user)
+            ->from('/forum/'.$board->slug)
+            ->post('/forum/'.$board->slug, ['title' => 'Oi', 'body' => ''])
+            ->assertRedirect('/forum/'.$board->slug)
+            ->assertSessionHasErrors('body');
+
+        $this->actingAs($user)
+            ->get('/forum/'.$board->slug)
+            ->assertOk()
+            ->assertSee('id="new-thread" class="mb-6 rounded-xl border border-zinc-800 p-4"', false);
+    }
+
     public function test_reply_increments_position_and_counts(): void
     {
         $author = User::factory()->create();

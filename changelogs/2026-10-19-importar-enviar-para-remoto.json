@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: enviar para o remoto ao concluir",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["importacao", "transferencia", "admin"],
+    "summary": "Quando todas as páginas de um import terminam de baixar, a tela de progresso mostra o botão “Enviar p/ remoto”, com o mesmo envio em partes da lista de comics. Se alguma página falhar, o botão só aparece depois que as falhas forem resolvidas.",
+    "body": "## Enviar p/ remoto direto da importação\n\nAo concluir o download de todas as páginas, a tela **Admin → Importar → progresso** agora oferece o botão **Enviar p/ remoto**:\n\n- Usa a mesma transferência servidor-a-servidor de **Admin → Comics**, com o progresso do envio ao lado do botão.\n- Ao terminar, mostra o link **abrir no remoto ↗** e, nas visitas seguintes, o atalho **✓ No remoto ↗**.\n- Envios interrompidos podem ser retomados pelo mesmo botão (**Continuar envio**).\n- Se alguma página falhou, o botão fica oculto até não restar falhas — o comic precisa estar completo para viajar.\n\nO botão só aparece quando `TRANSFER_REMOTE_URL` e `TRANSFER_REMOTE_TOKEN` estão configurados."
+}

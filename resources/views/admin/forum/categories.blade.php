@@ -38,7 +38,15 @@
                         @forelse ($section->children as $board)
                             <tr data-id="{{ $board->id }}">
                                 <td class="drag-handle cursor-move select-none text-zinc-500" title="Arrastar para reordenar">⋮⋮</td>
-                                <td>{{ $board->icon }} {{ $board->name }}<br><span class="text-xs opacity-60">{{ $board->slug }}</span></td>
+                                <td>
+                                    <span class="flex items-center gap-2">
+                                        @if ($board->banner_image_path)
+                                            <img src="{{ asset($board->banner_image_path) }}" alt="" class="h-8 w-14 rounded border border-zinc-700 object-cover"
+                                                 style="object-position: {{ $board->bannerPosition() }};">
+                                        @endif
+                                        <span>{{ $board->icon }} {{ $board->name }}<br><span class="text-xs opacity-60">{{ $board->slug }}</span></span>
+                                    </span>
+                                </td>
                                 <td>{{ $board->threads_count }}</td>
                                 <td>{{ $board->sort_order }}</td>
                                 <td>{{ \App\Models\ForumCategory::roles()[$board->min_role] ?? $board->min_role }}</td>

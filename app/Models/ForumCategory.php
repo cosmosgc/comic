@@ -23,6 +23,9 @@ class ForumCategory extends Model
         'description',
         'icon',
         'color',
+        'banner_image_path',
+        'banner_position_x',
+        'banner_position_y',
         'sort_order',
         'is_visible',
         'is_locked',
@@ -39,6 +42,8 @@ class ForumCategory extends Model
         return [
             'is_visible' => 'boolean',
             'is_locked' => 'boolean',
+            'banner_position_x' => 'integer',
+            'banner_position_y' => 'integer',
         ];
     }
 
@@ -60,6 +65,23 @@ class ForumCategory extends Model
     public function isSection(): bool
     {
         return $this->parent_id === null;
+    }
+
+    /**
+     * Public URL of the board banner, or null when none was uploaded.
+     */
+    public function bannerUrl(): ?string
+    {
+        return $this->banner_image_path ? asset($this->banner_image_path) : null;
+    }
+
+    /**
+     * CSS object-position for the banner focal point (e.g. "50% 50%").
+     */
+    public function bannerPosition(): string
+    {
+        return max(0, min(100, (int) ($this->banner_position_x ?? 50))).'% '
+            .max(0, min(100, (int) ($this->banner_position_y ?? 50))).'%';
     }
 
     public function scopeVisible(Builder $query): Builder

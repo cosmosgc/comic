@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fórum: banner personalizado nos tópicos",
+    "date": "2026-10-19",
+    "category": "Added",
+    "tags": ["forum", "banner", "personalizacao", "comunidade"],
+    "summary": "O autor de um tópico pode enviar uma imagem de banner, na criação ou depois pelo próprio tópico. Ela aparece atrás do título, com um degradê horizontal, e pode ser trocada ou removida a qualquer momento.",
+    "body": "## Banner do tópico\n\nCada tópico agora pode ter uma **imagem de fundo personalizada**:\n\n- No formulário de **Novo tópico**, há o campo opcional **Banner do tópico**.\n- Depois de criado, o autor (ou um moderador) pode abrir **Banner do tópico** na página do tópico para enviar, trocar ou remover a imagem.\n- Na visualização do tópico, o banner fica atrás do título com um **degradê horizontal**, sumindo para a direita e mantendo o texto legível.\n\nO banner é público por enquanto — em breve será um **recurso premium**."
+}

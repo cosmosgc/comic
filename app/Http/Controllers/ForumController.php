@@ -169,6 +169,9 @@ class ForumController extends Controller
             'viewerPollVotes' => $viewerPollVotes,
             'canModerate' => Forum::isModerator($request->user(), $category),
             'isBanned' => Forum::isBanned($request->user(), $category->id),
+            // Topic banners are public for now (premium later), but only the
+            // owner (or a moderator) may change them.
+            'canEditThread' => $request->user() !== null && $request->user()->can('update', $thread),
         ]);
     }
 

@@ -152,6 +152,64 @@ class ForumAdminTest extends TestCase
         $this->assertDatabaseCount('forum_threads', 0);
     }
 
+    public function test_admin_can_edit_a_thread_and_move_it_to_another_board(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $currentBoard = ForumCategory::factory()->board()->create();
+        $newBoard = ForumCategory::factory()->board()->create();
+        $thread = ForumThread::factory()->create([
+            'forum_category_id' => $currentBoard->id,
+            'title' => 'Título antigo',
+            'slug' => 'titulo-antigo',
+        ]);
+
+        $this->actingAs($admin)->get('/admin/forum/threads/'.$thread->id.'/edit')
+            ->assertOk()
+            ->assertSee('Título antigo')
+            ->assertSee('name="banner_position_x"', false);
+
+        $this->actingAs($admin)->put('/admin/forum/threads/'.$thread->id, [
+            'title' => 'Título novo',
+            'forum_category_id' => $newBoard->id,
+            'type' => 'question',
+            'banner_position_x' => 30,
+            'banner_position_y' => 70,
+            'is_pinned' => '1',
+            'is_locked' => '1',
+            'is_approved' => '1',
+        ])->assertRedirect(route('admin.forum.threads'));
+
+        $thread->refresh();
+        $this->assertSame('Título novo', $thread->title);
+        $this->assertSame('titulo-novo', $thread->slug);
+        $this->assertSame($newBoard->id, (int) $thread->forum_category_id);
+        $this->assertSame('question', $thread->type);
+        $this->assertTrue($thread->is_pinned);
+        $this->assertTrue($thread->is_locked);
+        $this->assertSame(30, $thread->banner_position_x);
+        $this->assertSame(70, $thread->banner_position_y);
+        $this->assertSame(1, (int) $newBoard->fresh()->thread_count);
+        $this->assertSame(0, (int) $currentBoard->fresh()->thread_count);
+    }
+
+    public function test_admin_can_soft_delete_and_restore_a_thread(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $thread = ForumThread::factory()->create(['title' => 'Tópico removível']);
+
+        $this->actingAs($admin)->delete('/admin/forum/threads/'.$thread->id)
+            ->assertRedirect();
+        $this->assertSoftDeleted('forum_threads', ['id' => $thread->id]);
+
+        $this->actingAs($admin)->get('/admin/forum/threads?status=removed')
+            ->assertOk()
+            ->assertSee('Tópico removível');
+
+        $this->actingAs($admin)->post('/admin/forum/threads/'.$thread->id.'/restore')
+            ->assertRedirect();
+        $this->assertNotSoftDeleted('forum_threads', ['id' => $thread->id]);
+    }
+
     public function test_admin_can_resolve_a_report(): void
     {
         $admin = User::factory()->create(['admin_level' => 1]);

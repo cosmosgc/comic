@@ -103,13 +103,14 @@ class EhImportTest extends TestCase
             ->assertSee(now()->addDay()->format('Y-m-d'), false);
     }
 
-    public function test_preview_suggests_the_eh_uploader_linked_to_the_gallery(): void
+    public function test_preview_suggests_only_the_uploader_linked_to_the_gallery(): void
     {
         $response = $this->actingAs($this->admin)
             ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/']);
 
         $response->assertOk()
-            ->assertSee('[some_uploader](https://e-hentai.org/g/123/abcdef1234/)', false);
+            ->assertSee('[some_uploader](https://e-hentai.org/g/123/abcdef1234/)', false)
+            ->assertDontSee('Importado do E-Hentai', false);
     }
 
     public function test_default_date_follows_latest_scheduled(): void
@@ -390,6 +391,49 @@ class EhImportTest extends TestCase
                 ->assertOk()
                 ->assertSee('data-page-row="1"', false)
                 ->assertSee('data-page-row="2"', false);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
+    }
+
+    public function test_progress_page_offers_remote_transfer_when_configured(): void
+    {
+        config([
+            'transfer.remote_url' => 'https://remote.test/comic/public',
+            'transfer.remote_token' => 'secret',
+        ]);
+        $comicId = null;
+
+        try {
+            $comic = $this->storedComic();
+            $comicId = $comic->id;
+
+            $this->actingAs($this->admin)->get("/admin/import/{$comic->id}/progress")
+                ->assertOk()
+                ->assertSee('import-transfer-box', false)
+                ->assertSee('Enviar p/ remoto', false)
+                ->assertSee(route('admin.comics.transfer', $comic), false);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
+    }
+
+    public function test_progress_page_hides_remote_transfer_when_not_configured(): void
+    {
+        config(['transfer.remote_url' => '', 'transfer.remote_token' => '']);
+        $comicId = null;
+
+        try {
+            $comic = $this->storedComic();
+            $comicId = $comic->id;
+
+            $this->actingAs($this->admin)->get("/admin/import/{$comic->id}/progress")
+                ->assertOk()
+                ->assertDontSee('data-import-transfer', false);
         } finally {
             if ($comicId !== null) {
                 $this->deleteComicTree($comicId);
