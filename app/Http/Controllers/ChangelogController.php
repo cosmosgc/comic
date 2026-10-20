@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comic;
 use App\Services\ChangelogReader;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,10 +26,17 @@ class ChangelogController extends Controller
             route('changelog.index'),
             $query !== '' ? ['q' => $query] : []
         );
+        $nextScheduledComic = Comic::query()
+            ->scheduled()
+            ->orderBy('published_at')
+            ->orderBy('id')
+            ->first();
 
         return view('changelogs.index', [
             'changelogs' => $changelogs,
             'query' => $query,
+            'nextScheduledComic' => $nextScheduledComic,
+            'canReadNextScheduledComic' => $nextScheduledComic?->isVisibleTo($request->user()) ?? false,
         ]);
     }
 

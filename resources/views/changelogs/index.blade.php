@@ -8,6 +8,32 @@
     <h1 class="mb-1 text-2xl font-bold">Novidades</h1>
     <p class="mb-6 text-sm text-zinc-400">Mudanças do site, um post por atualização.</p>
 
+    @if ($nextScheduledComic !== null)
+        <section class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4" data-upcoming-comic>
+            <div>
+                <p class="text-sm font-semibold text-amber-200">Próximo lançamento</p>
+                @if ($canReadNextScheduledComic)
+                    <p class="mt-1 text-sm text-zinc-300">{{ $nextScheduledComic->title }} já está disponível para você.</p>
+                @else
+                    <p class="mt-1 text-sm text-zinc-300">Veja o que está chegando nos próximos dias.</p>
+                @endif
+            </div>
+            @if ($canReadNextScheduledComic)
+                <a href="{{ route('comics.showBySlug', $nextScheduledComic->slug) }}"
+                   data-upcoming-link
+                   class="rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300">
+                    Ler agora
+                </a>
+            @else
+                <a href="{{ route('comics.calendar') }}"
+                   data-upcoming-link
+                   class="rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300">
+                    Ver calendário
+                </a>
+            @endif
+        </section>
+    @endif
+
     {{-- Quick search --}}
     <form method="GET" action="{{ route('changelog.index') }}" class="mb-6 flex gap-2">
         <input type="text"
