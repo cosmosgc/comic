@@ -493,6 +493,7 @@ class MarketplaceListingController extends Controller
                 ->where('user_id', $listing->user_id)
                 ->whereIn('id', $ids)
                 ->pluck('id')
+                ->map(fn ($id) => (int) $id)
                 ->all();
 
         $sync = [];
