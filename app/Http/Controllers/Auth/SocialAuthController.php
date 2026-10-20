@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Throwable;
 
 /**
@@ -30,6 +31,10 @@ class SocialAuthController extends Controller
     public function redirect(Request $request, string $provider): RedirectResponse
     {
         abort_unless(OAuthProviders::isConfigured($provider), 404);
+
+        if ($provider === 'discord') {
+            return $this->discordRedirect($request);
+        }
 
         $state = Str::random(40);
         $verifier = Str::random(64);
@@ -116,6 +121,67 @@ class SocialAuthController extends Controller
         return $request->user() !== null
             ? $this->linkAccount($request, 'google', $profile)
             : $this->loginOrRegister($request, 'google', $profile);
+    }
+
+    /**
+     * Discord's authorization-code callback includes `iss=https://discord.com`
+     * in the query string, which the host's WAF rejects. The implicit flow puts
+     * the token in the URL fragment instead; this page forwards it to Laravel.
+     */
+    public function discordCallback(): View
+    {
+        abort_unless(OAuthProviders::isConfigured('discord'), 404);
+
+        return view('auth.oauth-fragment-callback', [
+            'providerLabel' => 'Discord',
+            'postRoute' => route('oauth.discord.token'),
+            'tokenField' => 'access_token',
+            'backRoute' => route('login'),
+        ]);
+    }
+
+    public function discordToken(Request $request): RedirectResponse
+    {
+        abort_unless(OAuthProviders::isConfigured('discord'), 404);
+
+        $pending = $request->session()->pull('oauth.pending');
+
+        if (! is_array($pending)
+            || ($pending['provider'] ?? null) !== 'discord'
+            || ! hash_equals((string) ($pending['state'] ?? ''), (string) $request->input('state', ''))) {
+            return $this->failure('A sessão de login social expirou. Tente novamente.');
+        }
+
+        $data = $request->validate([
+            'access_token' => ['required', 'string', 'max:4096'],
+        ]);
+
+        try {
+            $profile = $this->oauth->fetchProfile('discord', $data['access_token']);
+        } catch (Throwable $exception) {
+            Log::warning('Discord token verification failed.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $this->failure('Não foi possível validar a conta do Discord. Tente novamente.');
+        }
+
+        return $request->user() !== null
+            ? $this->linkAccount($request, 'discord', $profile)
+            : $this->loginOrRegister($request, 'discord', $profile);
+    }
+
+    protected function discordRedirect(Request $request): RedirectResponse
+    {
+        $state = Str::random(40);
+
+        $request->session()->put('oauth.pending', [
+            'provider' => 'discord',
+            'state' => $state,
+        ]);
+
+        return redirect()->away($this->oauth->discordImplicitAuthorizeUrl($state));
     }
 
     public function unlink(Request $request, string $provider): RedirectResponse

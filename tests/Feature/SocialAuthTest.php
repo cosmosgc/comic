@@ -292,6 +292,128 @@ class SocialAuthTest extends TestCase
         $this->assertSame(0, User::count());
     }
 
+    public function test_discord_redirect_uses_the_implicit_flow(): void
+    {
+        $this->configureDiscord();
+
+        $response = $this->get(route('oauth.redirect', ['provider' => 'discord']));
+
+        $response->assertRedirect();
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringStartsWith('https://oauth.test/discord/authorize?', $location);
+
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $pending = session('oauth.pending');
+
+        $this->assertSame('token', $query['response_type']);
+        $this->assertSame('discord-id', $query['client_id']);
+        $this->assertSame('http://localhost/auth/discord/callback', $query['redirect_uri']);
+        $this->assertSame('identify email', $query['scope']);
+        $this->assertSame($pending['state'], $query['state']);
+        $this->assertArrayNotHasKey('code_challenge', $query);
+    }
+
+    public function test_discord_token_creates_a_verified_account_and_logs_in(): void
+    {
+        $this->configureDiscord();
+
+        Http::fake([
+            'https://oauth.test/discord/user' => Http::response([
+                'id' => 'discord-123',
+                'global_name' => 'Jane Doe',
+                'username' => 'jane',
+                'email' => 'jane@example.com',
+                'verified' => true,
+                'avatar' => 'abc',
+            ]),
+        ]);
+
+        $this->withSession([
+            'oauth.pending' => [
+                'provider' => 'discord',
+                'state' => 'state-123',
+            ],
+        ])->post(route('oauth.discord.token'), [
+            'access_token' => 'discord-access-token',
+            'state' => 'state-123',
+        ])->assertRedirect(route('comics.index'));
+
+        $user = User::where('email', 'jane@example.com')->firstOrFail();
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'discord',
+            'provider_user_id' => 'discord-123',
+        ]);
+    }
+
+    public function test_authenticated_user_can_link_discord_with_an_access_token(): void
+    {
+        $user = User::factory()->create();
+
+        $this->configureDiscord();
+
+        Http::fake([
+            'https://oauth.test/discord/user' => Http::response([
+                'id' => 'discord-123',
+                'global_name' => 'Jane Doe',
+                'username' => 'jane',
+                'email' => 'other@example.com',
+                'verified' => true,
+            ]),
+        ]);
+
+        $this->actingAs($user)
+            ->withSession([
+                'oauth.pending' => [
+                    'provider' => 'discord',
+                    'state' => 'state-123',
+                ],
+            ])
+            ->post(route('oauth.discord.token'), [
+                'access_token' => 'discord-access-token',
+                'state' => 'state-123',
+            ])
+            ->assertRedirect(route('profile.edit').'#contas');
+
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider' => 'discord',
+            'provider_user_id' => 'discord-123',
+        ]);
+    }
+
+    public function test_discord_token_rejects_an_invalid_state(): void
+    {
+        $this->configureDiscord();
+        Http::fake();
+
+        $this->withSession([
+            'oauth.pending' => [
+                'provider' => 'discord',
+                'state' => 'expected-state',
+            ],
+        ])->post(route('oauth.discord.token'), [
+            'access_token' => 'discord-access-token',
+            'state' => 'wrong-state',
+        ])->assertRedirect(route('login'))->assertSessionHas('error');
+
+        $this->assertGuest();
+        Http::assertNothingSent();
+    }
+
+    public function test_discord_callback_page_renders_the_fragment_form(): void
+    {
+        $this->configureDiscord();
+
+        $this->get(route('oauth.discord.callback'))
+            ->assertOk()
+            ->assertSee('Entrando com Discord')
+            ->assertSee(route('oauth.discord.token'), false);
+    }
+
     public function test_login_page_only_shows_providers_with_credentials(): void
     {
         $this->configureProvider('discord', [
@@ -326,6 +448,17 @@ class SocialAuthTest extends TestCase
                 'picture' => 'https://example.com/jane.png',
                 'exp' => (string) (time() + 300),
             ], $overrides)),
+        ]);
+    }
+
+    protected function configureDiscord(): void
+    {
+        $this->configureProvider('discord', [
+            'client_id' => 'discord-id',
+            'client_secret' => 'discord-secret',
+            'redirect' => 'http://localhost/auth/discord/callback',
+            'authorize_url' => 'https://oauth.test/discord/authorize',
+            'user_url' => 'https://oauth.test/discord/user',
         ]);
     }
 

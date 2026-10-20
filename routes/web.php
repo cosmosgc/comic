@@ -217,6 +217,9 @@ Route::post('/register', [RegisterController::class, 'register']);
 // Social login / account linking (OAuth 2.0).
 Route::post('/auth/google/credential', [SocialAuthController::class, 'googleCredential'])
     ->middleware('throttle:10,1')->name('oauth.google.credential');
+Route::get('/auth/discord/callback', [SocialAuthController::class, 'discordCallback'])->name('oauth.discord.callback');
+Route::post('/auth/discord/token', [SocialAuthController::class, 'discordToken'])
+    ->middleware('throttle:10,1')->name('oauth.discord.token');
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
 Route::post('/auth/{provider}/unlink', [SocialAuthController::class, 'unlink'])

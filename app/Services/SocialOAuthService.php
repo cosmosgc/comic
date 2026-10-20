@@ -42,6 +42,29 @@ class SocialOAuthService
     }
 
     /**
+     * Discord's implicit flow. The access token arrives in the URL fragment,
+     * so the host's WAF never sees Discord's `iss=https://discord.com`
+     * parameter (which makes the authorization-code callback fail with 406).
+     */
+    public function discordImplicitAuthorizeUrl(string $state): string
+    {
+        $provider = $this->provider('discord');
+
+        $params = [
+            'response_type' => 'token',
+            'client_id' => (string) $provider['client_id'],
+            'redirect_uri' => OAuthProviders::callbackUrl('discord'),
+            'scope' => implode(' ', (array) ($provider['scopes'] ?? [])),
+            'state' => $state,
+        ];
+
+        $authorizeUrl = (string) $provider['authorize_url'];
+        $separator = str_contains($authorizeUrl, '?') ? '&' : '?';
+
+        return $authorizeUrl.$separator.http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    /**
      * Exchange the authorization code for an access token.
      *
      * @return array<string, mixed>
