@@ -7,6 +7,7 @@ use App\Models\Collection;
 use App\Models\Post;
 use App\Models\User;
 use App\Support\ImageStore;
+use App\Support\Marketplace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -152,10 +153,21 @@ class ProfileController extends Controller
         $canMute = Auth::check() && Auth::id() !== $user->id && Schema::hasTable('mutes');
         $isMuted = $canMute && Auth::user()->mutedUsers()->whereKey($user->getKey())->exists();
 
+        $marketplaceListings = collect();
+        if (Schema::hasTable('marketplace_listings') && Marketplace::enabled()) {
+            $marketplaceListings = $user->marketplaceListings()
+                ->visible()
+                ->with(['images', 'comics:id,title,slug,image_path', 'category:id,name,slug,icon'])
+                ->orderByDesc('bumped_at')
+                ->orderByDesc('published_at')
+                ->limit(6)
+                ->get();
+        }
+
         return view('profile.public', compact(
             'user', 'comics', 'likedPosts', 'likedPostIds', 'showLikes', 'likesTab', 'collectionsTab', 'collections',
             'likedComicIds', 'followsTab', 'followers', 'following', 'followersCount', 'followingCount', 'bookmarkedPostIds',
-            'canMute', 'isMuted'
+            'canMute', 'isMuted', 'marketplaceListings'
         ));
     }
 

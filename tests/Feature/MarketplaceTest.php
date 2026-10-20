@@ -347,6 +347,21 @@ class MarketplaceTest extends TestCase
             ->assertDontSee('À venda no Mercado', false);
     }
 
+    public function test_public_profile_shows_the_sellers_active_marketplace_listings(): void
+    {
+        $listing = MarketplaceListing::factory()->create([
+            'marketplace_category_id' => $this->category->id,
+            'user_id' => $this->seller->id,
+            'title' => 'Figure no perfil',
+        ]);
+
+        $this->get(route('profile.public.show.username', ['username' => $this->seller->name]))
+            ->assertOk()
+            ->assertSee('À venda no Mercado', false)
+            ->assertSee('Figure no perfil', false)
+            ->assertSee($listing->priceShort(), false);
+    }
+
     public function test_authenticated_marketplace_screens_render(): void
     {
         $listing = MarketplaceListing::factory()->create([

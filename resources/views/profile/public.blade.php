@@ -30,6 +30,34 @@
         'isMuted' => $isMuted ?? false,
     ])
 
+    @if (($marketplaceListings ?? collect())->isNotEmpty())
+        <section class="mb-6">
+            <div class="mb-4 flex items-end justify-between gap-3">
+                <div>
+                    <h2 class="text-xl font-semibold">À venda no Mercado</h2>
+                    <p class="text-sm text-zinc-500">Anúncios ativos de {{ $user->name }}.</p>
+                </div>
+                <a href="{{ route('marketplace.browse') }}" class="text-sm text-amber-400 hover:underline">Explorar o Mercado</a>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($marketplaceListings as $listing)
+                    <a href="{{ $listing->url() }}"
+                       class="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-3 transition hover:border-amber-500/60">
+                        @if ($listing->coverUrl())
+                            <img src="{{ $listing->coverUrl() }}" alt="" class="h-20 w-16 shrink-0 rounded-lg object-cover">
+                        @endif
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold">{{ $listing->title }}</p>
+                            <p class="mt-1 text-sm text-amber-300">{{ $listing->priceShort() }}</p>
+                            <p class="mt-1 text-xs text-zinc-500">{{ $listing->category?->name }} · {{ $listing->kindLabel() }}</p>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     @php
         $likesAvailable = !empty($showLikes) && $likedPosts !== null;
         $collectionsAvailable = $collections !== null;
