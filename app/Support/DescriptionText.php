@@ -17,15 +17,19 @@ class DescriptionText
     protected const PATTERN = '#\[([^\]\n]{1,120})\]\((https?://[^\s\)]+)\)|(https?://[^\s<]+)#i';
 
     /**
-     * Safe HTML: everything is escaped, only the links become markup.
+     * Safe HTML: everything is escaped; links become markup when $linkify is true.
      * Ready to echo unescaped in Blade: {!! DescriptionText::render($x) !!}
      */
-    public static function render(?string $text): string
+    public static function render(?string $text, bool $linkify = true): string
     {
         $text = (string) $text;
 
         if (trim($text) === '') {
             return '';
+        }
+
+        if (! $linkify) {
+            return nl2br(e(self::plain($text)));
         }
 
         if (preg_match_all(self::PATTERN, $text, $matches, PREG_OFFSET_CAPTURE) === 0) {

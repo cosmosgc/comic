@@ -78,7 +78,7 @@
 
         <!-- Description (desktop only: keeps phone cards compact) -->
         <p class="mt-2 hidden text-sm text-zinc-400 line-clamp-3 sm:block">
-            {!! \App\Support\DescriptionText::render($comic->description) !!}
+            {!! \App\Support\DescriptionText::render($comic->description, ! $locked) !!}
         </p>
 
         <!-- Tags (desktop only) -->

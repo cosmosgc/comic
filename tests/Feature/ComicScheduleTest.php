@@ -40,6 +40,31 @@ class ComicScheduleTest extends TestCase
             ->assertDontSee('Future Hidden XYZ');
     }
 
+    public function test_scheduled_teaser_shows_description_links_as_text_until_comic_is_accessible(): void
+    {
+        $owner = User::factory()->create();
+        $comic = Comic::factory()->create([
+            'user_id' => $owner->id,
+            'published_at' => now()->addDays(3),
+            'description' => 'Leia [babolix](https://example.com/comic)',
+        ]);
+        $descriptionLink = '<a class="desc-link" href="https://example.com/comic"';
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Leia babolix')
+            ->assertDontSee($descriptionLink, false);
+
+        $this->withUnencryptedCookie('comics_layout', 'list')->get('/')
+            ->assertOk()
+            ->assertSee('Leia babolix')
+            ->assertDontSee($descriptionLink, false);
+
+        $this->actingAs($owner)->get('/')
+            ->assertOk()
+            ->assertSee($descriptionLink, false);
+    }
+
     public function test_calendar_lists_scheduled_comics_inside_the_public_preview_window(): void
     {
         $this->travelTo('2026-10-20 10:00:00');

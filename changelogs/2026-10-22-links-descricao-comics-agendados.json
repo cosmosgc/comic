@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Links de descrição em comics bloqueados para visitantes",
+    "date": "2026-10-22",
+    "category": "Fixed",
+    "tags": ["comics", "home", "lancamentos", "descricao"],
+    "summary": "Visitantes veem o texto das descrições sem links clicáveis enquanto o comic está bloqueado para leitura.",
+    "body": "Na home, links em descrições de comics que ainda não podem ser lidos aparecem como texto simples nos layouts de grade e lista. Quando o comic fica acessível, os links voltam a funcionar normalmente."
+}

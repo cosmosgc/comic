@@ -27,6 +27,9 @@ Example:
 
 ## [Unreleased]
 
+### Fixed
+- Descrições de comics bloqueados para visitantes mostram links como texto simples nos layouts de grade e lista da home
+
 ### Added
 - **Lista de comics do admin: colunas Páginas e Tamanho (MB)** — quantidade de páginas e tamanho em disco (capa + páginas) em colunas separadas, ambas ordenáveis clicando no cabeçalho; o tamanho (em bytes no atributo de ordem, com tooltip mostrando o valor exato) fica em cache por 6h e é recalculado quando páginas são criadas ou apagadas
 - **Comics — envio em lote para o remoto**: a lista ganhou o filtro “Fora do remoto” (comics sem envio concluído para a outra instalação) e seleção múltipla com “Selecionar todos os listados”; “Enviar selecionados p/ remoto” manda um comic por vez com progresso por linha, pode ser parado e retomado, e o envio individual continua igual
