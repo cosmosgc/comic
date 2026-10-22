@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Comics: filtro “Fora do remoto” e envio em lote",
+    "date": "2026-10-21",
+    "category": "Added",
+    "tags": ["admin", "comics", "transferencia", "remoto"],
+    "summary": "A lista Admin → Comics ganhou o filtro “Fora do remoto”, que mostra só os comics sem envio concluído para a outra instalação, e um envio em lote: marque vários comics (ou todos os listados) e mande para o remoto de uma vez, com progresso por comic e opção de parar.",
+    "body": "## Envio em lote para o remoto\n\nNa tela **Admin → Comics**:\n\n- **Filtro “Fora do remoto”**: lista os comics que ainda não têm um envio concluído para a outra instalação. Envios falhos ou interrompidos também aparecem, para serem retomados.\n- **Seleção múltipla**: cada comic fora do remoto ganhou uma caixa de seleção. **Selecionar todos os listados** marca os resultados atuais (respeitando a busca da tabela), e o contador mostra quantos estão marcados.\n- **Enviar selecionados p/ remoto**: envia um comic por vez, reaproveitando o mesmo fluxo de antes (criação no remoto + envio das páginas em blocos), com o progresso na linha de cada comic e um resumo no fim.\n- O botão vira **Parar envio** enquanto roda: o comic atual termina de ser enviado e o restante fica para a próxima vez. Clicar de novo continua de onde parou — quem já foi enviado é reconhecido e pulado.\n- O envio individual por comic e o botão **Enviar p/ remoto** de cada linha continuam funcionando normalmente.\n\nTudo isso só aparece quando o remoto está configurado (`TRANSFER_REMOTE_URL` e `TRANSFER_REMOTE_TOKEN`)."
+}

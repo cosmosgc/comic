@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Lista de comics do admin mostra quantidade de páginas e tamanho em disco",
+    "date": "2026-10-21",
+    "category": "Added",
+    "tags": ["admin", "comics"],
+    "summary": "A tabela Admin → Comics ganhou duas colunas novas e ordenáveis: Páginas (quantidade de páginas do comic) e Tamanho (MB) (soma em disco de capa + páginas). Clique no cabeçalho para ordenar por qualquer uma das duas.",
+    "body": "## Colunas Páginas e Tamanho (MB) na lista de comics\n\n- **Páginas**: quantidade de páginas registradas no comic.\n- **Tamanho (MB)**: tamanho total em disco do comic (capa + todas as páginas), formatado com uma casa decimal; passe o mouse sobre o valor para ver os bytes exatos.\n- As duas colunas são ordenáveis como as demais — clique no cabeçalho (uma segunda vez inverte a direção).\n- Os tamanhos são calculados escaneando os arquivos e ficam em cache por 6 horas; criar, baixar ou apagar páginas recalcula na hora."
+}

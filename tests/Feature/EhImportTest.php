@@ -34,6 +34,7 @@ class EhImportTest extends TestCase
         config(['ehimport.delay_ms' => 0]);
         config(['ehimport.delay_jitter_ms' => 0]);
         config(['ehimport.image_delay_ms' => 0]);
+        config(['ehimport.title_cleanup' => []]);
         $this->artisan('migrate');
         Cache::flush();
 
@@ -102,6 +103,37 @@ class EhImportTest extends TestCase
             ->assertSee('female:stockings', false)
             ->assertSee('2 página(s)', false)
             ->assertSee(now()->addDay()->format('Y-m-d'), false);
+    }
+
+    public function test_preview_cleans_configured_snippets_from_the_title(): void
+    {
+        config(['ehimport.title_cleanup' => ['Imported']]);
+
+        $this->actingAs($this->admin)
+            ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/'])
+            ->assertOk()
+            ->assertSee('value="Title"', false)
+            ->assertDontSee('Imported Title', false);
+    }
+
+    public function test_title_cleanup_setting_is_editable_and_applied_to_previews(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/import/settings', ['title_cleanup' => "Imported\n[PT-BR]"])
+            ->assertRedirect(route('admin.import'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('eh_import_settings', [
+            'key' => 'title_cleanup',
+            'value' => "Imported\n[PT-BR]",
+        ]);
+        $this->assertSame("Imported\n[PT-BR]", config('ehimport.title_cleanup'));
+
+        $this->actingAs($this->admin)
+            ->post('/admin/import/preview', ['url' => 'https://e-hentai.org/g/123/abcdef1234/'])
+            ->assertOk()
+            ->assertSee('value="Title"', false)
+            ->assertDontSee('Imported Title', false);
     }
 
     public function test_preview_suggests_only_the_uploader_linked_to_the_gallery(): void
@@ -630,10 +662,14 @@ class EhImportTest extends TestCase
 
     public function test_import_page_shows_tuning_form_to_admin(): void
     {
+        config(['ehimport.title_cleanup' => ['[Portuguese-BR]', '[PT-BR]']]);
+
         $this->actingAs($this->admin)->get('/admin/import')->assertOk()
             ->assertSee('Configurações de importação', false)
             ->assertSee('Páginas por lote', false)
-            ->assertSee('Proxy de imagens', false);
+            ->assertSee('Proxy de imagens', false)
+            ->assertSee('Remover dos títulos', false)
+            ->assertSee('[Portuguese-BR]', false);
 
         $this->actingAs(User::factory()->create(['admin_level' => 0]))
             ->post('/admin/import/settings', ['chunk' => 1])

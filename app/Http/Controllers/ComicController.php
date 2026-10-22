@@ -8,6 +8,7 @@ use App\Http\Resources\ComicResource;
 use App\Models\Comic;
 use App\Models\Page;
 use App\Models\Tag;
+use App\Models\User;
 use App\Models\Widget;
 use App\Support\ActivityLogger;
 use App\Support\ImageStore;
@@ -43,22 +44,37 @@ class ComicController extends Controller
         // doubles as the pitch to sign up.
         $filter = $request->input('filter') === 'exclusivo' ? 'exclusivo' : null;
 
+        $user = Auth::user();
+
         $query = Comic::withCount($counts);
-        if (Auth::check()) {
+        if ($user !== null) {
             // Members see the standard visibility matrix: released comics,
             // the last week before release, their own queue, and admins'
             // full queue.
-            $query->visibleTo(Auth::user());
-        } else {
-            // The home page teases upcoming releases in the public preview
-            // window. Their cards remain locked and point to login; search
-            // and profile lists still use visibleTo() and do not expose them.
-            $query->where(function ($visibility) {
-                $visibility->published()
-                    ->orWhere(function ($scheduled) {
-                        $scheduled->scheduled()
-                            ->where('comics.published_at', '<=', now()->addDays(Comic::SCHEDULE_PREVIEW_DAYS));
+            $query->visibleTo($user);
+        }
+
+        if (Schema::hasColumn('comics', 'published_at')) {
+            // The home list keeps every "Pré-estreia" comic (the members'
+            // early access window) but only three "Em breve" teasers, so a
+            // long import queue cannot push released comics off page one.
+            // Guests get no early access, so all their scheduled comics are
+            // teasers and the whole guest visibility is decided here.
+            $teaserIds = $this->upcomingTeaserIds($user);
+
+            $query->where(function ($visibility) use ($user, $teaserIds) {
+                if ($user === null) {
+                    $visibility->published();
+                } else {
+                    $visibility->where(function ($available) {
+                        $available->whereNull('comics.published_at')
+                            ->orWhere('comics.published_at', '<=', now()->addDays(Comic::EARLY_ACCESS_DAYS));
                     });
+                }
+
+                if ($teaserIds !== []) {
+                    $visibility->orWhereIn('comics.id', $teaserIds);
+                }
             });
         }
         if ($filter === 'exclusivo' && Schema::hasColumn('comics', 'is_exclusive')) {
@@ -98,6 +114,39 @@ class ComicController extends Controller
         $recommendedComics = SidebarComposer::recommended();
 
         return view('comics.index', compact('comics', 'topComics', 'tags', 'showPanels', 'widgets', 'likedComicIds', 'sort', 'filter', 'latestComics', 'recommendedComics', 'layout'));
+    }
+
+    /**
+     * The "Em breve" cards kept in the home list (at most three).
+     *
+     * Signed-in viewers see comics inside the early access window as
+     * "Pré-estreia", so those are never counted here. Guests get no early
+     * access and therefore see every scheduled comic as "Em breve"; the
+     * public preview window already limits what they can see.
+     *
+     * @return array<int, int>
+     */
+    private function upcomingTeaserIds(?User $user): array
+    {
+        $query = Comic::query()->scheduled();
+
+        if ($user === null) {
+            $query->where('comics.published_at', '<=', now()->addDays(Comic::SCHEDULE_PREVIEW_DAYS));
+        } else {
+            $query->where('comics.published_at', '>', now()->addDays(Comic::EARLY_ACCESS_DAYS));
+
+            if ((int) $user->admin_level < 1) {
+                // Beyond the early access window, members only see their
+                // own queue, so only those can become teasers.
+                $query->where('comics.user_id', $user->id);
+            }
+        }
+
+        return $query->orderBy('comics.published_at')
+            ->orderBy('comics.id')
+            ->limit(3)
+            ->pluck('id')
+            ->all();
     }
 
     public function create(): View

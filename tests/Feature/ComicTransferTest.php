@@ -267,6 +267,53 @@ class ComicTransferTest extends TestCase
         }
     }
 
+    public function test_push_skips_page_number_gaps(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = $this->comicWithFiles(4);
+
+        // Simulate a page deleted/failed after the comic was uploaded.
+        $comic->pages()->where('page_number', 3)->delete();
+        File::delete(public_path("storage/comics/{$comic->id}/page-0003.gif"));
+
+        $pageUploads = 0;
+        Http::fake([
+            'remote.test/*' => function ($request) use (&$pageUploads) {
+                if (str_ends_with($request->url(), '/transfer/comics')) {
+                    return Http::response(['comic_id' => 99], 200);
+                }
+                if (str_ends_with($request->url(), '/pages') && $request->method() === 'GET') {
+                    return Http::response(['pages' => []], 200);
+                }
+                if (str_ends_with($request->url(), '/finalize')) {
+                    return Http::response(['ok' => true, 'pages' => 3, 'url' => 'https://remote.test/comics/99'], 200);
+                }
+
+                $pageUploads++;
+
+                return Http::response(['ok' => true, 'page_number' => $pageUploads], 200);
+            },
+        ]);
+
+        try {
+            $start = $this->actingAs($admin)->postJson("/admin/comics/{$comic->id}/transfer")
+                ->assertOk()->assertJson(['total' => 3]);
+
+            $pushUrl = $start->json('push_url');
+            $this->actingAs($admin)->postJson($pushUrl)
+                ->assertOk()->assertJson(['done' => 2, 'complete' => false]);
+            $this->actingAs($admin)->postJson($pushUrl)
+                ->assertOk()->assertJson(['done' => 3, 'complete' => true])
+                ->assertJsonPath('url', 'https://remote.test/comics/99');
+
+            // Pages 1, 2 and 4 went out; the missing 3 does not block.
+            $this->assertSame(3, $pageUploads);
+            $this->assertTrue($comic->transfer->fresh()->isDone());
+        } finally {
+            $this->deleteComicTree($comic->id);
+        }
+    }
+
     public function test_local_send_refuses_when_remote_unconfigured(): void
     {
         Config::set('transfer.remote_url', '');

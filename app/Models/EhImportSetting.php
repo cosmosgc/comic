@@ -86,6 +86,11 @@ class EhImportSetting extends Model
                 'hint' => 'Relay porta 443 p/ firewall que bloqueia hath (vazio = direto). Terminar com ?url=',
                 'type' => 'string', 'maxlen' => 500,
             ],
+            'title_cleanup' => [
+                'label' => 'Remover dos títulos',
+                'hint' => 'Um texto por linha, sem diferenciar maiúsculas (ex.: [Portuguese-BR]). Vazio = lista padrão do config/ehimport.php.',
+                'type' => 'text', 'maxlen' => 2000,
+            ],
         ];
     }
 

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: reordenar a fila arrastando e adicionar galerias",
+    "date": "2026-10-21",
+    "category": "Added",
+    "tags": ["importacao", "fila", "admin"],
+    "summary": "A fila de importação agora pode ser reordenada arrastando as linhas pelo ⠿, e a ordem escolhida é a usada pelo “Processar fila”. Também dá para adicionar uma galeria colando a URL (galeria ou página dela) ou escolher um comic já no site, com a opção de apagar as páginas atuais e baixar tudo de novo.",
+    "body": "## Fila de importação: ordem e novas formas de adicionar\n\nA fila em **Admin → Importar** ficou mais fácil de montar:\n\n- **Reordenar arrastando**: arraste cada linha pelo ⠿ para mudar a ordem. A nova ordem é salva na hora e é a que **Processar fila** segue.\n- **Adicionar por URL**: cole o link de uma galeria (ou de uma página dela) e ela entra no fim da fila, sem passar pela busca. Galerias já importadas ou já na fila são recusadas com aviso.\n- **Adicionar comics já no site**: digite o ID (ou escolha pelo título) de um comic que já tenha importação do E-Hentai. Sem marcar nada, a fila baixa só as páginas pendentes/falhas, dando nova chance às que falharam; com **Baixar todas as páginas de novo** marcado, as páginas atuais são apagadas e a galeria inteira é baixada outra vez.\n- **Remover** continua disponível em cada linha (exceto enquanto ela está baixando).\n\nA fila continua rodando pelo navegador: fechar a página pausa e **Continuar fila** retoma do item atual.\n\n### Deploy\n\nA migration `2026_10_21_113950_add_position_and_redownload_to_eh_import_queue_table` cria as colunas `position` e `redownload`. Rode as migrations em **Admin → Migrações** depois de enviar os arquivos."
+}

@@ -27,6 +27,7 @@ use App\Services\Deploy\FtpDeployer;
 use App\Services\GithubPullRequests;
 use App\Services\MigrationInspector;
 use App\Services\TransferException;
+use App\Support\ComicDiskUsage;
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
@@ -348,9 +349,25 @@ class AdminController extends Controller
     public function comics(Request $request, ComicDuplicateFinder $duplicates): View
     {
         $validated = $request->validate([
-            'attention' => ['nullable', 'in:untagged,duplicates'],
+            'filters' => ['nullable', 'array'],
+            'filters.*' => ['string', 'in:untagged,duplicates,remote,scheduled'],
+            // Legacy single-filter links (`?attention=remote`).
+            'attention' => ['nullable', 'in:untagged,duplicates,remote,scheduled'],
         ]);
-        $attentionFilter = $validated['attention'] ?? null;
+
+        $activeFilters = array_values(array_unique($validated['filters'] ?? []));
+        if ($activeFilters === [] && isset($validated['attention'])) {
+            $activeFilters = [$validated['attention']];
+        }
+
+        $transferConfigured = trim((string) config('transfer.remote_url')) !== ''
+            && trim((string) config('transfer.remote_token')) !== '';
+
+        // The remote button only exists when a remote is configured; drop a
+        // stale/bookmarked remote filter so the list does not go blank.
+        if (! $transferConfigured) {
+            $activeFilters = array_values(array_diff($activeFilters, ['remote']));
+        }
 
         // Only the columns the table renders: the admin list would
         // otherwise hydrate every comic with all of its text columns.
@@ -360,23 +377,36 @@ class AdminController extends Controller
             $columns[] = 'is_exclusive';
         }
 
-        $query = Comic::query();
-
-        if ($attentionFilter === 'untagged') {
-            $query->whereDoesntHave('tags');
-        } elseif ($attentionFilter === 'duplicates') {
-            $duplicateIds = $duplicates->potentialDuplicateIds(Comic::query()->get(['id', 'title']));
-            $query->whereIn('comics.id', $duplicateIds);
-        }
-
-        $comics = $query->with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
+        // Every row is rendered (DataTables paginates client-side); the
+        // attention filters are toggled live in the browser using these
+        // flags. Combinations are AND: all active filters must match.
+        $comics = Comic::query()
+            ->with('transfer:id,comic_id,status,remote_comic_id,remote_view_url,next_page,total_pages')
             ->get($columns);
+
+        $untaggedIds = array_flip(
+            Comic::query()->whereDoesntHave('tags')->pluck('id')->map(fn ($id) => (int) $id)->all()
+        );
+        $duplicateIds = array_flip($duplicates->potentialDuplicateIds($comics));
+
+        // Page counts in one grouped query — pageCount() per comic would
+        // be one query per row.
+        $pageCounts = Page::query()
+            ->selectRaw('comic_id, count(*) as pages_total')
+            ->groupBy('comic_id')
+            ->pluck('pages_total', 'comic_id');
+
+        // Total bytes on disk per comic (cover + pages), cached.
+        $pageBytes = ComicDiskUsage::bytesById($comics->modelKeys());
 
         return view('admin.comics', [
             'comics' => $comics,
-            'attentionFilter' => $attentionFilter,
-            'transferConfigured' => trim((string) config('transfer.remote_url')) !== ''
-                && trim((string) config('transfer.remote_token')) !== '',
+            'activeFilters' => $activeFilters,
+            'untaggedIds' => $untaggedIds,
+            'duplicateIds' => $duplicateIds,
+            'transferConfigured' => $transferConfigured,
+            'pageCounts' => $pageCounts,
+            'pageBytes' => $pageBytes,
         ]);
     }
 
@@ -392,7 +422,7 @@ class AdminController extends Controller
         ]);
 
         if (! Schema::hasColumn('comics', 'is_exclusive')) {
-            return redirect()->route('admin.comics')
+            return redirect()->route('admin.comics', $this->comicsRedirectParams($request))
                 ->with('error', 'A coluna is_exclusive ainda não existe neste banco - rode as migrações.');
         }
 
@@ -403,7 +433,7 @@ class AdminController extends Controller
             ? "Comic \"{$comic->title}\" agora é exclusivo para membros (visitantes veem o card bloqueado)."
             : "Comic \"{$comic->title}\" voltou a ser público.";
 
-        return redirect()->route('admin.comics')->with('success', $message);
+        return redirect()->route('admin.comics', $this->comicsRedirectParams($request))->with('success', $message);
     }
 
     /**
@@ -426,21 +456,48 @@ class AdminController extends Controller
             ? "Comic \"{$comic->title}\" agendado para {$comic->published_at->format('d/m/Y H:i')} — aparece como \"Em breve\" até lá."
             : "Comic \"{$comic->title}\" publicado agora.";
 
-        return redirect()->route('admin.comics')->with('success', $message);
+        return redirect()->route('admin.comics', $this->comicsRedirectParams($request))->with('success', $message);
     }
 
     /**
      * Delete a comic with everything attached: pages, tags/likes pivots,
      * comments and import tracking go via FK cascades; the cover + page
      * files under storage/comics/{id} are removed from disk.
+     *
+     * The admin list deletes via fetch so the DataTables page and the
+     * active filters stay put; the redirect fallback keeps the filters.
      */
-    public function destroyComic(Comic $comic): RedirectResponse
+    public function destroyComic(Request $request, Comic $comic): RedirectResponse|JsonResponse
     {
         File::deleteDirectory(public_path("storage/comics/{$comic->id}"));
         $title = $comic->title;
+        $id = $comic->id;
         $comic->delete();
+        ComicDiskUsage::flush();
 
-        return redirect()->route('admin.comics')->with('success', "Comic \"{$title}\" excluído com todos os arquivos.");
+        $message = "Comic \"{$title}\" excluído com todos os arquivos.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'id' => $id, 'message' => $message]);
+        }
+
+        return redirect()->route('admin.comics', $this->comicsRedirectParams($request))
+            ->with('success', $message);
+    }
+
+    /**
+     * Active attention filters to keep after a non-JS form redirect.
+     *
+     * @return array<string, mixed>
+     */
+    protected function comicsRedirectParams(Request $request): array
+    {
+        $filters = array_values(array_intersect(
+            (array) $request->input('filters', []),
+            ['untagged', 'duplicates', 'remote', 'scheduled']
+        ));
+
+        return $filters === [] ? [] : ['filters' => $filters];
     }
 
     /**
@@ -515,13 +572,21 @@ class AdminController extends Controller
         $skipped = 0;
         $processed = 0;
         $chunk = max(1, (int) config('transfer.chunk', 2));
+        $nextNumber = (int) $transfer->next_page;
 
         while ($processed < $chunk) {
-            $page = $pages->firstWhere('page_number', $transfer->next_page);
+            // Page numbers can have gaps (a page record deleted or a failed
+            // download), so look for the next existing number instead of
+            // requiring an exact match — otherwise the transfer would poll
+            // forever on the missing number.
+            $page = $pages->first(fn (Page $candidate): bool => $candidate->page_number >= $nextNumber);
             if ($page === null) {
                 break;
             }
-            $transfer->increment('next_page');
+
+            $nextNumber = $page->page_number + 1;
+            $transfer->update(['next_page' => $nextNumber]);
+
             if (in_array($page->page_number, $remotePages, true)) {
                 $skipped++;
 
@@ -545,7 +610,9 @@ class AdminController extends Controller
 
         $transfer->update(['error' => null]);
 
-        if ($transfer->fresh()->next_page > $transfer->total_pages) {
+        // Drive completion by local page numbers, not the page count: with a
+        // gap the last number can differ from the number of pages.
+        if ($nextNumber > (int) $pages->max('page_number')) {
             try {
                 $final = $sender->finalize($transfer->fresh());
             } catch (TransferException|ConnectionException $e) {

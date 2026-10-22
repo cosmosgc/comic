@@ -78,9 +78,18 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::post('/migrations/run', 'runMigrations')->name('admin.migrations.run');
     Route::post('/caches/clear', 'clearCaches')->name('admin.caches.clear');
     Route::get('/import', [AdminImportController::class, 'show'])->name('admin.import');
+    Route::get('/import/search', [AdminImportController::class, 'search'])->name('admin.import.search');
     Route::post('/import/preview', [AdminImportController::class, 'preview'])->name('admin.import.preview');
     Route::post('/import', [AdminImportController::class, 'store'])->name('admin.import.store');
     Route::post('/import/settings', [AdminImportController::class, 'updateSettings'])->name('admin.import.settings');
+    Route::post('/import/queue', [AdminImportController::class, 'storeQueue'])->name('admin.import.queue.store');
+    Route::post('/import/queue/add', [AdminImportController::class, 'addQueueItem'])->name('admin.import.queue.add');
+    Route::post('/import/queue/add-comic', [AdminImportController::class, 'addQueueComic'])->name('admin.import.queue.add-comic');
+    Route::post('/import/queue/reorder', [AdminImportController::class, 'reorderQueue'])->name('admin.import.queue.reorder');
+    Route::post('/import/queue/process', [AdminImportController::class, 'processQueue'])->name('admin.import.queue.process');
+    Route::post('/import/queue/clear', [AdminImportController::class, 'clearQueue'])->name('admin.import.queue.clear');
+    Route::post('/import/queue/{item}/retry', [AdminImportController::class, 'retryQueueItem'])->name('admin.import.queue.retry');
+    Route::delete('/import/queue/{item}', [AdminImportController::class, 'removeQueueItem'])->name('admin.import.queue.remove');
     Route::get('/import/{comic}/progress', [AdminImportController::class, 'progress'])->name('admin.import.progress');
     Route::get('/import/{comic}/pages/{number}/file', [AdminImportController::class, 'downloadPageFile'])->whereNumber('number')->name('admin.import.page-file');
     Route::post('/import/{comic}/pages/{number}/file', [AdminImportController::class, 'uploadPageFile'])->whereNumber('number')->name('admin.import.page-upload');

@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: busca de galerias com paginação e fila de downloads",
+    "date": "2026-10-21",
+    "category": "Added",
+    "tags": ["importacao", "busca", "fila", "admin"],
+    "summary": "A tela Admin → Importar agora pesquisa galerias no E-Hentai, pagina os resultados e deixa selecionar várias para uma fila. A fila cria cada comic com os dados da galeria e baixa as páginas uma por vez, retomando de onde parou se a página for fechada. O formulário “Buscar galeria” por URL continua disponível.",
+    "body": "## Busca, seleção e fila na importação\n\nA tela **Admin → Importar** ganhou uma busca de galerias antes do formulário por URL:\n\n- **Buscar galerias**: pesquisa livre por título, artista ou tags (ex.: `language:portuguese$ furry`).\n- **URL de busca**: também aceita links como `https://e-hentai.org/?f_search=language:portuguese%24+furry&next=3657960`, abrindo direto na mesma página/cursor.\n- **Paginação**: os botões **Primeira**, **Anterior** e **Próxima** preservam o termo e o cursor (`next`/`prev`) do E-Hentai, com o número da página na tela.\n- **Seleção múltipla**: marque várias galerias (ou **Selecionar todas**) e adicione à fila de uma vez. Quem já foi importado ou já está na fila aparece marcado e não pode ser selecionado de novo.\n- **Fila de importação**: mostra pendentes, o que está baixando, concluídas e falhas. **Processar fila** baixa uma galeria por vez, usando os dados da galeria (título, artista, tags, descrição com o uploader e o próximo dia livre no agendamento).\n- A fila roda pelo navegador enquanto a página estiver aberta; fechar a aba pausa e **Continuar fila** retoma do item atual. Itens falhos podem ser tentados de novo ou removidos, e as concluídas podem ser limpas.\n\nO formulário antigo **Buscar galeria** (colar a URL de uma galeria ou de uma página dela) continua igual, agora no passo 2."
+}

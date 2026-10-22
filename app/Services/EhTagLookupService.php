@@ -199,7 +199,7 @@ class EhTagLookupService
     /**
      * @return array<string, string>
      */
-    protected function authCookies(): array
+    public function authCookies(): array
     {
         $cookies = [];
         if (config('taglookup.member_id') && config('taglookup.pass_hash')) {

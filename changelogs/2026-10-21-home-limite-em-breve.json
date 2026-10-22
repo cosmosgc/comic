@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Home: todos os comics em pré-estreia e no máximo 3 “Em breve”",
+    "date": "2026-10-21",
+    "category": "Changed",
+    "tags": ["comics", "home", "lancamentos", "visibilidade"],
+    "summary": "A lista de comics da home agora mostra todos os lançamentos em pré-estreia e limita os cards “Em breve” a três. Assim, uma fila longa de comics agendados não empurra mais os comics já disponíveis para as páginas seguintes — na primeira página o visitante encontra os três próximos lançamentos bloqueados e o resto com comics liberados.",
+    "body": "## Primeira página com comics disponíveis\n\nA lista principal da home passou a limitar os cards de lançamentos futuros:\n\n- **Pré-estreia**: todos os comics dentro da janela de uma semana antes do lançamento continuam aparecendo (e são legíveis para membros).\n- **Em breve**: no máximo **3** cards de lançamentos mais distantes são mantidos na lista.\n- **Visitantes**: os três próximos lançamentos aparecem como cards bloqueados, apontando para o login; o restante da primeira página fica com comics já liberados para leitura.\n- **Admins e donos da fila**: a fila longa não inunda mais a home — veem todos os títulos em pré-estreia e apenas três “Em breve”.\n\nO restante do agendamento continua disponível no **Calendário de lançamentos** e no painel Admin → Comics."
+}

@@ -20,9 +20,29 @@
     @endif
 
     @if ($stage === 'form')
-        <div class="admin-card mb-6 max-w-2xl">
+        <div class="admin-card mb-6 max-w-3xl" id="import-search">
             <div class="admin-card-header">
-                <span>1 · Buscar galeria</span>
+                <span>1 · Buscar galerias</span>
+            </div>
+            <div class="admin-card-body">
+                <p class="mb-4 text-sm opacity-80">
+                    Pesquise por título, artista ou tags e selecione várias galerias para baixar em fila.
+                    Também aceita a URL de uma busca do E-Hentai (com <code>f_search</code> e <code>next</code>),
+                    para abrir direto naquela página de resultados.
+                </p>
+                <form method="GET" action="{{ route('admin.import.search') }}" class="flex flex-wrap gap-2">
+                    <input type="text" name="q" required maxlength="500" value="{{ old('q') }}"
+                           placeholder="ex.: language:portuguese$ furry"
+                           class="admin-input min-w-0 flex-1">
+                    <button type="submit" class="admin-btn admin-btn-success">Buscar galerias</button>
+                </form>
+                @error('q')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        <div class="admin-card mb-6 max-w-3xl" id="import-gallery">
+            <div class="admin-card-header">
+                <span>2 · Buscar galeria</span>
             </div>
             <div class="admin-card-body">
                 <p class="mb-4 text-sm opacity-80">
@@ -37,6 +57,158 @@
                     <button type="submit" class="admin-btn admin-btn-success">Buscar</button>
                 </form>
                 @error('url')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        @php
+            $queueLabels = [
+                'pending' => 'Pendente',
+                'processing' => 'Baixando',
+                'done' => 'Concluída',
+                'failed' => 'Falhou',
+                'skipped' => 'Já importada',
+            ];
+            $queueBadges = [
+                'pending' => 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-200',
+                'processing' => 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-200',
+                'done' => 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200',
+                'failed' => 'bg-red-500/15 text-red-700 dark:text-red-200',
+                'skipped' => 'bg-amber-500/15 text-amber-800 dark:text-amber-100',
+            ];
+        @endphp
+        <div class="admin-card mb-6 max-w-3xl" id="import-queue"
+             data-queue-process-url="{{ route('admin.import.queue.process') }}"
+             data-queue-remove-url="{{ route('admin.import.queue.remove', ['item' => '__ID__']) }}"
+             data-queue-retry-url="{{ route('admin.import.queue.retry', ['item' => '__ID__']) }}"
+             data-queue-order-url="{{ route('admin.import.queue.reorder') }}">
+            <div class="admin-card-header">
+                <span>Fila de importação</span>
+                <span data-queue-counts class="text-xs font-normal opacity-60">
+                    {{ $importQueue['pending'] }} pendente(s) · {{ $importQueue['processing'] }} baixando · {{ $importQueue['done'] }} concluída(s)@if ($importQueue['failed'] > 0) · {{ $importQueue['failed'] }} com falha @endif
+                </span>
+            </div>
+            <div class="admin-card-body text-sm">
+                <div id="import-queue-list">
+                    @if ($importQueue['total'] === 0)
+                        <p class="opacity-60">Nenhuma galeria na fila. Busque acima, cole uma URL ou escolha um comic já no site para começar.</p>
+                    @else
+                        <ul class="space-y-3">
+                            @foreach ($importQueue['items'] as $item)
+                                <li class="flex flex-wrap items-start gap-3" data-queue-item="{{ $item['id'] }}">
+                                    <span data-queue-drag draggable="true"
+                                          class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80"
+                                          title="Arraste para reordenar" aria-hidden="true">⠿</span>
+                                    @if ($item['thumb'])
+                                        <img src="{{ $item['thumb'] }}" alt="" loading="lazy" class="h-16 w-12 shrink-0 rounded object-cover">
+                                    @endif
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                            <span class="font-medium break-words">{{ $item['title'] }}</span>
+                                            <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $queueBadges[$item['status']] ?? '' }}">
+                                                {{ $queueLabels[$item['status']] ?? $item['status'] }}
+                                            </span>
+                                            @if ($item['redownload'])
+                                                <span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-100"
+                                                      title="As páginas atuais serão apagadas e baixadas de novo">
+                                                    ↻ tudo de novo
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs opacity-60">
+                                            @if ($item['total'] > 0)
+                                                {{ $item['done'] }}/{{ $item['total'] }} páginas
+                                            @elseif ($item['status'] === 'processing')
+                                                preparando…
+                                            @endif
+                                            @if ($item['progress_url'])
+                                                · <a href="{{ $item['progress_url'] }}" class="text-indigo-600 hover:underline dark:text-indigo-300">abrir importação</a>
+                                            @endif
+                                            · <a href="{{ $item['source_url'] }}" target="_blank" rel="noopener" class="hover:underline">galeria ↗</a>
+                                        </p>
+                                        @if ($item['error'])
+                                            <p class="mt-1 text-xs text-amber-600 dark:text-amber-300">{{ $item['error'] }}</p>
+                                        @endif
+                                    </div>
+                                    <div class="flex shrink-0 gap-1">
+                                        @if ($item['status'] === 'failed')
+                                            <form method="POST" action="{{ route('admin.import.queue.retry', $item['id']) }}">
+                                                @csrf
+                                                <button type="submit" class="admin-btn admin-btn-sm">Tentar de novo</button>
+                                            </form>
+                                        @endif
+                                        @if ($item['status'] !== 'processing')
+                                            <form method="POST" action="{{ route('admin.import.queue.remove', $item['id']) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="admin-btn admin-btn-sm">Remover</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <button type="button" id="import-queue-process" class="admin-btn admin-btn-success admin-btn-sm"
+                            @disabled($importQueue['pending'] === 0 && $importQueue['processing'] === 0)>
+                        {{ $importQueue['processing'] > 0 ? 'Continuar fila' : 'Processar fila' }}
+                    </button>
+                    @if ($importQueue['done'] + $importQueue['skipped'] > 0)
+                        <form method="POST" action="{{ route('admin.import.queue.clear') }}">
+                            @csrf
+                            <button type="submit" class="admin-btn admin-btn-sm">Limpar concluídas</button>
+                        </form>
+                    @endif
+                    <span id="import-queue-status" class="text-xs opacity-70"></span>
+                </div>
+                <p class="mt-2 text-xs opacity-60">
+                    A fila baixa uma galeria por vez enquanto esta página estiver aberta. Fechar a página
+                    pausa; <strong>Processar fila</strong> continua de onde parou. Arraste as linhas pelo
+                    <span aria-hidden="true">⠿</span> para mudar a ordem.
+                </p>
+
+                <div class="mt-4 grid gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+                    <details>
+                        <summary class="cursor-pointer opacity-80 hover:opacity-100">Adicionar por URL</summary>
+                        <form method="POST" action="{{ route('admin.import.queue.add') }}" class="mt-2 flex flex-wrap gap-2">
+                            @csrf
+                            <input type="text" name="url" required maxlength="500"
+                                   placeholder="https://e-hentai.org/g/…/…/"
+                                   class="admin-input min-w-0 flex-1">
+                            <button type="submit" class="admin-btn admin-btn-sm">Adicionar ao fim da fila</button>
+                        </form>
+                        @error('url')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+                        <p class="mt-1 text-xs opacity-60">
+                            Aceita a URL da galeria ou de uma página dela. Galerias já importadas precisam ser
+                            adicionadas em “Adicionar comics já no site”.
+                        </p>
+                    </details>
+
+                    <details>
+                        <summary class="cursor-pointer opacity-80 hover:opacity-100">Adicionar comics já no site</summary>
+                        <form method="POST" action="{{ route('admin.import.queue.add-comic') }}" class="mt-2 flex flex-wrap items-center gap-2">
+                            @csrf
+                            <input type="text" name="comic_id" list="import-queue-comics" required
+                                   placeholder="ID ou título do comic" class="admin-input w-40">
+                            <datalist id="import-queue-comics">
+                                @foreach ($queueComics as $queueComic)
+                                    <option value="{{ $queueComic->id }}">{{ $queueComic->title }}</option>
+                                @endforeach
+                            </datalist>
+                            <label class="flex items-center gap-2 text-xs">
+                                <input type="checkbox" name="redownload" value="1" class="rounded">
+                                Baixar todas as páginas de novo
+                            </label>
+                            <button type="submit" class="admin-btn admin-btn-sm">Adicionar ao fim da fila</button>
+                        </form>
+                        @error('comic_id')<p class="mt-1 w-full text-xs text-red-500">{{ $message }}</p>@enderror
+                        <p class="mt-1 text-xs opacity-60">
+                            Sem a opção marcada, a fila baixa só as páginas pendentes/falhas. Com ela marcada,
+                            as páginas atuais são apagadas e a galeria inteira é baixada outra vez.
+                        </p>
+                    </details>
+                </div>
             </div>
         </div>
 
@@ -90,16 +262,22 @@
                 <form method="POST" action="{{ route('admin.import.settings') }}" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     @csrf
                     @foreach ($settingDefs as $key => $def)
-                        <div class="{{ ($def['type'] ?? 'string') === 'string' ? 'sm:col-span-2' : '' }}">
+                        @php($settingType = $def['type'] ?? 'string')
+                        @php($settingValue = config("ehimport.{$key}"))
+                        <div class="{{ in_array($settingType, ['string', 'text'], true) ? 'sm:col-span-2' : '' }}">
                             <label for="setting-{{ $key }}" class="admin-label">{{ $def['label'] }}</label>
-                            @if (($def['type'] ?? 'string') === 'int')
+                            @if ($settingType === 'int')
                                 <input type="number" class="admin-input" name="{{ $key }}" id="setting-{{ $key }}"
                                        min="{{ $def['min'] }}" max="{{ $def['max'] }}" step="1"
-                                       value="{{ old($key, config("ehimport.{$key}")) }}">
+                                       value="{{ old($key, $settingValue) }}">
+                            @elseif ($settingType === 'text')
+                                <textarea class="admin-input" name="{{ $key }}" id="setting-{{ $key }}" rows="4"
+                                          maxlength="{{ $def['maxlen'] ?? 500 }}"
+                                          placeholder="Um texto por linha">{{ old($key, is_array($settingValue) ? implode("\n", $settingValue) : $settingValue) }}</textarea>
                             @else
                                 <input type="text" class="admin-input" name="{{ $key }}" id="setting-{{ $key }}"
                                        maxlength="{{ $def['maxlen'] ?? 500 }}" placeholder="(vazio = direto, sem proxy)"
-                                       value="{{ old($key, config("ehimport.{$key}")) }}">
+                                       value="{{ old($key, $settingValue) }}">
                             @endif
                             <p class="mt-1 text-xs opacity-60">{{ $def['hint'] }}</p>
                             @error($key)<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
@@ -111,6 +289,116 @@
                 </form>
             </div>
         </details>
+    @endif
+
+    @if ($stage === 'search')
+        <div class="admin-card mb-6 max-w-4xl">
+            <div class="admin-card-header">
+                <span>Buscar galerias</span>
+                <span class="text-xs font-normal opacity-60">
+                    @if ($foundCount !== null)
+                        ~{{ number_format($foundCount, 0, ',', '.') }} resultado(s) ·
+                    @endif
+                    página {{ $page }}
+                </span>
+            </div>
+            <div class="admin-card-body">
+                <form method="GET" action="{{ route('admin.import.search') }}" class="flex flex-wrap gap-2">
+                    <input type="text" name="q" required maxlength="500" value="{{ $searchQuery }}"
+                           class="admin-input min-w-0 flex-1">
+                    <button type="submit" class="admin-btn admin-btn-success">Buscar</button>
+                    <a href="{{ route('admin.import') }}" class="admin-btn">Voltar</a>
+                </form>
+                <p class="mt-1 text-xs opacity-60">
+                    Busca livre ou URL de busca do E-Hentai. Os links de paginação preservam o
+                    <code>f_search</code> e o cursor (<code>next</code>/<code>prev</code>).
+                </p>
+
+                @if ($searchError !== null)
+                    <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
+                        {{ $searchError }}
+                    </div>
+                @elseif ($results === [])
+                    <p class="mt-4 text-sm opacity-70">Nenhuma galeria encontrada para “{{ $searchQuery }}”.</p>
+                @else
+                    <form method="POST" action="{{ route('admin.import.queue.store') }}" class="mt-4" data-search-results>
+                        @csrf
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <label class="flex items-center gap-2 text-xs opacity-70">
+                                <input type="checkbox" data-queue-select-all class="rounded">
+                                Selecionar todas
+                            </label>
+                            <span class="text-xs opacity-60" data-queue-selected>0 selecionada(s)</span>
+                        </div>
+                        <ul class="divide-y divide-zinc-200 dark:divide-zinc-800">
+                            @foreach ($results as $item)
+                                @php($imported = $importedGids[$item['gid']] ?? null)
+                                @php($queued = $queuedGids[$item['gid']] ?? null)
+                                <li class="flex items-start gap-3 py-3">
+                                    <div class="mt-1 shrink-0">
+                                        @if ($imported || $queued)
+                                            <input type="checkbox" class="mt-0.5 rounded" disabled
+                                                   aria-label="{{ $item['title'] }}">
+                                        @else
+                                            <input type="checkbox" class="mt-0.5 rounded" data-queue-check
+                                                   name="items[]" value="{{ $item['gid'] }}:{{ $item['token'] }}"
+                                                   aria-label="Selecionar {{ $item['title'] }}">
+                                        @endif
+                                    </div>
+                                    @if ($item['thumb'])
+                                        <img src="{{ $item['thumb'] }}" alt="" loading="lazy" class="h-20 w-14 shrink-0 rounded object-cover">
+                                    @endif
+                                    <div class="min-w-0 flex-1 text-sm">
+                                        <a href="{{ $item['source_url'] }}" target="_blank" rel="noopener"
+                                           class="font-medium break-words text-indigo-600 hover:underline dark:text-indigo-300">{{ $item['title'] }}</a>
+                                        <p class="mt-0.5 text-xs opacity-60">
+                                            {{ $item['category'] ?? '—' }}
+                                            @if ($item['pages']) · {{ $item['pages'] }} página(s) @endif
+                                            @if ($item['posted']) · {{ $item['posted'] }} @endif
+                                            @if ($item['uploader']) · por {{ $item['uploader'] }} @endif
+                                        </p>
+                                        @if ($imported)
+                                            <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-200">
+                                                Já importado
+                                                @if ($imported['title'] !== '')
+                                                    como <a href="{{ route('comics.showById', $imported['comic_id']) }}" class="underline">{{ $imported['title'] }}</a>
+                                                @endif
+                                            </p>
+                                        @elseif ($queued)
+                                            <p class="mt-1 text-xs text-indigo-600 dark:text-indigo-300">
+                                                Na fila ({{ ['pending' => 'pendente', 'processing' => 'baixando', 'done' => 'concluída', 'failed' => 'falhou', 'skipped' => 'já importada'][$queued] ?? $queued }})
+                                            </p>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+
+                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                            <button type="submit" class="admin-btn admin-btn-success" data-queue-submit disabled>
+                                Adicionar selecionadas à fila
+                            </button>
+                            <a href="{{ route('admin.import') }}" class="admin-btn admin-btn-sm">Voltar</a>
+                        </div>
+                    </form>
+
+                    <div class="mt-5 flex flex-wrap items-center gap-2 border-t border-zinc-200 pt-4 text-sm dark:border-zinc-800">
+                        <a href="{{ route('admin.import.search', ['q' => $searchQuery]) }}" class="admin-btn admin-btn-sm">« Primeira</a>
+                        @if ($prevCursor !== null)
+                            <a href="{{ route('admin.import.search', array_filter(['q' => $searchQuery, 'prev' => $prevCursor, 'page' => max(1, $page - 1)])) }}" class="admin-btn admin-btn-sm">‹ Anterior</a>
+                        @else
+                            <span class="admin-btn admin-btn-sm pointer-events-none opacity-40">‹ Anterior</span>
+                        @endif
+                        <span class="text-xs opacity-60">Página {{ $page }}</span>
+                        @if ($nextCursor !== null)
+                            <a href="{{ route('admin.import.search', array_filter(['q' => $searchQuery, 'next' => $nextCursor, 'page' => $page + 1])) }}" class="admin-btn admin-btn-sm">Próxima ›</a>
+                        @else
+                            <span class="admin-btn admin-btn-sm pointer-events-none opacity-40">Próxima ›</span>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </div>
     @endif
 
     @if ($stage === 'edit')
@@ -165,7 +453,7 @@
 
         <div class="admin-card mb-6 max-w-2xl">
             <div class="admin-card-header">
-                <span>2 · Revisar e agendar</span>
+                <span>3 · Revisar e agendar</span>
             </div>
             <div class="admin-card-body">
                 <div class="mb-4 flex items-start gap-3">
@@ -267,7 +555,7 @@
              data-retry-url="{{ route('admin.import.retry', $comic) }}"
              data-total="{{ $total }}">
             <div class="admin-card-header">
-                <span>3 · Baixando páginas</span>
+                <span>4 · Baixando páginas</span>
             </div>
             <div class="admin-card-body">
                 <p class="mb-1 text-sm font-medium">{{ $comic->title }}</p>
@@ -883,5 +1171,297 @@
 })();
 </script>
 @endif
+@endif
+@endpush
+
+@push('scripts')
+@if ($stage === 'search')
+<script>
+// Select galleries from the results and count the selection.
+(function () {
+    var form = document.querySelector('[data-search-results]');
+    if (!form) return;
+    var checks = Array.prototype.slice.call(form.querySelectorAll('[data-queue-check]'));
+    var all = form.querySelector('[data-queue-select-all]');
+    var submit = form.querySelector('[data-queue-submit]');
+    var count = form.querySelector('[data-queue-selected]');
+
+    function refresh() {
+        var selected = checks.filter(function (check) { return check.checked; }).length;
+        count.textContent = selected + ' selecionada(s)';
+        submit.disabled = selected === 0;
+        if (all) {
+            all.checked = checks.length > 0 && selected === checks.length;
+            all.indeterminate = selected > 0 && selected < checks.length;
+        }
+    }
+
+    checks.forEach(function (check) { check.addEventListener('change', refresh); });
+    if (all) {
+        all.addEventListener('change', function () {
+            checks.forEach(function (check) { check.checked = all.checked; });
+            refresh();
+        });
+    }
+    refresh();
+})();
+</script>
+@endif
+@endpush
+
+@push('scripts')
+@if ($stage === 'form')
+<script>
+// Browser-driven bulk queue: walk the pending galleries one by one,
+// downloading a chunk of pages per request (same flow as the progress
+// view). Closing the tab pauses; the button resumes from the last item.
+(function () {
+    var root = document.getElementById('import-queue');
+    if (!root) return;
+    var list = document.getElementById('import-queue-list');
+    var button = document.getElementById('import-queue-process');
+    var statusEl = document.getElementById('import-queue-status');
+    var countsEl = root.querySelector('[data-queue-counts]');
+    var processUrl = root.dataset.queueProcessUrl;
+    var removeUrl = root.dataset.queueRemoveUrl;
+    var retryUrl = root.dataset.queueRetryUrl;
+    var csrf = '{{ csrf_token() }}';
+    var running = false;
+
+    var labels = { pending: 'Pendente', processing: 'Baixando', done: 'Concluída', failed: 'Falhou', skipped: 'Já importada' };
+    var badgeClasses = {
+        pending: 'bg-zinc-500/15 text-zinc-700 dark:text-zinc-200',
+        processing: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-200',
+        done: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-200',
+        failed: 'bg-red-500/15 text-red-700 dark:text-red-200',
+        skipped: 'bg-amber-500/15 text-amber-800 dark:text-amber-100'
+    };
+
+    function esc(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function actionForm(url, label, method) {
+        return '<form method="POST" action="' + esc(url) + '">'
+            + '<input type="hidden" name="_token" value="' + esc(csrf) + '">'
+            + (method ? '<input type="hidden" name="_method" value="' + method + '">' : '')
+            + '<button type="submit" class="admin-btn admin-btn-sm">' + esc(label) + '</button></form>';
+    }
+
+    function render(queue) {
+        countsEl.textContent = queue.pending + ' pendente(s) · ' + queue.processing + ' baixando · '
+            + queue.done + ' concluída(s)' + (queue.failed > 0 ? ' · ' + queue.failed + ' com falha' : '');
+
+        if (!queue.items.length) {
+            list.innerHTML = '<p class="opacity-60">Nenhuma galeria na fila. Busque acima, cole uma URL ou escolha um comic já no site para começar.</p>';
+            return;
+        }
+
+        var html = '<ul class="space-y-3">';
+        queue.items.forEach(function (item) {
+            var progress = item.total > 0
+                ? item.done + '/' + item.total + ' páginas'
+                : (item.status === 'processing' ? 'preparando…' : '');
+
+            html += '<li class="flex flex-wrap items-start gap-3" data-queue-item="' + item.id + '">'
+                + '<span data-queue-drag draggable="true" class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80" title="Arraste para reordenar" aria-hidden="true">⠿</span>';
+            if (item.thumb) {
+                html += '<img src="' + esc(item.thumb) + '" alt="" loading="lazy" class="h-16 w-12 shrink-0 rounded object-cover">';
+            }
+            html += '<div class="min-w-0 flex-1">'
+                + '<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">'
+                + '<span class="font-medium break-words">' + esc(item.title) + '</span>'
+                + '<span class="rounded-full px-2 py-0.5 text-[11px] font-semibold ' + (badgeClasses[item.status] || '') + '">'
+                + esc(labels[item.status] || item.status) + '</span>'
+                + (item.redownload ? '<span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-100" title="As páginas atuais serão apagadas e baixadas de novo">↻ tudo de novo</span>' : '')
+                + '</div>'
+                + '<p class="text-xs opacity-60">'
+                + (progress ? '<span>' + esc(progress) + '</span>' : '')
+                + (item.progress_url ? ' · <a href="' + esc(item.progress_url) + '" class="text-indigo-600 hover:underline dark:text-indigo-300">abrir importação</a>' : '')
+                + ' · <a href="' + esc(item.source_url) + '" target="_blank" rel="noopener" class="hover:underline">galeria ↗</a>'
+                + '</p>'
+                + (item.error ? '<p class="mt-1 text-xs text-amber-600 dark:text-amber-300">' + esc(item.error) + '</p>' : '')
+                + '</div>'
+                + '<div class="flex shrink-0 gap-1">'
+                + (item.status === 'failed' ? actionForm(retryUrl.replace('__ID__', item.id), 'Tentar de novo') : '')
+                + (item.status !== 'processing' ? actionForm(removeUrl.replace('__ID__', item.id), 'Remover', 'DELETE') : '')
+                + '</div></li>';
+        });
+        list.innerHTML = html + '</ul>';
+    }
+
+    function setStatus(text) {
+        statusEl.textContent = text || '';
+    }
+
+    // Drag and drop ordering: the handle starts the drag, the rows swap
+    // live and the new order is saved when the drag ends.
+    var draggedItem = null;
+    var orderUrl = root.dataset.queueOrderUrl;
+
+    function rowAfter(y) {
+        var rows = Array.prototype.slice.call(list.querySelectorAll('[data-queue-item]'))
+            .filter(function (row) { return row !== draggedItem; });
+
+        return rows.reduce(function (closest, row) {
+            var box = row.getBoundingClientRect();
+            var offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: row };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    list.addEventListener('dragstart', function (event) {
+        var handle = event.target.closest ? event.target.closest('[data-queue-drag]') : null;
+        if (!handle) {
+            return;
+        }
+        draggedItem = handle.closest('[data-queue-item]');
+        if (!draggedItem) {
+            return;
+        }
+        draggedItem.classList.add('opacity-40');
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', draggedItem.getAttribute('data-queue-item'));
+        if (event.dataTransfer.setDragImage) {
+            event.dataTransfer.setDragImage(draggedItem, 24, 24);
+        }
+    });
+
+    list.addEventListener('dragover', function (event) {
+        if (!draggedItem) {
+            return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        var ul = list.querySelector('ul');
+        if (!ul) {
+            return;
+        }
+        var after = rowAfter(event.clientY);
+        if (after === null) {
+            ul.appendChild(draggedItem);
+        } else {
+            ul.insertBefore(draggedItem, after);
+        }
+    });
+
+    list.addEventListener('dragend', function () {
+        if (!draggedItem) {
+            return;
+        }
+        draggedItem.classList.remove('opacity-40');
+        draggedItem = null;
+        saveOrder();
+    });
+
+    function saveOrder() {
+        var ids = Array.prototype.slice.call(list.querySelectorAll('[data-queue-item]'))
+            .map(function (row) { return parseInt(row.getAttribute('data-queue-item'), 10); });
+        if (!orderUrl || ids.length === 0) {
+            return;
+        }
+
+        fetch(orderUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ ids: ids }),
+        })
+        .then(function (response) {
+            setStatus(response.ok ? 'Ordem da fila salva.' : 'Não foi possível salvar a ordem da fila.');
+        })
+        .catch(function () {
+            setStatus('Não foi possível salvar a ordem da fila (rede).');
+        });
+    }
+
+    function stop(text) {
+        running = false;
+        button.textContent = 'Continuar fila';
+        setStatus(text);
+    }
+
+    function step() {
+        if (!running) return;
+
+        fetch(processUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        })
+        .then(function (response) {
+            var retryAfter = parseInt(response.headers.get('Retry-After') || '0', 10) || 0;
+            return response.json().then(function (body) {
+                return { ok: response.ok, status: response.status, body: body, retryAfter: retryAfter };
+            }, function () {
+                return { ok: response.ok, status: response.status, body: {}, retryAfter: retryAfter };
+            });
+        })
+        .then(function (res) {
+            if (res.body && res.body.queue) render(res.body.queue);
+
+            if (res.status === 429) {
+                setStatus('Limite de downloads atingido — retomando em ' + (res.retryAfter || 60) + 's…');
+                setTimeout(step, (res.retryAfter || 60) * 1000);
+                return;
+            }
+            if (res.status === 409) {
+                setStatus('Outra aba está baixando — tentando de novo…');
+                setTimeout(step, 3000);
+                return;
+            }
+            if (!res.ok) {
+                stop('Erro (' + res.status + '): ' + ((res.body && res.body.message) || 'falha ao processar a fila'));
+                return;
+            }
+            if (res.body.done) {
+                running = false;
+                button.disabled = true;
+                button.textContent = 'Fila concluída';
+                setStatus('Fila concluída.');
+                return;
+            }
+            if (res.body.comic) {
+                setStatus(res.body.comic.title + ' · ' + res.body.comic.done + '/' + res.body.comic.total + ' páginas');
+            } else if (res.body.failed) {
+                setStatus('Item falhou: ' + (res.body.message || 'erro'));
+            } else if (res.body.skipped) {
+                setStatus('Item já importado — seguindo para o próximo…');
+            }
+            setTimeout(step, 700);
+        })
+        .catch(function () {
+            setStatus('Erro de rede — tentando de novo em 5s…');
+            setTimeout(step, 5000);
+        });
+    }
+
+    button.addEventListener('click', function () {
+        if (running) {
+            running = false;
+            button.textContent = 'Continuar fila';
+            setStatus('Fila pausada.');
+            return;
+        }
+        running = true;
+        button.disabled = false;
+        button.textContent = 'Pausar fila';
+        setStatus('Iniciando…');
+        step();
+    });
+
+    list.addEventListener('submit', function (event) {
+        if (!event.target.matches('form')) {
+            return;
+        }
+        if (running && !window.confirm('A fila está rodando. Remover/tentar este item agora?')) {
+            event.preventDefault();
+        }
+    });
+})();
+</script>
 @endif
 @endpush

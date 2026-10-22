@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Envio ao remoto não trava mais em páginas faltantes",
+    "date": "2026-10-21",
+    "category": "Fixed",
+    "tags": ["admin", "comics", "remoto", "transferencia"],
+    "summary": "O envio de um comic para o servidor remoto parava para sempre quando faltava um número de página no meio do comic (página apagada ou download que falhou): o contador avançava para o número faltante e a página nunca era encontrada, então o envio ficava parado no mesmo progresso. Agora o envio pula o número que não existe e continua até finalizar.",
+    "body": "## Envio ao remoto com páginas faltantes\n\n- **O que acontecia**: se o comic tivesse um número de página ausente (por exemplo, a página 63 de um comic de 205 páginas), o envio ao remoto ficava travado naquele número — a barra parava em “62/204” e não avançava mais, mesmo com a página seguinte disponível.\n- **O que muda**: o envio agora procura a próxima página **existente** a partir do contador, ignora o número que falta e segue até o fim, finalizando o comic no servidor remoto normalmente.\n- A contagem exibida no Admin → Comics continua mostrando o total de páginas do comic, e páginas que já estão no remoto continuam sendo puladas (o envio é idempotente, pode ser repetido com segurança)."
+}

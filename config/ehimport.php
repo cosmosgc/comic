@@ -58,6 +58,16 @@ return [
     // Download attempts per page before it is reported as failed.
     'max_attempts' => (int) env('EHIMPORT_MAX_ATTEMPTS', 3),
 
+    // Snippets removed from gallery titles on import, without case
+    // sensitivity (e.g. "[Portuguese-BR]"). Not regex. Editable in
+    // Admin → Importar (one per line, stored in eh_import_settings);
+    // clearing that field falls back to this list.
+    'title_cleanup' => [
+        '[Portuguese-BR]',
+        '[Português]',
+        '[PT-BR]',
+    ],
+
     // How long a fetched preview stays valid for the edit form.
     'preview_ttl' => (int) env('EHIMPORT_PREVIEW_TTL', 3600),
 

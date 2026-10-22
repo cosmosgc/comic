@@ -82,12 +82,58 @@ class ComicExclusivityTest extends TestCase
         $this->get("/comics/id/{$comic->id}")->assertNotFound();
     }
 
-    public function test_admin_sees_every_scheduled_comic_in_the_home_list(): void
+    public function test_home_list_caps_far_ahead_teasers_at_three_for_admins(): void
     {
-        Comic::factory()->create(['title' => 'Admin Queue XYZ', 'published_at' => now()->addDays(30)]);
+        $admin = User::factory()->create(['admin_level' => 1]);
 
-        $this->actingAs(User::factory()->create(['admin_level' => 1]))
-            ->get('/')->assertOk()->assertSee('Admin Queue XYZ');
+        $queue = collect(range(1, 5))->map(fn (int $offset) => Comic::factory()->create([
+            'title' => "Admin Queue XYZ {$offset}",
+            'published_at' => now()->addDays(30 + $offset),
+        ]))->values();
+
+        $response = $this->actingAs($admin)->get('/')->assertOk();
+
+        foreach ($queue->take(3) as $comic) {
+            $response->assertSee('data-comic-card="'.$comic->id.'"', false);
+        }
+        foreach ($queue->slice(3) as $comic) {
+            $response->assertDontSee('data-comic-card="'.$comic->id.'"', false);
+        }
+    }
+
+    public function test_guest_home_list_caps_coming_soon_teasers_at_three(): void
+    {
+        $upcoming = collect(range(1, 5))->map(fn (int $offset) => Comic::factory()->create([
+            'title' => "Em breve XYZ {$offset}",
+            'published_at' => now()->addDays($offset),
+        ]))->values();
+        $released = Comic::factory()->create(['title' => 'Released XYZ']);
+
+        $response = $this->get('/')->assertOk()
+            ->assertSee('data-comic-card="'.$released->id.'"', false);
+
+        foreach ($upcoming->take(3) as $comic) {
+            $response->assertSee('data-comic-card="'.$comic->id.'"', false);
+        }
+        foreach ($upcoming->slice(3) as $comic) {
+            $response->assertDontSee('data-comic-card="'.$comic->id.'"', false);
+        }
+    }
+
+    public function test_member_home_list_shows_every_early_access_comic(): void
+    {
+        $member = User::factory()->create(['admin_level' => 0]);
+
+        $earlyAccess = collect(range(1, 6))->map(fn (int $offset) => Comic::factory()->create([
+            'title' => "Pré-estreia XYZ {$offset}",
+            'published_at' => now()->addDays($offset),
+        ]))->values();
+
+        $response = $this->actingAs($member)->get('/')->assertOk();
+
+        foreach ($earlyAccess as $comic) {
+            $response->assertSee('data-comic-card="'.$comic->id.'"', false);
+        }
     }
 
     public function test_exclusive_filter_lists_only_exclusive_comics(): void

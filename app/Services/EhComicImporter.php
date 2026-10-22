@@ -15,7 +15,10 @@ use Illuminate\Support\Facades\Http;
  */
 class EhComicImporter
 {
-    public function __construct(protected EhTagLookupService $lookup) {}
+    public function __construct(
+        protected EhTagLookupService $lookup,
+        protected EhTitleCleaner $titleCleaner,
+    ) {}
 
     /**
      * Fetch everything the import form needs: metadata + ordered
@@ -62,7 +65,7 @@ class EhComicImporter
         return [
             'gid' => $gallery['gid'],
             'token' => $gallery['token'],
-            'title' => (string) ($meta['title'] ?? 'Galeria '.$gallery['gid']),
+            'title' => $this->titleCleaner->clean((string) ($meta['title'] ?? 'Galeria '.$gallery['gid'])),
             'title_jpn' => isset($meta['title_jpn']) ? (string) $meta['title_jpn'] : null,
             'artist' => $this->artistNames($tags),
             'tags' => $tags,
@@ -271,6 +274,14 @@ class EhComicImporter
         }
 
         return $response->body();
+    }
+
+    /**
+     * Canonical gallery URL for a gid/token pair (respects ExHentai).
+     */
+    public function sourceUrl(int $gid, string $token): string
+    {
+        return $this->galleryUrl($gid, strtolower($token));
     }
 
     protected function galleryUrl(int $gid, string $token, int $index = 0): string

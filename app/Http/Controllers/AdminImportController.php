@@ -5,17 +5,23 @@ namespace App\Http\Controllers;
 use App\Models\Comic;
 use App\Models\EhImport;
 use App\Models\EhImportPage;
+use App\Models\EhImportQueueItem;
 use App\Models\EhImportSetting;
 use App\Models\Page;
 use App\Models\Tag;
 use App\Services\ComicDuplicateFinder;
 use App\Services\EhComicImporter;
+use App\Services\EhGallerySearch;
 use App\Services\EhImportException;
+use App\Services\EhTagLookupService;
+use App\Services\EhTitleCleaner;
+use App\Support\ComicDiskUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -41,6 +47,9 @@ class AdminImportController extends Controller
     public function __construct(
         protected EhComicImporter $importer,
         protected ComicDuplicateFinder $duplicates,
+        protected EhTagLookupService $lookup,
+        protected EhGallerySearch $search,
+        protected EhTitleCleaner $titleCleaner,
     ) {}
 
     /**
@@ -55,7 +64,572 @@ class AdminImportController extends Controller
             'queue' => Comic::scheduled()->with('ehImport:id,comic_id,total_pages')->withCount('pages')
                 ->orderBy('published_at')->orderBy('id')->limit(8)->get(['id', 'title', 'published_at']),
             'settingDefs' => EhImportSetting::definitions(),
+            'importQueue' => $this->queuePayload(),
+            // Comics already imported from E-Hentai: the only ones with
+            // page URLs to (re)download, so the only valid "add existing".
+            'queueComics' => Comic::query()
+                ->whereHas('ehImport', fn ($q) => $q->whereNotNull('gid'))
+                ->orderBy('title')
+                ->limit(1000)
+                ->get(['id', 'title']),
         ]);
+    }
+
+    /**
+     * Gallery search with cursor pagination (free text or a pasted
+     * E-Hentai search URL) used to fill the bulk import queue.
+     */
+    public function search(Request $request): View|RedirectResponse
+    {
+        $input = trim((string) $request->query('q', ''));
+
+        if ($input === '') {
+            return redirect()->route('admin.import')
+                ->withFragment('import-search')
+                ->with('error', 'Digite um termo de busca ou cole a URL de uma busca do E-Hentai.');
+        }
+
+        // A gallery (or image page) URL belongs to the single-gallery form.
+        if ($this->lookup->parseGalleryUrl($input) !== null || $this->lookup->parsePageUrl($input) !== null) {
+            return redirect()->route('admin.import')
+                ->withInput(['url' => $input])
+                ->withFragment('import-gallery')
+                ->with('error', 'Essa URL é de uma galeria — ela já foi preenchida em “Buscar galeria”.');
+        }
+
+        $parsed = $this->search->parseSearchInput($input);
+        $query = $parsed['query'];
+        $next = $request->filled('next') ? (int) $request->query('next') : $parsed['next'];
+        $prev = $request->filled('prev') ? (int) $request->query('prev') : $parsed['prev'];
+        $page = max(1, (int) $request->query('page', 1));
+
+        try {
+            $result = $this->search->search($query, $next, $prev);
+        } catch (EhImportException $e) {
+            return view('admin.import', [
+                'stage' => 'search',
+                'searchQuery' => $query,
+                'searchError' => $e->getMessage(),
+                'results' => [],
+                'nextCursor' => null,
+                'prevCursor' => null,
+                'foundCount' => null,
+                'page' => $page,
+                'importedGids' => [],
+                'queuedGids' => [],
+            ]);
+        }
+
+        $gids = array_map(fn (array $item): int => $item['gid'], $result['items']);
+
+        $imported = EhImport::query()
+            ->whereIn('gid', $gids)
+            ->with('comic:id,title')
+            ->get()
+            ->mapWithKeys(fn (EhImport $import) => [
+                (int) $import->gid => [
+                    'comic_id' => (int) $import->comic_id,
+                    'title' => (string) ($import->comic?->title ?? ''),
+                ],
+            ])
+            ->all();
+
+        $queued = EhImportQueueItem::query()
+            ->whereIn('gid', $gids)
+            ->pluck('status', 'gid')
+            ->mapWithKeys(fn ($status, $gid) => [(int) $gid => (string) $status])
+            ->all();
+
+        return view('admin.import', [
+            'stage' => 'search',
+            'searchQuery' => $query,
+            'searchError' => null,
+            'results' => $result['items'],
+            'nextCursor' => $result['next'],
+            'prevCursor' => $result['prev'],
+            'foundCount' => $result['found'],
+            'page' => $page,
+            'importedGids' => $imported,
+            'queuedGids' => $queued,
+        ]);
+    }
+
+    /**
+     * Add the galleries selected on the search screen to the queue.
+     * Metadata is re-read from the API so titles/thumbs are canonical.
+     */
+    public function storeQueue(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'items' => 'required|array|min:1|max:100',
+            'items.*' => ['required', 'string', 'regex:/^\d+:[a-f0-9]{10}$/i'],
+        ]);
+
+        $pairs = [];
+        foreach ($validated['items'] as $raw) {
+            [$gid, $token] = explode(':', (string) $raw, 2);
+            $pairs[(int) $gid] = strtolower($token);
+        }
+
+        $added = 0;
+        $skipped = 0;
+        $toAdd = [];
+
+        foreach ($pairs as $gid => $token) {
+            if ($this->duplicates->findByGallery($gid) !== null) {
+                $skipped++;
+
+                continue;
+            }
+
+            $existing = EhImportQueueItem::query()->where('gid', $gid)->first();
+            if ($existing !== null && in_array($existing->status, [
+                EhImportQueueItem::STATUS_PENDING,
+                EhImportQueueItem::STATUS_PROCESSING,
+                EhImportQueueItem::STATUS_DONE,
+                EhImportQueueItem::STATUS_SKIPPED,
+            ], true)) {
+                $skipped++;
+
+                continue;
+            }
+
+            $toAdd[$gid] = $token;
+        }
+
+        $metadata = [];
+        $list = [];
+        foreach ($toAdd as $gid => $token) {
+            $list[] = ['gid' => $gid, 'token' => $token];
+        }
+
+        // The API accepts at most 25 galleries per call. Without metadata
+        // the queue still works: the item falls back to a placeholder title
+        // and the real data is read when the gallery is processed.
+        foreach (array_chunk($list, 25) as $batch) {
+            try {
+                $batchMetadata = $this->lookup->fetchMetadata($batch);
+            } catch (\Throwable) {
+                $batchMetadata = [];
+            }
+
+            foreach ($batchMetadata as $meta) {
+                if (isset($meta['gid'])) {
+                    $metadata[(int) $meta['gid']] = $meta;
+                }
+            }
+        }
+
+        foreach ($toAdd as $gid => $token) {
+            $meta = $metadata[$gid] ?? [];
+            $title = $this->titleCleaner->clean(trim((string) ($meta['title'] ?? '')));
+            $thumb = trim((string) ($meta['thumb'] ?? ''));
+
+            EhImportQueueItem::updateOrCreate(
+                ['gid' => $gid],
+                [
+                    'token' => $token,
+                    'title' => mb_substr($title !== '' ? $title : 'Galeria '.$gid, 0, 255),
+                    'thumb' => $thumb !== '' ? mb_substr($thumb, 0, 500) : null,
+                    'source_url' => $this->importer->sourceUrl($gid, $token),
+                    'status' => EhImportQueueItem::STATUS_PENDING,
+                    'position' => $this->nextQueuePosition(),
+                    'redownload' => false,
+                    'comic_id' => null,
+                    'error' => null,
+                    'processed_at' => null,
+                ]
+            );
+            $added++;
+        }
+
+        $message = $added.' galeria(s) adicionada(s) à fila.';
+        if ($skipped > 0) {
+            $message .= ' '.$skipped.' ignorada(s) (já importada(s) ou já na fila).';
+        }
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with($added > 0 ? 'success' : 'error', $message);
+    }
+
+    /**
+     * Add a single gallery to the end of the queue from a pasted URL
+     * (gallery or one of its image pages), skipping the search step.
+     */
+    public function addQueueItem(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'url' => ['required', 'string', 'max:500'],
+        ]);
+        $input = trim($validated['url']);
+
+        $gallery = $this->lookup->parseGalleryUrl($input);
+        if ($gallery === null) {
+            $page = $this->lookup->parsePageUrl($input);
+            $token = $page !== null
+                ? $this->lookup->resolvePageToken($page['page_token'], $page['gid'], $page['page'])
+                : null;
+            if ($page === null || $token === null) {
+                return redirect()->route('admin.import')
+                    ->withFragment('import-queue')
+                    ->with('error', 'Cole a URL de uma galeria ou de uma página dela no E-Hentai.');
+            }
+            $gallery = ['gid' => $page['gid'], 'token' => $token];
+        }
+
+        $gid = (int) $gallery['gid'];
+        $token = strtolower($gallery['token']);
+
+        $existingComic = $this->duplicates->findByGallery($gid);
+        if ($existingComic !== null) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Esta galeria já foi importada como “'.$existingComic->title.'” — use “Adicionar comics já no site” para baixar as páginas de novo.');
+        }
+
+        if (EhImportQueueItem::query()->where('gid', $gid)->exists()) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Esta galeria já está na fila.');
+        }
+
+        $meta = $this->queueMetadata($gid, $token);
+        $title = $this->titleCleaner->clean(trim((string) ($meta['title'] ?? '')));
+        $thumb = trim((string) ($meta['thumb'] ?? ''));
+
+        EhImportQueueItem::create([
+            'gid' => $gid,
+            'token' => $token,
+            'title' => mb_substr($title !== '' ? $title : 'Galeria '.$gid, 0, 255),
+            'thumb' => $thumb !== '' ? mb_substr($thumb, 0, 500) : null,
+            'source_url' => $this->importer->sourceUrl($gid, $token),
+            'status' => EhImportQueueItem::STATUS_PENDING,
+            'position' => $this->nextQueuePosition(),
+            'redownload' => false,
+        ]);
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with('success', 'Galeria “'.($title !== '' ? $title : $gid).'” adicionada ao fim da fila.');
+    }
+
+    /**
+     * Put a comic that is already on the site back in the queue: it then
+     * downloads its pending/failed pages, or the whole gallery again when
+     * "Baixar todas as páginas de novo" is checked.
+     */
+    public function addQueueComic(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'comic_id' => ['required', 'integer', 'exists:comics,id'],
+            'redownload' => ['nullable', 'boolean'],
+        ]);
+
+        $comic = Comic::with('ehImport')->findOrFail((int) $validated['comic_id']);
+        $import = $comic->ehImport;
+
+        if ($import === null || $import->gid === null || trim((string) $import->token) === '') {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Este comic não tem uma importação do E-Hentai para baixar.');
+        }
+
+        if (EhImportQueueItem::query()->where('gid', (int) $import->gid)->exists()) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Este comic já está na fila.');
+        }
+
+        $redownload = $request->boolean('redownload');
+        if (! $redownload && ! $import->pages()
+            ->whereIn('status', [
+                EhImportPage::STATUS_PENDING,
+                EhImportPage::STATUS_DOWNLOADING,
+                EhImportPage::STATUS_FAILED,
+            ])->exists()) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Todas as páginas deste comic já estão baixadas — marque “Baixar todas as páginas de novo” para baixar outra vez.');
+        }
+
+        if (! $redownload) {
+            // Same as "Tentar de novo" per item: failed pages get a fresh
+            // round of attempts instead of being skipped.
+            $import->pages()
+                ->where('status', EhImportPage::STATUS_FAILED)
+                ->update(['status' => EhImportPage::STATUS_PENDING, 'attempts' => 0, 'error' => null]);
+        }
+
+        EhImportQueueItem::create([
+            'gid' => (int) $import->gid,
+            'token' => strtolower((string) $import->token),
+            'title' => mb_substr($comic->title, 0, 255),
+            'thumb' => $comic->image_path !== null ? mb_substr(asset('storage/'.$comic->image_path), 0, 500) : null,
+            'source_url' => mb_substr((string) ($import->source_url ?: $this->importer->sourceUrl((int) $import->gid, (string) $import->token)), 0, 500),
+            'status' => EhImportQueueItem::STATUS_PENDING,
+            'position' => $this->nextQueuePosition(),
+            'redownload' => $redownload,
+            'comic_id' => $comic->id,
+        ]);
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with('success', '“'.$comic->title.'” adicionado ao fim da fila'.($redownload ? ' para baixar tudo de novo.' : '.'));
+    }
+
+    /**
+     * Persist the order chosen by dragging the queue rows.
+     */
+    public function reorderQueue(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $existing = EhImportQueueItem::query()
+            ->orderBy('position')
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $sent = array_values(array_intersect(
+            array_map('intval', $validated['ids']),
+            $existing
+        ));
+        $order = array_values(array_merge($sent, array_diff($existing, $sent)));
+
+        DB::transaction(function () use ($order): void {
+            foreach ($order as $index => $id) {
+                EhImportQueueItem::query()->whereKey($id)->update(['position' => $index + 1]);
+            }
+        });
+
+        return response()->json(['ok' => true, 'order' => $order]);
+    }
+
+    /**
+     * Process the next queued gallery: create its scheduled comic with
+     * the gallery defaults, then download one chunk of pages. The admin
+     * page calls this repeatedly, so a closed tab simply pauses the queue.
+     */
+    public function processQueue(): JsonResponse
+    {
+        $lock = Cache::lock('ehimport:queue:lock', 180);
+        if (! $lock->get()) {
+            return response()->json(['message' => 'Outra requisição já está processando a fila. Aguarde.'], 409);
+        }
+
+        try {
+            $item = EhImportQueueItem::query()
+                ->whereIn('status', [EhImportQueueItem::STATUS_PROCESSING, EhImportQueueItem::STATUS_PENDING])
+                ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [EhImportQueueItem::STATUS_PROCESSING])
+                ->orderBy('position')
+                ->orderBy('id')
+                ->first();
+
+            if ($item === null) {
+                return response()->json(['done' => true, 'queue' => $this->queuePayload()]);
+            }
+
+            $comic = $item->comic_id !== null ? Comic::find($item->comic_id) : null;
+
+            // A comic added with "Baixar todas as páginas de novo": wipe
+            // the old pages once, then keep downloading normally.
+            if ($comic !== null && $item->redownload) {
+                try {
+                    $this->resetComicImport(
+                        $comic,
+                        (string) ($item->source_url ?: $comic->ehImport?->source_url)
+                    );
+                    $item->update(['redownload' => false]);
+                } catch (\Throwable $e) {
+                    $item->update([
+                        'status' => EhImportQueueItem::STATUS_FAILED,
+                        'error' => mb_substr($e->getMessage(), 0, 500),
+                        'processed_at' => now(),
+                    ]);
+
+                    return response()->json([
+                        'failed' => true,
+                        'message' => $e->getMessage(),
+                        'queue' => $this->queuePayload(),
+                    ]);
+                }
+            }
+
+            if ($comic === null) {
+                if ($item->comic_id !== null) {
+                    $item->update(['comic_id' => null]);
+                }
+                $item->update([
+                    'status' => EhImportQueueItem::STATUS_PROCESSING,
+                    'error' => null,
+                    'processed_at' => null,
+                ]);
+
+                try {
+                    $comic = $this->createComicFromQueueItem($item->fresh());
+                } catch (\Throwable $e) {
+                    $item->update([
+                        'status' => EhImportQueueItem::STATUS_FAILED,
+                        'error' => mb_substr($e->getMessage(), 0, 500),
+                        'processed_at' => now(),
+                    ]);
+
+                    return response()->json([
+                        'failed' => true,
+                        'message' => $e->getMessage(),
+                        'queue' => $this->queuePayload(),
+                    ]);
+                }
+
+                if ($comic === null) {
+                    // The gallery was already imported: item marked skipped.
+                    return response()->json(['skipped' => true, 'queue' => $this->queuePayload()]);
+                }
+
+                $item->update(['comic_id' => $comic->id]);
+            } elseif ($item->status === EhImportQueueItem::STATUS_PENDING) {
+                $item->update(['status' => EhImportQueueItem::STATUS_PROCESSING, 'error' => null]);
+            }
+
+            $import = $comic->fresh()->ehImport;
+            if ($import === null) {
+                $item->update([
+                    'status' => EhImportQueueItem::STATUS_FAILED,
+                    'error' => 'Comic sem fila de páginas — abra a importação e use “Baixar tudo de novo”.',
+                    'processed_at' => now(),
+                ]);
+
+                return response()->json([
+                    'failed' => true,
+                    'message' => 'Comic sem fila de páginas.',
+                    'queue' => $this->queuePayload(),
+                ]);
+            }
+
+            $chunk = $this->downloadChunk($import);
+            if ($chunk['busy']) {
+                return response()->json(['message' => 'Outra requisição está baixando este comic. Aguarde.'], 409);
+            }
+
+            $payload = $this->finishImport($comic->fresh());
+            $failures = count($payload['failed']);
+
+            if ($payload['complete']) {
+                $item->update([
+                    'status' => EhImportQueueItem::STATUS_DONE,
+                    'error' => $failures > 0
+                        ? $failures.' página(s) falharam — abra a importação para tentar de novo.'
+                        : null,
+                    'processed_at' => now(),
+                ]);
+            }
+
+            $queue = $this->queuePayload();
+            $comicPayload = [
+                'id' => $comic->id,
+                'title' => $comic->title,
+                'done' => $payload['done'],
+                'total' => $payload['total'],
+                'failed' => $failures,
+                'complete' => $payload['complete'],
+                'progress_url' => route('admin.import.progress', $comic),
+            ];
+
+            if (! $payload['complete'] && $chunk['limited'] && $chunk['processed'] === 0) {
+                return response()->json(
+                    [
+                        'message' => 'Limite de downloads por minuto atingido — aguardando.',
+                        'retry_after' => $chunk['retry_after'],
+                        'comic' => $comicPayload,
+                        'queue' => $queue,
+                    ],
+                    429,
+                    ['Retry-After' => (string) $chunk['retry_after']]
+                );
+            }
+
+            return response()->json([
+                'done' => $queue['pending'] === 0 && $queue['processing'] === 0,
+                'comic' => $comicPayload,
+                'queue' => $queue,
+            ]);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Put a failed queue item back in line.
+     */
+    public function retryQueueItem(EhImportQueueItem $item): RedirectResponse
+    {
+        if ($item->status === EhImportQueueItem::STATUS_PROCESSING) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Este item está sendo processado agora.');
+        }
+
+        $comic = $item->comic_id !== null ? Comic::find($item->comic_id) : null;
+
+        // A queue item can finish with failed pages: put them back in the
+        // page queue so "Tentar de novo" actually retries the download.
+        $import = $comic?->ehImport;
+        if ($import !== null) {
+            $import->pages()
+                ->where('status', EhImportPage::STATUS_FAILED)
+                ->update(['status' => EhImportPage::STATUS_PENDING, 'attempts' => 0, 'error' => null]);
+            if ($import->isComplete()) {
+                $import->update(['status' => EhImport::STATUS_DOWNLOADING]);
+            }
+        }
+
+        $item->update([
+            'status' => EhImportQueueItem::STATUS_PENDING,
+            'comic_id' => $comic !== null ? $comic->id : null,
+            'error' => null,
+            'processed_at' => null,
+        ]);
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with('success', 'Item voltou para a fila.');
+    }
+
+    /**
+     * Drop a queue item that is not being downloaded.
+     */
+    public function removeQueueItem(EhImportQueueItem $item): RedirectResponse
+    {
+        if ($item->status === EhImportQueueItem::STATUS_PROCESSING) {
+            return redirect()->route('admin.import')
+                ->withFragment('import-queue')
+                ->with('error', 'Este item está sendo processado agora — aguarde ou pause a fila.');
+        }
+
+        $item->delete();
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with('success', 'Item removido da fila.');
+    }
+
+    /**
+     * Remove the finished (done/skipped) rows from the queue.
+     */
+    public function clearQueue(): RedirectResponse
+    {
+        $deleted = EhImportQueueItem::query()
+            ->whereIn('status', [EhImportQueueItem::STATUS_DONE, EhImportQueueItem::STATUS_SKIPPED])
+            ->delete();
+
+        return redirect()->route('admin.import')
+            ->withFragment('import-queue')
+            ->with('success', $deleted.' item(ns) concluído(s) removido(s) da fila.');
     }
 
     /**
@@ -215,9 +789,37 @@ class AdminImportController extends Controller
             return response()->json($this->progressPayload($comic->fresh(), null, true));
         }
 
+        $chunk = $this->downloadChunk($import);
+
+        if ($chunk['busy']) {
+            return response()->json(['message' => 'Outra requisição está baixando. Aguarde.'], 409);
+        }
+
+        if ($chunk['limited'] && $chunk['processed'] === 0) {
+            return response()->json(
+                ['message' => 'Limite de downloads por minuto atingido — aguardando.', 'retry_after' => $chunk['retry_after']],
+                429,
+                ['Retry-After' => (string) $chunk['retry_after']]
+            );
+        }
+
+        return response()->json($this->finishImport($comic->fresh()));
+    }
+
+    /**
+     * Download the next chunk of pending pages for one import.
+     *
+     * Shared by the per-comic progress view and the bulk queue. The lock
+     * keeps two tabs (or a queue + progress page) from downloading the
+     * same import at once.
+     *
+     * @return array{busy: bool, limited: bool, retry_after: int, processed: int}
+     */
+    protected function downloadChunk(EhImport $import): array
+    {
         $lock = Cache::lock("ehimport:import:{$import->id}:lock", 120);
         if (! $lock->get()) {
-            return response()->json(['message' => 'Outra requisição está baixando. Aguarde.'], 409);
+            return ['busy' => true, 'limited' => false, 'retry_after' => 0, 'processed' => 0];
         }
 
         try {
@@ -235,7 +837,12 @@ class AdminImportController extends Controller
                 ->get();
 
             if ($chunk->isEmpty()) {
-                return response()->json($this->finishImport($comic->fresh()));
+                return ['busy' => false, 'limited' => false, 'retry_after' => 0, 'processed' => 0];
+            }
+
+            $comic = $import->comic;
+            if ($comic === null) {
+                return ['busy' => false, 'limited' => false, 'retry_after' => 0, 'processed' => 0];
             }
 
             $import->update(['status' => EhImport::STATUS_DOWNLOADING]);
@@ -296,17 +903,12 @@ class AdminImportController extends Controller
                 $processed++;
             }
 
-            if ($limited && $processed === 0) {
-                $retryAfter = max(1, RateLimiter::availableIn('ehimport:images'));
-
-                return response()->json(
-                    ['message' => 'Limite de downloads por minuto atingido — aguardando.', 'retry_after' => $retryAfter],
-                    429,
-                    ['Retry-After' => (string) $retryAfter]
-                );
-            }
-
-            return response()->json($this->finishImport($comic->fresh()));
+            return [
+                'busy' => false,
+                'limited' => $limited,
+                'retry_after' => $limited ? max(1, RateLimiter::availableIn('ehimport:images')) : 0,
+                'processed' => $processed,
+            ];
         } finally {
             $lock->release();
         }
@@ -374,21 +976,13 @@ class AdminImportController extends Controller
         $request->validate(['url' => 'required|string|max:500']);
 
         try {
-            $preview = $this->importer->previewFromUrl($request->input('url'));
+            $import = $this->resetComicImport($comic, (string) $request->input('url'));
         } catch (EhImportException $e) {
             return redirect()->route('admin.import.progress', $comic)->with('error', $e->getMessage());
         }
 
-        $comic->pages()->delete();
-        File::deleteDirectory(public_path("storage/comics/{$comic->id}/pages"));
-        $comic->update(['image_path' => null]);
-        $comic->ehImport?->delete();
-
-        $import = $this->seedImport($comic, $preview);
-        $this->logEvent($import, 'Baixar tudo de novo: páginas antigas apagadas, fila zerada.');
-
         return redirect()->route('admin.import.progress', $comic)
-            ->with('success', count($preview['page_urls']).' página(s) na fila — baixando de novo em ordem.');
+            ->with('success', $import->total_pages.' página(s) na fila — baixando de novo em ordem.');
     }
 
     /**
@@ -429,6 +1023,7 @@ class AdminImportController extends Controller
         $comic->pages()->delete();
         File::deleteDirectory(public_path("storage/comics/{$comic->id}"));
         $comic->delete();
+        ComicDiskUsage::flush();
 
         return redirect()->route('admin.import')->with('success', 'Importação cancelada e comic removido.');
     }
@@ -469,6 +1064,146 @@ class AdminImportController extends Controller
         }
 
         $this->logEvent($import, "Import criado a partir de {$preview['source_url']} ({$import->total_pages} páginas).");
+
+        return $import;
+    }
+
+    /**
+     * Turn a queued gallery into a scheduled comic using the gallery
+     * defaults (title, artist, tags, uploader description, next free
+     * schedule date) and seed its page queue.
+     *
+     * @return Comic|null null when the gallery was already imported (item marked skipped)
+     *
+     * @throws EhImportException|\Throwable
+     */
+    protected function createComicFromQueueItem(EhImportQueueItem $item): ?Comic
+    {
+        $gid = (int) $item->gid;
+
+        $existing = $this->duplicates->findByGallery($gid);
+        if ($existing !== null) {
+            $item->update([
+                'status' => EhImportQueueItem::STATUS_SKIPPED,
+                'comic_id' => $existing->id,
+                'error' => 'Já importado como “'.$existing->title.'”.',
+                'processed_at' => now(),
+            ]);
+
+            return null;
+        }
+
+        $preview = $this->importer->previewFromUrl($item->source_url);
+
+        return DB::transaction(function () use ($preview): Comic {
+            $comic = Comic::create([
+                'title' => $preview['title'],
+                'author' => $preview['artist'] !== '' ? $preview['artist'] : null,
+                'description' => $this->suggestedDescription($preview),
+                'slug' => Comic::generateUniqueSlug($preview['title']),
+                'published_at' => Comic::defaultScheduledDate(),
+                'user_id' => Auth::id(),
+            ]);
+
+            $this->syncTagsFromFullNames($comic, implode(', ', $preview['tags']));
+
+            $import = $this->seedImport($comic, $preview);
+            $this->logEvent($import, 'Importação criada pela fila de busca.');
+
+            return $comic;
+        });
+    }
+
+    /**
+     * Queue state for the import view and the process endpoint.
+     *
+     * @return array{items: array<int, array{id: int, gid: int, title: string, thumb: string|null, status: string, redownload: bool, error: string|null, comic_id: int|null, done: int, total: int, progress_url: string|null, source_url: string}>, total: int, pending: int, processing: int, done: int, failed: int, skipped: int}
+     */
+    protected function queuePayload(): array
+    {
+        $items = EhImportQueueItem::query()
+            ->with(['comic:id,title', 'comic.ehImport:id,comic_id,status,total_pages', 'comic.pages:id,comic_id'])
+            ->orderBy('position')
+            ->orderBy('id')
+            ->get();
+
+        $mapped = $items->map(function (EhImportQueueItem $item): array {
+            $comic = $item->comic;
+
+            return [
+                'id' => (int) $item->id,
+                'gid' => (int) $item->gid,
+                'title' => $item->title,
+                'thumb' => $item->thumb,
+                'status' => $item->status,
+                'redownload' => (bool) $item->redownload,
+                'error' => $item->error,
+                'comic_id' => $item->comic_id !== null ? (int) $item->comic_id : null,
+                'done' => $comic !== null ? $comic->pages->count() : 0,
+                'total' => (int) ($comic?->ehImport?->total_pages ?? 0),
+                'progress_url' => $comic !== null ? route('admin.import.progress', $comic) : null,
+                'source_url' => $item->source_url,
+            ];
+        })->all();
+
+        return [
+            'items' => $mapped,
+            'total' => count($mapped),
+            'pending' => $items->where('status', EhImportQueueItem::STATUS_PENDING)->count(),
+            'processing' => $items->where('status', EhImportQueueItem::STATUS_PROCESSING)->count(),
+            'done' => $items->where('status', EhImportQueueItem::STATUS_DONE)->count(),
+            'failed' => $items->where('status', EhImportQueueItem::STATUS_FAILED)->count(),
+            'skipped' => $items->where('status', EhImportQueueItem::STATUS_SKIPPED)->count(),
+        ];
+    }
+
+    /**
+     * Next free position at the end of the queue.
+     */
+    protected function nextQueuePosition(): int
+    {
+        return ((int) EhImportQueueItem::query()->max('position')) + 1;
+    }
+
+    /**
+     * Best-effort gallery metadata for a manually added queue item.
+     * Without it the item still works with a placeholder title.
+     *
+     * @return array<string, mixed>
+     */
+    protected function queueMetadata(int $gid, string $token): array
+    {
+        try {
+            $metadata = $this->lookup->fetchMetadata([['gid' => $gid, 'token' => $token]]);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        foreach ($metadata as $meta) {
+            if (isset($meta['gid']) && (int) $meta['gid'] === $gid) {
+                return $meta;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Wipe a comic's pages and seed a fresh import from its gallery URL.
+     * Shared by "Baixar tudo de novo" and the queue's redownload flag.
+     */
+    protected function resetComicImport(Comic $comic, string $url): EhImport
+    {
+        $preview = $this->importer->previewFromUrl($url);
+
+        $comic->pages()->delete();
+        File::deleteDirectory(public_path("storage/comics/{$comic->id}/pages"));
+        $comic->update(['image_path' => null]);
+        $comic->ehImport?->delete();
+        ComicDiskUsage::flush();
+
+        $import = $this->seedImport($comic, $preview);
+        $this->logEvent($import, 'Baixar tudo de novo: páginas antigas apagadas, fila zerada.');
 
         return $import;
     }

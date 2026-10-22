@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: limpeza configurável dos títulos das galerias",
+    "date": "2026-10-21",
+    "category": "Added",
+    "tags": ["importacao", "titulos", "configuracao", "admin"],
+    "summary": "Os imports (individual e em fila) agora removem trechos configurados do título da galeria, como “[Portuguese-BR]”, sem diferenciar maiúsculas. A lista de trechos pode ser editada em Admin → Importar → Configurações de importação, um por linha, e o padrão fica em config/ehimport.php.",
+    "body": "## Títulos mais limpos ao importar\n\nO título sugerido na pré-visualização e o título criado pela fila passam por uma limpeza configurável antes de virar comic:\n\n- **Remoção de trechos**: some qualquer texto da lista, sem diferenciar maiúsculas. Ex.: `[Portuguese-BR]`, `[Português]`, `[PT-BR]`.\n- **Normalização**: espaços repetidos viram um só e separadores pendentes (`-`, `–`, `—`, `|`, `:`) nas pontas são removidos. Se a limpeza apagar o título inteiro, o original é mantido.\n- **Onde editar**: em **Admin → Importar → Configurações de importação**, no campo **Remover dos títulos**, um trecho por linha. O valor fica no banco (`eh_import_settings`) e vale na hora; deixar o campo vazio volta à lista padrão de `config/ehimport.php`.\n- **Onde se aplica**: no formulário de importação individual (o título já aparece limpo e continua editável antes de salvar) e na fila, tanto no nome guardado na fila quanto no comic criado ao processar.\n\nNenhuma migration é necessária: o campo usa a tabela de configurações de importação já existente."
+}
