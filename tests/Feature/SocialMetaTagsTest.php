@@ -153,4 +153,35 @@ class SocialMetaTagsTest extends TestCase
             ->assertSee('<meta property="og:image" content="'.asset('storage/posts/legacy-preview.jpg').'">', false)
             ->assertSee('<meta name="twitter:image" content="'.asset('storage/posts/legacy-preview.jpg').'">', false);
     }
+
+    public function test_post_image_preserves_its_aspect_ratio_and_opens_the_image_viewer(): void
+    {
+        $post = Post::factory()->create([
+            'media' => ['storage/posts/tall-image.jpg'],
+        ]);
+
+        $this->get(route('posts.show', ['post' => $post->id]))
+            ->assertSee('data-post-image-view', false)
+            ->assertSee('data-image-src="'.asset('storage/posts/tall-image.jpg').'"', false)
+            ->assertSee('max-h-[32rem] max-w-full object-contain', false)
+            ->assertSee('<dialog id="post-image-modal"', false)
+            ->assertSee('id="post-image-modal-content"', false)
+            ->assertSee('aria-label="Fechar imagem ampliada"', false);
+    }
+
+    public function test_each_post_image_in_a_gallery_uses_the_uncropped_image_viewer(): void
+    {
+        $post = Post::factory()->create([
+            'media' => [
+                'storage/posts/gallery-one.jpg',
+                'storage/posts/gallery-two.jpg',
+            ],
+        ]);
+
+        $this->get(route('posts.show', ['post' => $post->id]))
+            ->assertSee('data-image-src="'.asset('storage/posts/gallery-one.jpg').'"', false)
+            ->assertSee('data-image-src="'.asset('storage/posts/gallery-two.jpg').'"', false)
+            ->assertSee('aspect-square w-full cursor-zoom-in', false)
+            ->assertSee('h-full w-full object-contain', false);
+    }
 }

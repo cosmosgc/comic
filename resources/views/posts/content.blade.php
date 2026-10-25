@@ -66,13 +66,27 @@
         @if (!empty($mediaFiles))
             <div class="mt-3 overflow-hidden rounded-2xl border border-zinc-800">
                 @if (count($mediaFiles) === 1)
-                    <img src="{{ asset($mediaFiles[0]) }}" alt="Imagem do post de {{ $authorName }}"
-                         class="max-h-96 w-full object-cover">
+                    <button type="button"
+                            data-post-image-view
+                            data-image-src="{{ asset($mediaFiles[0]) }}"
+                            data-image-alt="Imagem do post de {{ $authorName }}"
+                            aria-label="Ampliar imagem do post"
+                            class="flex w-full cursor-zoom-in justify-center bg-zinc-950/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500">
+                        <img src="{{ asset($mediaFiles[0]) }}" alt="Imagem do post de {{ $authorName }}"
+                             class="block h-auto max-h-[32rem] max-w-full object-contain">
+                    </button>
                 @else
                     <div class="grid grid-cols-2 gap-0.5">
                         @foreach (array_slice($mediaFiles, 0, 4) as $media)
-                            <img src="{{ asset($media) }}" alt="Imagem {{ $loop->iteration }} do post de {{ $authorName }}"
-                                 class="h-48 w-full object-cover">
+                            <button type="button"
+                                    data-post-image-view
+                                    data-image-src="{{ asset($media) }}"
+                                    data-image-alt="Imagem {{ $loop->iteration }} do post de {{ $authorName }}"
+                                    aria-label="Ampliar imagem {{ $loop->iteration }} do post"
+                                    class="flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden bg-zinc-950/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500">
+                                <img src="{{ asset($media) }}" alt="Imagem {{ $loop->iteration }} do post de {{ $authorName }}"
+                                     class="h-full w-full object-contain">
+                            </button>
                         @endforeach
                     </div>
                 @endif
@@ -324,7 +338,43 @@
 </div>
 
 @once
+    <dialog id="post-image-modal"
+            class="fixed inset-0 m-auto max-h-[90dvh] max-w-[96vw] overflow-visible border-0 bg-transparent p-0 text-white backdrop:bg-black/90">
+        <div class="relative flex max-h-[90dvh] max-w-[96vw] items-center justify-center">
+            <button type="button" id="post-image-modal-close"
+                    class="absolute -right-2 -top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-zinc-900 text-2xl text-white shadow-lg transition hover:bg-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    aria-label="Fechar imagem ampliada">
+                ×
+            </button>
+            <img id="post-image-modal-content" src="" alt=""
+                 class="max-h-[85dvh] max-w-[96vw] rounded-lg object-contain shadow-2xl">
+        </div>
+    </dialog>
+
     <script>
+        const postImageModal = document.getElementById('post-image-modal');
+        const postImageModalContent = document.getElementById('post-image-modal-content');
+
+        document.addEventListener('click', function (event) {
+            const imageButton = event.target.closest('[data-post-image-view]');
+            if (imageButton) {
+                postImageModalContent.src = imageButton.dataset.imageSrc;
+                postImageModalContent.alt = imageButton.dataset.imageAlt;
+                postImageModal.showModal();
+            }
+        });
+
+        document.getElementById('post-image-modal-close').addEventListener('click', function () {
+            postImageModal.close();
+        });
+
+        postImageModal.addEventListener('click', function (event) {
+            event.stopPropagation();
+            if (event.target === postImageModal) {
+                postImageModal.close();
+            }
+        });
+
         // Whole-card navigation: clicking a post opens its thread, except
         // on interactive elements (buttons, links, inputs), text selections,
         // modifier-clicks (kept as new-tab), and the already-open thread.
