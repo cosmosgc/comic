@@ -142,4 +142,15 @@ class SocialMetaTagsTest extends TestCase
         $this->get(route('posts.show', ['post' => $post->id]))
             ->assertSee('<meta property="og:image" content="'.Vite::asset('resources/images/icon.png').'">', false);
     }
+
+    public function test_post_page_reads_legacy_json_media_for_social_preview(): void
+    {
+        $post = Post::factory()->create([
+            'media' => json_encode(['storage/posts/legacy-preview.jpg']),
+        ]);
+
+        $this->get(route('posts.show', ['post' => $post->id]))
+            ->assertSee('<meta property="og:image" content="'.asset('storage/posts/legacy-preview.jpg').'">', false)
+            ->assertSee('<meta name="twitter:image" content="'.asset('storage/posts/legacy-preview.jpg').'">', false);
+    }
 }

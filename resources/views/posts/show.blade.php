@@ -1,12 +1,18 @@
 @extends('layouts.app')
 
 @section('title', 'Post')
+@php
+    $postMedia = is_array($post->media)
+        ? $post->media
+        : (is_string($post->media) ? json_decode($post->media, true) ?: [] : []);
+    $previewImagePath = is_string($postMedia[0] ?? null) ? $postMedia[0] : null;
+@endphp
 @section('meta_title', 'Post de '.($post->author?->name ?? 'usuário removido'))
 @section('meta_description', \Illuminate\Support\Str::limit(
     strip_tags($post->text ?: 'Post de '.($post->author?->name ?? 'usuário removido').' na comunidade.'),
     200
 ))
-@section('meta_image', ! empty($post->media) ? asset($post->media[0]) : '')
+@section('meta_image', $previewImagePath ? asset($previewImagePath) : '')
 @section('meta_type', 'article')
 
 @section('content')
