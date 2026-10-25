@@ -1,6 +1,12 @@
 @extends('layouts.marketplace-layout')
 
 @section('title', $listing->title.' — Mercado')
+@section('meta_description', \Illuminate\Support\Str::limit(
+    strip_tags($listing->description ?: 'Anúncio publicado no Mercado da comunidade.'),
+    200
+))
+@section('meta_image', $listing->coverUrl() ?? '')
+@section('meta_type', 'article')
 
 @section('content')
 @php

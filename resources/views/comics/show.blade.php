@@ -5,16 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#09090b">
     <title>{{ $comic->title }} - Comic Reader</title>
-    <meta property="og:title" content="{{$comic->title}}" />
-    <meta property="og:description" content="{{$comic->author}}" />
-    <meta property="og:image" content="{{ asset('storage/' . $comic->image_path) }}" />
-    <meta property="og:image:width" content="630">
-    <meta property="og:image:height" content="1200">
-
-    <meta property="twitter:title" content="{{$comic->title}}" />
-    <meta property="twitter:description" content="{{$comic->author}}" />
+    @php
+        $metaTitle = $comic->title;
+        $metaDescription = \Illuminate\Support\Str::limit(
+            strip_tags($comic->description ?: $comic->author ?: 'Leia este comic online.'),
+            200
+        );
+        $metaImage = $comic->image_path
+            ? asset('storage/'.$comic->image_path)
+            : Vite::asset('resources/images/icon.png');
+    @endphp
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="{{ config('app.site_title') }}">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:image" content="{{ $metaImage }}">
+    <meta property="og:image:alt" content="{{ $metaTitle }}">
+    <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta property="twitter:image:src" content="{{ asset('storage/' . $comic->image_path) }}" />
+    <meta name="twitter:title" content="{{ $metaTitle }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $metaImage }}">
     <style>
         body {
             margin: 0;

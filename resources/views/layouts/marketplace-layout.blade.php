@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>@yield('title', 'Mercado — '.config('app.site_title'))</title>
-
-    <meta name="description" content="Mercado da comunidade: anuncie, troque e encontre comics, figures, arte e serviços.">
+    @include('layouts.partials.social-meta', [
+        'defaultTitle' => 'Mercado — '.config('app.site_title'),
+        'defaultDescription' => 'Mercado da comunidade: anuncie, troque e encontre comics, figures, arte e serviços.',
+        'defaultImage' => Vite::asset('resources/images/icon.png'),
+    ])
     <meta name="robots" content="noindex">
     <meta name="theme-color" content="#09090b">
 

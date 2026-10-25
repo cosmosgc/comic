@@ -1,6 +1,16 @@
 @extends('layouts.forum-layout')
 
 @section('title', $thread->title.' — Fórum')
+@php
+    $openingPost = $posts->first();
+    $previewAttachment = $openingPost?->attachments->first(fn ($attachment) => $attachment->isImage());
+@endphp
+@section('meta_description', \Illuminate\Support\Str::limit(
+    strip_tags($posts->first()?->body ?: 'Discussão no fórum da comunidade.'),
+    200
+))
+@section('meta_image', $thread->bannerUrl() ?? $previewAttachment?->url() ?? '')
+@section('meta_type', 'article')
 
 @section('content')
 <div class="mx-auto min-h-screen max-w-4xl px-4 py-6">

@@ -4,19 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>@yield('title', config('app.site_title'))</title>
-
-    <meta name="description" content="Descubra os melhores comics da semana. Veja os mais populares e explore a coleção completa.">
+    @include('layouts.partials.social-meta', [
+        'defaultTitle' => config('app.site_title'),
+        'defaultDescription' => 'Descubra comics, explore a coleção e acompanhe as novidades da comunidade.',
+        'defaultImage' => Vite::asset('resources/images/icon.png'),
+    ])
     <meta name="keywords" content="comics, leitura online">
-
-    {{-- Open Graph --}}
-    <meta property="og:title" content="Comics Index">
-    <meta property="og:description" content="Top comics da semana">
-    <meta property="og:image" content="{{ Vite::asset('resources/images/icon.png') }}">
-    <meta property="og:url" content="{{ url()->current() }}">
-
-    {{-- Twitter --}}
-    <meta name="twitter:card" content="summary_large_image">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
