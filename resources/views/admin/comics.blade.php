@@ -27,6 +27,12 @@
         <span data-comics-flash-text></span>
     </div>
 
+    <div class="mb-6 flex flex-wrap gap-2">
+        <a href="{{ route('admin.comics.schedule-view', ['month' => now()->format('Y-m')]) }}" class="admin-btn admin-btn-sm admin-btn-success">
+            Ver agenda de lançamentos
+        </a>
+    </div>
+
     <div class="admin-card mb-6">
         <div class="admin-card-header">
             <span>Transferir entre instalações</span>

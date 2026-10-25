@@ -62,7 +62,11 @@ class Comic extends Model
             // unreachable empty slug.
             $slug = 'comic';
         }
-        $originalSlug = $slug; // Keep the original slug for comparison
+
+        // comics.slug is varchar(255); leave room for the "-N" suffix of
+        // duplicates so a max-length title can't overflow the column.
+        $originalSlug = mb_substr($slug, 0, 240);
+        $slug = $originalSlug;
         $count = 1;
 
         // Check if the slug already exists and append a number if needed

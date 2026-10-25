@@ -342,6 +342,35 @@ class EhImportTest extends TestCase
         }
     }
 
+    public function test_pages_chunk_reports_the_client_side_pause_before_the_next_batch(): void
+    {
+        config([
+            'ehimport.chunk' => 1,
+            'ehimport.image_delay_ms' => 1000,
+            'ehimport.delay_ms' => 1000,
+            'ehimport.delay_jitter_ms' => 0,
+        ]);
+
+        $comicId = null;
+
+        try {
+            $comic = $this->storedComic();
+            $comicId = $comic->id;
+
+            $this->actingAs($this->admin)
+                ->postJson("/admin/import/{$comic->id}/pages")
+                ->assertOk()
+                ->assertJsonPath('done', 1)
+                ->assertJsonPath('complete', false)
+                // 1 image → 1000 (imagem) + 2×1000 (pausas).
+                ->assertJsonPath('next_delay_ms', 3000);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
+    }
+
     public function test_expired_preview_token_is_rejected(): void
     {
         $this->actingAs($this->admin)->post('/admin/import', [

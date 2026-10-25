@@ -437,24 +437,86 @@ class AdminController extends Controller
     }
 
     /**
+     * Show scheduled comics in a monthly or weekly admin calendar.
+     */
+    public function scheduleView(Request $request): View
+    {
+        $validated = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+            'view' => ['nullable', 'in:month,week'],
+            'week' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $calendarView = $validated['view'] ?? 'month';
+        $weekDate = Carbon::createFromFormat('!Y-m-d', $validated['week'] ?? now()->toDateString());
+        $currentMonth = isset($validated['month'])
+            ? Carbon::createFromFormat('!Y-m', $validated['month'])->startOfMonth()
+            : ($calendarView === 'week' ? $weekDate->copy()->startOfMonth() : now()->startOfMonth());
+
+        $calendarStart = $calendarView === 'week'
+            ? $weekDate->copy()->startOfWeek(Carbon::MONDAY)
+            : $currentMonth->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
+        $calendarEnd = $calendarView === 'week'
+            ? $weekDate->copy()->endOfWeek(Carbon::SUNDAY)
+            : $currentMonth->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
+
+        $scheduledComics = Comic::query()
+            ->scheduled()
+            ->whereBetween('published_at', [$calendarStart->copy()->startOfDay(), $calendarEnd->copy()->endOfDay()])
+            ->orderBy('published_at')
+            ->orderBy('id')
+            ->get();
+
+        $scheduledByDate = [];
+        foreach ($scheduledComics as $comic) {
+            $scheduledByDate[$comic->published_at->format('Y-m-d')][] = $comic;
+        }
+
+        $days = [];
+        $cursor = $calendarStart->copy();
+        while ($cursor->lte($calendarEnd)) {
+            $days[] = $cursor->copy();
+            $cursor->addDay();
+        }
+
+        return view('admin.comics-schedule', [
+            'currentMonth' => $currentMonth,
+            'previousMonth' => $currentMonth->copy()->subMonth(),
+            'nextMonth' => $currentMonth->copy()->addMonth(),
+            'calendarView' => $calendarView,
+            'weekStart' => $calendarStart->copy(),
+            'previousWeek' => $calendarStart->copy()->subWeek(),
+            'nextWeek' => $calendarStart->copy()->addWeek(),
+            'days' => $days,
+            'scheduledByDate' => $scheduledByDate,
+        ]);
+    }
+
+    /**
      * Set (or clear) a comic's release date from the admin list. A future
      * date keeps it off the public site and flags it as "Em breve"; an empty
      * date publishes it right away.
      */
-    public function scheduleComic(Request $request, Comic $comic): RedirectResponse
+    public function scheduleComic(Request $request, Comic $comic): RedirectResponse|JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'published_at' => 'nullable|date',
         ]);
 
-        $comic->published_at = $request->filled('published_at')
-            ? $request->date('published_at')
+        $comic->published_at = filled($validated['published_at'] ?? null)
+            ? Carbon::parse($validated['published_at'])
             : null;
         $comic->save();
 
         $message = $comic->isScheduled()
             ? "Comic \"{$comic->title}\" agendado para {$comic->published_at->format('d/m/Y H:i')} — aparece como \"Em breve\" até lá."
             : "Comic \"{$comic->title}\" publicado agora.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'published_at' => $comic->published_at?->toIso8601String(),
+            ]);
+        }
 
         return redirect()->route('admin.comics', $this->comicsRedirectParams($request))->with('success', $message);
     }

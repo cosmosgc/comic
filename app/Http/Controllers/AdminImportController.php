@@ -44,6 +44,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class AdminImportController extends Controller
 {
+    /**
+     * Rows shown per page in the import queue panel.
+     */
+    private const QUEUE_PER_PAGE = 10;
+
     public function __construct(
         protected EhComicImporter $importer,
         protected ComicDuplicateFinder $duplicates,
@@ -55,7 +60,7 @@ class AdminImportController extends Controller
     /**
      * Step 1: URL form + upcoming schedule queue + tuning.
      */
-    public function show(): View
+    public function show(Request $request): View
     {
         return view('admin.import', [
             'stage' => 'form',
@@ -64,7 +69,19 @@ class AdminImportController extends Controller
             'queue' => Comic::scheduled()->with('ehImport:id,comic_id,total_pages')->withCount('pages')
                 ->orderBy('published_at')->orderBy('id')->limit(8)->get(['id', 'title', 'published_at']),
             'settingDefs' => EhImportSetting::definitions(),
-            'importQueue' => $this->queuePayload(),
+            'importQueue' => $this->queuePayload($request),
+            'queueFilters' => [
+                'all' => 'Todas',
+                'queued' => 'Na fila',
+                'processing' => 'Importando',
+                'done' => 'Concluídas',
+            ],
+            'queueSorts' => [
+                'recent' => 'Mais recentes',
+                'oldest' => 'Mais antigas',
+                'position' => 'Ordem da fila',
+                'title' => 'Título (A-Z)',
+            ],
             // Comics already imported from E-Hentai: the only ones with
             // page URLs to (re)download, so the only valid "add existing".
             'queueComics' => Comic::query()
@@ -415,7 +432,7 @@ class AdminImportController extends Controller
      * the gallery defaults, then download one chunk of pages. The admin
      * page calls this repeatedly, so a closed tab simply pauses the queue.
      */
-    public function processQueue(): JsonResponse
+    public function processQueue(Request $request): JsonResponse
     {
         $lock = Cache::lock('ehimport:queue:lock', 180);
         if (! $lock->get()) {
@@ -431,7 +448,7 @@ class AdminImportController extends Controller
                 ->first();
 
             if ($item === null) {
-                return response()->json(['done' => true, 'queue' => $this->queuePayload()]);
+                return response()->json(['done' => true, 'queue' => $this->queuePayload($request)]);
             }
 
             $comic = $item->comic_id !== null ? Comic::find($item->comic_id) : null;
@@ -455,7 +472,7 @@ class AdminImportController extends Controller
                     return response()->json([
                         'failed' => true,
                         'message' => $e->getMessage(),
-                        'queue' => $this->queuePayload(),
+                        'queue' => $this->queuePayload($request),
                     ]);
                 }
             }
@@ -482,13 +499,13 @@ class AdminImportController extends Controller
                     return response()->json([
                         'failed' => true,
                         'message' => $e->getMessage(),
-                        'queue' => $this->queuePayload(),
+                        'queue' => $this->queuePayload($request),
                     ]);
                 }
 
                 if ($comic === null) {
                     // The gallery was already imported: item marked skipped.
-                    return response()->json(['skipped' => true, 'queue' => $this->queuePayload()]);
+                    return response()->json(['skipped' => true, 'queue' => $this->queuePayload($request)]);
                 }
 
                 $item->update(['comic_id' => $comic->id]);
@@ -507,7 +524,7 @@ class AdminImportController extends Controller
                 return response()->json([
                     'failed' => true,
                     'message' => 'Comic sem fila de páginas.',
-                    'queue' => $this->queuePayload(),
+                    'queue' => $this->queuePayload($request),
                 ]);
             }
 
@@ -529,7 +546,7 @@ class AdminImportController extends Controller
                 ]);
             }
 
-            $queue = $this->queuePayload();
+            $queue = $this->queuePayload($request);
             $comicPayload = [
                 'id' => $comic->id,
                 'title' => $comic->title,
@@ -557,6 +574,7 @@ class AdminImportController extends Controller
                 'done' => $queue['pending'] === 0 && $queue['processing'] === 0,
                 'comic' => $comicPayload,
                 'queue' => $queue,
+                'next_delay_ms' => $this->clientPauseMs($chunk['processed']),
             ]);
         } finally {
             $lock->release();
@@ -803,7 +821,34 @@ class AdminImportController extends Controller
             );
         }
 
-        return response()->json($this->finishImport($comic->fresh()));
+        return response()->json(array_merge(
+            $this->finishImport($comic->fresh()),
+            ['next_delay_ms' => $this->clientPauseMs($chunk['processed'])]
+        ));
+    }
+
+    /**
+     * How long the browser should wait before asking for the next batch.
+     *
+     * The importer used to usleep() before/after every image. That keeps
+     * the only PHP worker busy on single-process hosts (nginx + one
+     * php-cgi, or artisan serve), so every other page appears frozen.
+     * The same spacing now happens in the admin page, between polls,
+     * while the PHP worker is free to answer other requests.
+     */
+    protected function clientPauseMs(int $processed): int
+    {
+        if ($processed <= 0) {
+            return 0;
+        }
+
+        // One pause before the image, one after it, and one after
+        // resolving the image page (resolve is skipped on retries).
+        $perImage = max(0, (int) config('ehimport.image_delay_ms', 3000))
+            + (2 * max(0, (int) config('ehimport.delay_ms', 1200)))
+            + max(0, (int) config('ehimport.delay_jitter_ms', 800));
+
+        return $processed * $perImage;
     }
 
     /**
@@ -1095,12 +1140,18 @@ class AdminImportController extends Controller
 
         $preview = $this->importer->previewFromUrl($item->source_url);
 
-        return DB::transaction(function () use ($preview): Comic {
+        // Gallery titles come from the API without a length limit, while
+        // comics.title is varchar(255): trim before inserting so a single
+        // huge title doesn't fail the whole queue item.
+        $title = mb_substr(trim($preview['title']), 0, 255);
+        $author = trim($preview['artist']);
+
+        return DB::transaction(function () use ($preview, $title, $author): Comic {
             $comic = Comic::create([
-                'title' => $preview['title'],
-                'author' => $preview['artist'] !== '' ? $preview['artist'] : null,
+                'title' => $title,
+                'author' => $author !== '' ? mb_substr($author, 0, 255) : null,
                 'description' => $this->suggestedDescription($preview),
-                'slug' => Comic::generateUniqueSlug($preview['title']),
+                'slug' => Comic::generateUniqueSlug($title),
                 'published_at' => Comic::defaultScheduledDate(),
                 'user_id' => Auth::id(),
             ]);
@@ -1115,19 +1166,65 @@ class AdminImportController extends Controller
     }
 
     /**
-     * Queue state for the import view and the process endpoint.
+     * One page of the import queue plus the global counters, the active
+     * filter/sort and the pagination state. Used by the view and by the
+     * polling endpoint, which echoes the current query string back.
      *
-     * @return array{items: array<int, array{id: int, gid: int, title: string, thumb: string|null, status: string, redownload: bool, error: string|null, comic_id: int|null, done: int, total: int, progress_url: string|null, source_url: string}>, total: int, pending: int, processing: int, done: int, failed: int, skipped: int}
+     * @return array{items: array<int, array{id: int, gid: int, title: string, thumb: string|null, status: string, redownload: bool, error: string|null, comic_id: int|null, done: int, total: int, created_at: string|null, progress_url: string|null, source_url: string}>, total: int, filtered: int, pending: int, processing: int, done: int, failed: int, skipped: int, filter: string, sort: string, can_reorder: bool, pagination: array{page: int, last_page: int, total: int, prev_url: string|null, next_url: string|null}}
      */
-    protected function queuePayload(): array
+    protected function queuePayload(Request $request): array
     {
-        $items = EhImportQueueItem::query()
-            ->with(['comic:id,title', 'comic.ehImport:id,comic_id,status,total_pages', 'comic.pages:id,comic_id'])
-            ->orderBy('position')
-            ->orderBy('id')
-            ->get();
+        $validated = $request->validate([
+            'status' => 'nullable|in:all,queued,processing,done',
+            'sort' => 'nullable|in:recent,oldest,position,title',
+        ]);
 
-        $mapped = $items->map(function (EhImportQueueItem $item): array {
+        $filter = $validated['status'] ?? 'all';
+        $sort = $validated['sort'] ?? 'recent';
+
+        $counts = EhImportQueueItem::query()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $pending = (int) ($counts[EhImportQueueItem::STATUS_PENDING] ?? 0);
+        $processing = (int) ($counts[EhImportQueueItem::STATUS_PROCESSING] ?? 0);
+        $done = (int) ($counts[EhImportQueueItem::STATUS_DONE] ?? 0);
+        $failed = (int) ($counts[EhImportQueueItem::STATUS_FAILED] ?? 0);
+        $skipped = (int) ($counts[EhImportQueueItem::STATUS_SKIPPED] ?? 0);
+
+        $query = EhImportQueueItem::query()
+            ->with(['comic:id,title', 'comic.ehImport:id,comic_id,status,total_pages', 'comic.pages:id,comic_id']);
+
+        switch ($filter) {
+            case 'queued':
+                $query->whereIn('status', [EhImportQueueItem::STATUS_PENDING, EhImportQueueItem::STATUS_FAILED]);
+                break;
+            case 'processing':
+                $query->where('status', EhImportQueueItem::STATUS_PROCESSING);
+                break;
+            case 'done':
+                $query->whereIn('status', [EhImportQueueItem::STATUS_DONE, EhImportQueueItem::STATUS_SKIPPED]);
+                break;
+        }
+
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at')->orderBy('id');
+                break;
+            case 'position':
+                $query->orderBy('position')->orderBy('id');
+                break;
+            case 'title':
+                $query->orderBy('title')->orderBy('id');
+                break;
+            default:
+                $query->orderByDesc('created_at')->orderByDesc('id');
+        }
+
+        $paginator = $query->paginate(self::QUEUE_PER_PAGE)->withQueryString();
+
+        $mapped = $paginator->getCollection()->map(function (EhImportQueueItem $item): array {
             $comic = $item->comic;
 
             return [
@@ -1141,6 +1238,7 @@ class AdminImportController extends Controller
                 'comic_id' => $item->comic_id !== null ? (int) $item->comic_id : null,
                 'done' => $comic !== null ? $comic->pages->count() : 0,
                 'total' => (int) ($comic?->ehImport?->total_pages ?? 0),
+                'created_at' => $item->created_at?->format('d/m H:i'),
                 'progress_url' => $comic !== null ? route('admin.import.progress', $comic) : null,
                 'source_url' => $item->source_url,
             ];
@@ -1148,12 +1246,23 @@ class AdminImportController extends Controller
 
         return [
             'items' => $mapped,
-            'total' => count($mapped),
-            'pending' => $items->where('status', EhImportQueueItem::STATUS_PENDING)->count(),
-            'processing' => $items->where('status', EhImportQueueItem::STATUS_PROCESSING)->count(),
-            'done' => $items->where('status', EhImportQueueItem::STATUS_DONE)->count(),
-            'failed' => $items->where('status', EhImportQueueItem::STATUS_FAILED)->count(),
-            'skipped' => $items->where('status', EhImportQueueItem::STATUS_SKIPPED)->count(),
+            'total' => $pending + $processing + $done + $failed + $skipped,
+            'filtered' => $paginator->total(),
+            'pending' => $pending,
+            'processing' => $processing,
+            'done' => $done,
+            'failed' => $failed,
+            'skipped' => $skipped,
+            'filter' => $filter,
+            'sort' => $sort,
+            'can_reorder' => $filter === 'all' && $sort === 'position',
+            'pagination' => [
+                'page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                'prev_url' => $paginator->previousPageUrl(),
+                'next_url' => $paginator->nextPageUrl(),
+            ],
         ];
     }
 

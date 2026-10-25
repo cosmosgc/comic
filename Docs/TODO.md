@@ -27,3 +27,4 @@ _Nothing open._
   - Comics without tags.
   - Potential duplicate comics.
   - User-reported comics when report data is available (current reports are for posts only).
+- [x] a Schedule view accessable bellow admin/comics, it will show a callendar with the schedule comics (freeze already released comics) and allow drag and drop, make a system that allow to drag a comic to other months too

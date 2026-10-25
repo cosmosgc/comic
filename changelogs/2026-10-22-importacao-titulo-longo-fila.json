@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: títulos gigantes não travam mais a fila",
+    "date": "2026-10-22",
+    "category": "Fixed",
+    "tags": ["importacao", "fila", "admin"],
+    "summary": "Galerias com títulos maiores que 255 caracteres (nome japonês + tradução, por exemplo) não falham mais ao entrar na fila. O título do comic é cortado no limite da coluna e o slug também respeita o tamanho máximo.",
+    "body": "## Títulos longos na fila de importação\n\nAlgumas galerias do E-Hentai têm nomes enormes, com o título japonês e a tradução na mesma linha. Ao processar a fila, esse nome era gravado direto em `comics.title` e o MySQL recusava com `Data too long for column 'title'`, marcando o item como **Falhou**.\n\nAgora:\n\n- O título vindo da galeria é limitado a 255 caracteres antes de criar o comic.\n- O autor também respeita o limite da coluna.\n- O slug gerado deixa espaço para o sufixo de duplicatas (`-1`, `-2`…), sem estourar os 255 caracteres.\n\nDepois de atualizar os arquivos, use **Tentar de novo** no item que falhou — ele volta para a fila e é importado normalmente."
+}

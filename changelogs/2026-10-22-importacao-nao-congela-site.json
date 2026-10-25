@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: pausas entre imagens não travam mais o site",
+    "date": "2026-10-22",
+    "category": "Fixed",
+    "tags": ["importacao", "fila", "admin", "desempenho"],
+    "summary": "As pausas entre imagens deixaram de ser feitas dentro da requisição PHP e passaram para o navegador. Em hospedagem com um único worker (nginx + um php-cgi), o site volta a responder enquanto a fila importa.",
+    "body": "## Por que travava\n\nO importador baixava as imagens e, entre uma e outra, dormia com `usleep()` dentro da própria requisição HTTP. Como o servidor atende com um único processo PHP (`php-cgi.exe`), essa requisição segurava o único worker por 10–20 segundos por lote — e o site inteiro ficava esperando.\n\n## O que mudou\n\n- As pausas entre imagens agora são feitas **pelo navegador**, entre um lote e o próximo. O PHP termina a requisição e fica livre para atender as outras páginas.\n- A varredura das páginas de índice da galeria usa uma pausa curta (até 300 ms) em vez da pausa cheia, para não segurar o worker por dezenas de segundos em galerias grandes.\n- O teto de downloads por minuto continua valendo, então o ritmo continua educado com o E-Hentai.\n- As configurações **Páginas por lote**, **Pausa entre imagens** e **Pausa entre requisições** ganharam textos explicando o efeito no servidor.\n\n## Se ainda demorar\n\nCada imagem ainda ocupa o PHP enquanto está sendo baixada. Em hosts com um único worker, use **Páginas por lote = 1** em Admin → Importar → Configurações de importação. Assim cada requisição baixa uma única imagem e o site respira entre elas."
+}

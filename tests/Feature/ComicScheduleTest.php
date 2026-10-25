@@ -65,6 +65,57 @@ class ComicScheduleTest extends TestCase
             ->assertSee($descriptionLink, false);
     }
 
+    public function test_admin_schedule_view_lists_monthly_queue_for_drag_and_drop_updates(): void
+    {
+        $this->travelTo('2026-10-20 10:00:00');
+        $admin = User::factory()->create(['admin_level' => 1]);
+        $comic = Comic::factory()->create([
+            'title' => 'Linha do tempo XYZ',
+            'author' => 'Autor do agendamento',
+            'published_at' => '2026-10-21 09:00:00',
+        ]);
+        Comic::factory()->create([
+            'title' => 'Comic já publicado XYZ',
+            'published_at' => '2026-10-19 09:00:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.comics.schedule-view', ['view' => 'month', 'month' => '2026-10']))
+            ->assertOk()
+            ->assertSee('Agenda de lançamentos')
+            ->assertSee('Linha do tempo XYZ')
+            ->assertDontSee('Comic já publicado XYZ')
+            ->assertSee('data-date="2026-10-21"', false)
+            ->assertSee('data-month-shift="1"', false);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.comics.schedule', $comic), ['published_at' => '2026-11-03T12:00'])
+            ->assertOk()
+            ->assertJsonPath('message', 'Comic "Linha do tempo XYZ" agendado para 03/11/2026 12:00 — aparece como "Em breve" até lá.')
+            ->assertJsonPath('published_at', '2026-11-03T12:00:00+00:00');
+
+        $this->assertSame('2026-11-03 12:00:00', $comic->fresh()->published_at->format('Y-m-d H:i:s'));
+
+        $this->actingAs($admin)
+            ->get(route('admin.comics.schedule-view', ['view' => 'week', 'week' => '2026-11-03']))
+            ->assertOk()
+            ->assertSee('Semana')
+            ->assertSee('Linha do tempo XYZ')
+            ->assertSee('data-week-shift="1"', false)
+            ->assertSee('data-date="2026-11-03"', false)
+            ->assertSee('data-current-date="2026-11-03"', false);
+    }
+
+    public function test_admin_schedule_view_rejects_invalid_calendar_ranges(): void
+    {
+        $admin = User::factory()->create(['admin_level' => 1]);
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.comics.schedule-view', ['view' => 'month', 'month' => '2026-13']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('month');
+    }
+
     public function test_calendar_lists_scheduled_comics_inside_the_public_preview_window(): void
     {
         $this->travelTo('2026-10-20 10:00:00');

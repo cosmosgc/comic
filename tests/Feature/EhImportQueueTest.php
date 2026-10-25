@@ -51,7 +51,9 @@ class EhImportQueueTest extends TestCase
                     $gmetadata[] = [
                         'gid' => $gid,
                         'token' => (string) ($pair[1] ?? ''),
-                        'title' => 'Search Gallery '.$gid,
+                        // 4242 mimics real E-Hentai titles with both the
+                        // Japanese and translated names, far past 255 chars.
+                        'title' => $gid === 4242 ? str_repeat('Very Long Gallery Title ', 20) : 'Search Gallery '.$gid,
                         'category' => 'Doujinshi',
                         'thumb' => 'https://img.test/thumb-'.$gid.'.jpg',
                         'filecount' => '1',
@@ -248,6 +250,35 @@ class EhImportQueueTest extends TestCase
                 'comic_id' => $comic->id,
                 'status' => EhImportQueueItem::STATUS_DONE,
             ]);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
+    }
+
+    public function test_queue_processing_reports_the_client_side_pause_before_the_next_batch(): void
+    {
+        config([
+            'ehimport.image_delay_ms' => 1000,
+            'ehimport.delay_ms' => 1000,
+            'ehimport.delay_jitter_ms' => 500,
+        ]);
+
+        $comicId = null;
+
+        try {
+            $this->actingAs($this->admin)
+                ->post('/admin/import/queue', ['items' => ['321:abcdef0123']])
+                ->assertSessionHas('success');
+
+            $response = $this->actingAs($this->admin)
+                ->postJson('/admin/import/queue/process')
+                ->assertOk()
+                // 1 image → 1000 (imagem) + 2×1000 (pausas) + 500 (jitter).
+                ->assertJsonPath('next_delay_ms', 3500);
+
+            $comicId = (int) $response->json('comic.id');
         } finally {
             if ($comicId !== null) {
                 $this->deleteComicTree($comicId);
@@ -637,7 +668,7 @@ class EhImportQueueTest extends TestCase
         ]);
 
         $this->actingAs($this->admin)
-            ->get('/admin/import')
+            ->get('/admin/import?sort=position')
             ->assertOk()
             ->assertSee('data-queue-order-url', false)
             ->assertSee('data-queue-drag', false)
@@ -645,6 +676,123 @@ class EhImportQueueTest extends TestCase
             ->assertSee('Adicionar por URL', false)
             ->assertSee('Adicionar comics já no site', false)
             ->assertSee('Baixar todas as páginas de novo', false);
+    }
+
+    public function test_the_queue_card_paginates_sorts_by_most_recent_and_filters_by_status(): void
+    {
+        for ($i = 1; $i <= 11; $i++) {
+            $item = EhImportQueueItem::create([
+                'gid' => 9000 + $i,
+                'token' => 'aaaabbbbcc',
+                'title' => 'Queue Item '.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'source_url' => 'https://e-hentai.org/g/'.(9000 + $i).'/aaaabbbbcc/',
+                'status' => EhImportQueueItem::STATUS_PENDING,
+                'position' => $i,
+            ]);
+            // Item 01 is the oldest, item 11 the newest.
+            $item->forceFill([
+                'created_at' => now()->subMinutes(20 - $i),
+                'updated_at' => now()->subMinutes(20 - $i),
+            ])->save();
+        }
+
+        EhImportQueueItem::create([
+            'gid' => 9100,
+            'token' => 'aaaabbbbcc',
+            'title' => 'Finished Download',
+            'source_url' => 'https://e-hentai.org/g/9100/aaaabbbbcc/',
+            'status' => EhImportQueueItem::STATUS_DONE,
+            'position' => 12,
+        ]);
+
+        // Default: most recent first, 10 rows per page.
+        $this->actingAs($this->admin)
+            ->get('/admin/import')
+            ->assertOk()
+            ->assertSee('Queue Item 11', false)
+            ->assertSee('Queue Item 04', false)
+            ->assertDontSee('Queue Item 01', false)
+            ->assertSee('Página 1 de 2', false);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/import?page=2')
+            ->assertOk()
+            ->assertSee('Queue Item 01', false)
+            ->assertDontSee('Queue Item 11', false);
+
+        // Explicit ordering.
+        $this->actingAs($this->admin)
+            ->get('/admin/import?sort=oldest')
+            ->assertOk()
+            ->assertSee('Queue Item 01', false)
+            ->assertDontSee('Queue Item 11', false);
+
+        // Status filters: queue (pending/failed), importing and finished.
+        $this->actingAs($this->admin)
+            ->get('/admin/import?status=queued')
+            ->assertOk()
+            ->assertSee('Queue Item 11', false)
+            ->assertDontSee('Finished Download', false);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/import?status=done')
+            ->assertOk()
+            ->assertSee('Finished Download', false)
+            ->assertDontSee('Queue Item 11', false);
+
+        $this->actingAs($this->admin)
+            ->get('/admin/import?status=processing')
+            ->assertOk()
+            ->assertSee('Nenhuma galeria com este filtro.', false);
+    }
+
+    public function test_queue_processing_returns_the_current_filter_and_page(): void
+    {
+        EhImportQueueItem::create([
+            'gid' => 9200,
+            'token' => 'aaaabbbbcc',
+            'title' => 'Finished Page Item',
+            'source_url' => 'https://e-hentai.org/g/9200/aaaabbbbcc/',
+            'status' => EhImportQueueItem::STATUS_DONE,
+            'position' => 1,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->postJson('/admin/import/queue/process?status=done&sort=oldest')
+            ->assertOk()
+            ->assertJsonPath('done', true)
+            ->assertJsonPath('queue.filter', 'done')
+            ->assertJsonPath('queue.sort', 'oldest')
+            ->assertJsonPath('queue.filtered', 1)
+            ->assertJsonPath('queue.items.0.title', 'Finished Page Item');
+    }
+
+    public function test_queue_processing_truncates_gallery_titles_longer_than_the_comics_column(): void
+    {
+        $comicId = null;
+
+        try {
+            $this->actingAs($this->admin)
+                ->post('/admin/import/queue', ['items' => ['4242:aaaabbbbcc']])
+                ->assertSessionHas('success');
+
+            $response = $this->actingAs($this->admin)
+                ->postJson('/admin/import/queue/process')
+                ->assertOk()
+                ->assertJsonPath('queue.done', 1);
+
+            $comicId = (int) $response->json('comic.id');
+            $comic = Comic::findOrFail($comicId);
+
+            $this->assertSame(255, mb_strlen($comic->title));
+            $this->assertStringStartsWith('Very Long Gallery Title', $comic->title);
+            $this->assertLessThanOrEqual(255, mb_strlen($comic->slug));
+            $this->assertSame(EhImportQueueItem::STATUS_DONE, EhImportQueueItem::firstOrFail()->status);
+        } finally {
+            if ($comicId !== null) {
+                $this->deleteComicTree($comicId);
+            }
+        }
     }
 
     public function test_guest_and_non_admin_cannot_use_search_or_the_queue(): void

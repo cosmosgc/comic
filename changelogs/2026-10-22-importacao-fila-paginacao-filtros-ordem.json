@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Importar: paginação, filtros e ordenação na fila",
+    "date": "2026-10-22",
+    "category": "Added",
+    "tags": ["importacao", "fila", "admin"],
+    "summary": "A Fila de importação agora é paginada e tem filtros para ver só o que está na fila, o que está importando ou as concluídas. A ordenação padrão é pelas mais recentes, com opções para mais antigas, ordem da fila e título.",
+    "body": "## Fila de importação: paginação, filtros e ordem\n\nA fila em **Admin → Importar** ficou mais fácil de navegar:\n\n- **Paginação**: a fila mostra 10 itens por página, com **Anterior** e **Próxima** — mesmo com centenas de galerias esperando.\n- **Filtros**: use os botões **Todas**, **Na fila** (pendentes e falhas), **Importando** (baixando agora) e **Concluídas** (baixadas e já importadas). Cada botão mostra a quantidade de itens.\n- **Ordenação**: o padrão é **Mais recentes**; também dá para escolher **Mais antigas**, **Ordem da fila** ou **Título (A-Z)**.\n- **Arrastar**: o ⠿ aparece quando **Ordem da fila** está selecionada — arraste as linhas para mudar a ordem usada por **Processar fila**.\n- Cada linha mostra o horário em que entrou na fila, junto com as páginas e os links da galeria/importação.\n\nFiltros, ordenação e página são mantidos enquanto a fila processa, então o painel continua mostrando o mesmo recorte durante o download."
+}

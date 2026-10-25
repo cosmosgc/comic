@@ -21,16 +21,19 @@ return [
     // GET timeout for each full-size image (seconds).
     'image_timeout' => (int) env('EHIMPORT_IMAGE_TIMEOUT', 45),
 
-    // Polite pause between outbound requests (milliseconds).
+    // Polite pause between outbound requests (milliseconds). Also used
+    // by the admin page to space image batches, so the PHP worker is
+    // released between polls instead of sleeping inside the request.
     'delay_ms' => (int) env('EHIMPORT_DELAY_MS', 1200),
 
     // Random extra pause added to every delay (milliseconds) so the
     // request rhythm doesn't look robotic to rate limiters.
     'delay_jitter_ms' => (int) env('EHIMPORT_DELAY_JITTER_MS', 800),
 
-    // Extra pause BEFORE each full-size image download (milliseconds):
+    // Pause the browser takes between image batches (milliseconds):
     // images are the bandwidth-heavy calls that trigger 509s and
-    // firewall attention.
+    // firewall attention. Applied client-side so a slow import never
+    // holds the only PHP worker.
     'image_delay_ms' => (int) env('EHIMPORT_IMAGE_DELAY_MS', 3000),
 
     // Hard ceiling: image downloads per rolling minute, shared by all
@@ -38,7 +41,9 @@ return [
     // and the progress view backs off automatically.
     'max_per_minute' => (int) env('EHIMPORT_MAX_PER_MINUTE', 20),
 
-    // Image pages downloaded per progress-poll request.
+    // Image pages downloaded per progress-poll request. Each chunk is a
+    // single HTTP request, so keep it small on hosts with one PHP
+    // worker (nginx + one php-cgi) to avoid blocking other pages.
     'chunk' => (int) env('EHIMPORT_CHUNK', 3),
 
     // Safety caps: gallery index pages scanned, total pages imported.

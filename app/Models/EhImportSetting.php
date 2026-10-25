@@ -28,7 +28,7 @@ class EhImportSetting extends Model
         return [
             'chunk' => [
                 'label' => 'Páginas por lote',
-                'hint' => 'Quantas páginas cada requisição baixa.',
+                'hint' => 'Quantas páginas cada requisição baixa. Em hospedagem com um único worker PHP, use 1 para não travar o site.',
                 'type' => 'int', 'min' => 1, 'max' => 20,
             ],
             'max_per_minute' => [
@@ -37,13 +37,13 @@ class EhImportSetting extends Model
                 'type' => 'int', 'min' => 1, 'max' => 120,
             ],
             'image_delay_ms' => [
-                'label' => 'Pausa antes de cada imagem (ms)',
-                'hint' => 'Imagens são o que dispara 509 e firewall.',
+                'label' => 'Pausa entre imagens (ms)',
+                'hint' => 'Feita pelo navegador entre lotes; não segura o PHP. Imagens são o que dispara 509 e firewall.',
                 'type' => 'int', 'min' => 0, 'max' => 30000,
             ],
             'delay_ms' => [
                 'label' => 'Pausa entre requisições (ms)',
-                'hint' => 'Vale para páginas HTML e downloads.',
+                'hint' => 'Vale para o espaço entre lotes e para as páginas HTML do índice.',
                 'type' => 'int', 'min' => 0, 'max' => 30000,
             ],
             'delay_jitter_ms' => [

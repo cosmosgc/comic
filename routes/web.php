@@ -50,6 +50,7 @@ Route::prefix('admin')->middleware(['auth', AdminMiddleware::class])->controller
     Route::get('/users/{id}/edit', 'editUser')->name('admin.users.edit');
     Route::put('/users/{id}', 'updateUser')->name('admin.users.update');
     Route::get('/comics', 'comics')->name('admin.comics');
+    Route::get('/comics/schedule', 'scheduleView')->name('admin.comics.schedule-view');
     Route::post('/comics/{comic}/schedule', 'scheduleComic')->name('admin.comics.schedule');
     Route::post('/comics/{comic}/exclusive', 'exclusiveComic')->name('admin.comics.exclusive');
     Route::delete('/comics/{comic}', 'destroyComic')->name('admin.comics.destroy');

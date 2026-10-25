@@ -88,16 +88,58 @@
                 </span>
             </div>
             <div class="admin-card-body text-sm">
+                <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <span class="admin-label">Mostrar</span>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($queueFilters as $filterKey => $filterLabel)
+                                @php($filterCount = match ($filterKey) {
+                                    'queued' => $importQueue['pending'] + $importQueue['failed'],
+                                    'processing' => $importQueue['processing'],
+                                    'done' => $importQueue['done'] + $importQueue['skipped'],
+                                    default => $importQueue['total'],
+                                })
+                                <a href="{{ route('admin.import', array_filter([
+                                        'status' => $filterKey !== 'all' ? $filterKey : null,
+                                        'sort' => $importQueue['sort'] !== 'recent' ? $importQueue['sort'] : null,
+                                    ])) }}#import-queue"
+                                   class="admin-toggle {{ $importQueue['filter'] === $filterKey ? 'admin-toggle-active' : '' }}">
+                                    {{ $filterLabel }} ({{ $filterCount }})
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                    <form method="GET" action="{{ route('admin.import') }}#import-queue" class="flex items-end gap-2">
+                        @if ($importQueue['filter'] !== 'all')
+                            <input type="hidden" name="status" value="{{ $importQueue['filter'] }}">
+                        @endif
+                        <div>
+                            <label for="import-queue-sort" class="admin-label">Ordenar por</label>
+                            <select name="sort" id="import-queue-sort" class="admin-input admin-input-sm"
+                                    onchange="this.form.submit()">
+                                @foreach ($queueSorts as $sortKey => $sortLabel)
+                                    <option value="{{ $sortKey }}" @selected($importQueue['sort'] === $sortKey)>{{ $sortLabel }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="admin-btn admin-btn-sm">Aplicar</button>
+                    </form>
+                </div>
+
                 <div id="import-queue-list">
                     @if ($importQueue['total'] === 0)
                         <p class="opacity-60">Nenhuma galeria na fila. Busque acima, cole uma URL ou escolha um comic já no site para começar.</p>
+                    @elseif ($importQueue['filtered'] === 0)
+                        <p class="opacity-60">Nenhuma galeria com este filtro.</p>
                     @else
                         <ul class="space-y-3">
                             @foreach ($importQueue['items'] as $item)
                                 <li class="flex flex-wrap items-start gap-3" data-queue-item="{{ $item['id'] }}">
-                                    <span data-queue-drag draggable="true"
-                                          class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80"
-                                          title="Arraste para reordenar" aria-hidden="true">⠿</span>
+                                    @if ($importQueue['can_reorder'])
+                                        <span data-queue-drag draggable="true"
+                                              class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80"
+                                              title="Arraste para reordenar" aria-hidden="true">⠿</span>
+                                    @endif
                                     @if ($item['thumb'])
                                         <img src="{{ $item['thumb'] }}" alt="" loading="lazy" class="h-16 w-12 shrink-0 rounded object-cover">
                                     @endif
@@ -124,6 +166,9 @@
                                                 · <a href="{{ $item['progress_url'] }}" class="text-indigo-600 hover:underline dark:text-indigo-300">abrir importação</a>
                                             @endif
                                             · <a href="{{ $item['source_url'] }}" target="_blank" rel="noopener" class="hover:underline">galeria ↗</a>
+                                            @if ($item['created_at'])
+                                                · <span title="Adicionada à fila">{{ $item['created_at'] }}</span>
+                                            @endif
                                         </p>
                                         @if ($item['error'])
                                             <p class="mt-1 text-xs text-amber-600 dark:text-amber-300">{{ $item['error'] }}</p>
@@ -149,6 +194,19 @@
                         </ul>
                     @endif
                 </div>
+
+                @php($queuePagination = $importQueue['pagination'])
+                <div data-queue-pagination
+                     class="mt-4 flex-wrap items-center justify-center gap-2 text-xs {{ $queuePagination['last_page'] > 1 ? 'flex' : 'hidden' }}">
+                    <a data-queue-prev href="{{ $queuePagination['prev_url'] ?? '#' }}"
+                       class="admin-btn admin-btn-sm {{ $queuePagination['prev_url'] ? '' : 'pointer-events-none opacity-40' }}">‹ Anterior</a>
+                    <span data-queue-page class="opacity-60">
+                        Página {{ $queuePagination['page'] }} de {{ $queuePagination['last_page'] }} · {{ $queuePagination['total'] }} item(ns)
+                    </span>
+                    <a data-queue-next href="{{ $queuePagination['next_url'] ?? '#' }}"
+                       class="admin-btn admin-btn-sm {{ $queuePagination['next_url'] ? '' : 'pointer-events-none opacity-40' }}">Próxima ›</a>
+                </div>
+
                 <div class="mt-4 flex flex-wrap items-center gap-2">
                     <button type="button" id="import-queue-process" class="admin-btn admin-btn-success admin-btn-sm"
                             @disabled($importQueue['pending'] === 0 && $importQueue['processing'] === 0)>
@@ -164,8 +222,9 @@
                 </div>
                 <p class="mt-2 text-xs opacity-60">
                     A fila baixa uma galeria por vez enquanto esta página estiver aberta. Fechar a página
-                    pausa; <strong>Processar fila</strong> continua de onde parou. Arraste as linhas pelo
-                    <span aria-hidden="true">⠿</span> para mudar a ordem.
+                    pausa; <strong>Processar fila</strong> continua de onde parou. A ordem de download segue a
+                    <strong>Ordem da fila</strong>: selecione essa opção em “Ordenar por” para arrastar as
+                    linhas pelo <span aria-hidden="true">⠿</span> e mudar a ordem.
                 </p>
 
                 <div class="mt-4 grid gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
@@ -907,7 +966,8 @@
             paintStats(res.body);
             paintPages(res.body);
             paintLog(res.body.log || []);
-            setTimeout(poll, 800);
+            var wait = parseInt(res.body.next_delay_ms, 10);
+            setTimeout(poll, wait > 0 ? wait : 800);
         })
         .catch(function () {
             status.textContent = 'Erro de rede — tentando de novo…';
@@ -1222,6 +1282,10 @@
     var button = document.getElementById('import-queue-process');
     var statusEl = document.getElementById('import-queue-status');
     var countsEl = root.querySelector('[data-queue-counts]');
+    var pager = root.querySelector('[data-queue-pagination]');
+    var pagerPrev = root.querySelector('[data-queue-prev]');
+    var pagerNext = root.querySelector('[data-queue-next]');
+    var pagerPage = root.querySelector('[data-queue-page]');
     var processUrl = root.dataset.queueProcessUrl;
     var removeUrl = root.dataset.queueRemoveUrl;
     var retryUrl = root.dataset.queueRetryUrl;
@@ -1250,12 +1314,33 @@
             + '<button type="submit" class="admin-btn admin-btn-sm">' + esc(label) + '</button></form>';
     }
 
+    function paintPagination(pagination) {
+        if (!pager || !pagination) return;
+        var many = pagination.last_page > 1;
+        pager.classList.toggle('hidden', !many);
+        pager.classList.toggle('flex', many);
+        if (pagerPage) {
+            pagerPage.textContent = 'Página ' + pagination.page + ' de ' + pagination.last_page
+                + ' · ' + pagination.total + ' item(ns)';
+        }
+        [[pagerPrev, pagination.prev_url], [pagerNext, pagination.next_url]].forEach(function (pair) {
+            var link = pair[0];
+            if (!link) return;
+            link.setAttribute('href', pair[1] || '#');
+            link.classList.toggle('pointer-events-none', !pair[1]);
+            link.classList.toggle('opacity-40', !pair[1]);
+        });
+    }
+
     function render(queue) {
         countsEl.textContent = queue.pending + ' pendente(s) · ' + queue.processing + ' baixando · '
             + queue.done + ' concluída(s)' + (queue.failed > 0 ? ' · ' + queue.failed + ' com falha' : '');
+        paintPagination(queue.pagination);
 
         if (!queue.items.length) {
-            list.innerHTML = '<p class="opacity-60">Nenhuma galeria na fila. Busque acima, cole uma URL ou escolha um comic já no site para começar.</p>';
+            list.innerHTML = queue.total === 0
+                ? '<p class="opacity-60">Nenhuma galeria na fila. Busque acima, cole uma URL ou escolha um comic já no site para começar.</p>'
+                : '<p class="opacity-60">Nenhuma galeria com este filtro.</p>';
             return;
         }
 
@@ -1266,7 +1351,7 @@
                 : (item.status === 'processing' ? 'preparando…' : '');
 
             html += '<li class="flex flex-wrap items-start gap-3" data-queue-item="' + item.id + '">'
-                + '<span data-queue-drag draggable="true" class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80" title="Arraste para reordenar" aria-hidden="true">⠿</span>';
+                + (queue.can_reorder ? '<span data-queue-drag draggable="true" class="cursor-grab select-none px-1 text-xl leading-none opacity-40 hover:opacity-80" title="Arraste para reordenar" aria-hidden="true">⠿</span>' : '');
             if (item.thumb) {
                 html += '<img src="' + esc(item.thumb) + '" alt="" loading="lazy" class="h-16 w-12 shrink-0 rounded object-cover">';
             }
@@ -1281,6 +1366,7 @@
                 + (progress ? '<span>' + esc(progress) + '</span>' : '')
                 + (item.progress_url ? ' · <a href="' + esc(item.progress_url) + '" class="text-indigo-600 hover:underline dark:text-indigo-300">abrir importação</a>' : '')
                 + ' · <a href="' + esc(item.source_url) + '" target="_blank" rel="noopener" class="hover:underline">galeria ↗</a>'
+                + (item.created_at ? ' · <span title="Adicionada à fila">' + esc(item.created_at) + '</span>' : '')
                 + '</p>'
                 + (item.error ? '<p class="mt-1 text-xs text-amber-600 dark:text-amber-300">' + esc(item.error) + '</p>' : '')
                 + '</div>'
@@ -1388,7 +1474,8 @@
     function step() {
         if (!running) return;
 
-        fetch(processUrl, {
+        // Keep the same filter/sort/page being displayed while the queue runs.
+        fetch(processUrl + window.location.search, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
         })
@@ -1431,7 +1518,8 @@
             } else if (res.body.skipped) {
                 setStatus('Item já importado — seguindo para o próximo…');
             }
-            setTimeout(step, 700);
+            var wait = parseInt(res.body.next_delay_ms, 10);
+            setTimeout(step, wait > 0 ? wait : 700);
         })
         .catch(function () {
             setStatus('Erro de rede — tentando de novo em 5s…');

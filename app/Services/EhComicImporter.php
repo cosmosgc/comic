@@ -127,7 +127,10 @@ class EhComicImporter
             if ($new === 0) {
                 break;
             }
-            $this->politeDelay();
+            // Index pages are lightweight HTML. A full delay here could
+            // keep the only PHP worker busy for a minute on huge
+            // galleries; the browser paces the heavy image batches.
+            $this->pause(min(300, max(0, (int) config('ehimport.delay_ms', 1200))));
         }
 
         if ($found === []) {
@@ -153,8 +156,6 @@ class EhComicImporter
             || preg_match('#\bsrc="([^"]+)"#i', $m[0], $src) !== 1) {
             throw new EhImportException('Página sem imagem original: '.$pageUrl);
         }
-
-        $this->politeDelay();
 
         return html_entity_decode($src[1], ENT_QUOTES | ENT_HTML5);
     }
@@ -196,9 +197,6 @@ class EhComicImporter
     {
         $label ??= $imageUrl;
 
-        // Extra pause before the heavy call (plus jitter below).
-        $this->politeDelay(max(0, (int) config('ehimport.image_delay_ms', 3000)));
-
         try {
             $response = Http::connectTimeout(10)
                 ->timeout((int) config('ehimport.image_timeout', 45))
@@ -220,8 +218,6 @@ class EhComicImporter
         if (@getimagesizefromstring($bytes) === false) {
             throw new EhImportException('O arquivo baixado não é uma imagem válida: '.$label);
         }
-
-        $this->politeDelay();
 
         return ['bytes' => $bytes, 'extension' => $this->extensionFor($response->header('Content-Type'), $label)];
     }
@@ -338,11 +334,8 @@ class EhComicImporter
             : 'jpg';
     }
 
-    protected function politeDelay(?int $baseMs = null): void
+    protected function pause(int $ms): void
     {
-        $base = $baseMs ?? (int) config('ehimport.delay_ms', 1200);
-        $jitter = (int) config('ehimport.delay_jitter_ms', 800);
-        $ms = $base + ($jitter > 0 ? random_int(0, $jitter) : 0);
         if ($ms > 0) {
             usleep($ms * 1000);
         }

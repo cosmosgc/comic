@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Agenda administrativa de lançamentos",
+    "date": "2026-10-22",
+    "category": "Added",
+    "tags": ["admin", "comics", "agenda", "agendamento"],
+    "summary": "O painel Admin ganhou uma agenda mensal e semanal para reorganizar comics agendados com arraste entre datas e meses.",
+    "body": "## Agenda no painel Admin\n\nA nova opção **Agenda** fica junto da lista de comics e mostra os lançamentos futuros em calendário mensal ou semanal. Comics já publicados não aparecem na agenda e não podem ser movidos por ela.\n\n- Arraste um comic para outra data para reagendar sem perder o horário de publicação.\n- Use as setas de mês ou semana como alvos de soltura para mover um lançamento para o período seguinte ou anterior.\n- Os alvos de soltura destacam-se durante o arraste; a movimentação tem animação e confirmação, e falhas são exibidas sem esconder o erro."
+}
