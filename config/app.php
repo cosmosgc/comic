@@ -68,6 +68,8 @@ return [
 
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'America/Sao_Paulo'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

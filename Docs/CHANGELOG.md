@@ -84,6 +84,7 @@ Example:
 - Novas migrations: `edited_at` em `posts`, `mutes`, `forum_polls` + `forum_poll_options` + `forum_poll_votes` e `forum_digest` em `users`
 
 ### Changed
+- **Fuso horário do painel administrativo**: atividades, relatório de horários de pico e análises mostram os horários em `America/Sao_Paulo`; configure `APP_DISPLAY_TIMEZONE` no `.env` para escolher outro fuso sem alterar o fuso usado pelo restante da aplicação
 - **Comics — filtros e exclusão na lista**: os filtros de atenção (agora também **Em breve**, para lançamentos com data futura) viraram botões que ligam/desligam na hora e podem ser combinados (todos precisam bater), o estado fica na URL, e excluir um comic remove a linha sem recarregar — mantendo a página da tabela, a busca e os filtros (o formulário sem JS e os atalhos de exclusivo/agendar também preservam os filtros)
 - **Mercado — visual**: superfícies sólidas, bordas finas, cantos menores, tipografia mais contida e âmbar só como acento; saíram gradientes, translucidez e pills, mantendo o layout e os fluxos de anúncio, filtros, favoritos, mensagens e moderação
 - **Home — lançamentos sem afogar a primeira página**: a lista mostra todos os comics em **Pré-estreia** e no máximo **3 cards “Em breve”**, então uma fila longa de agendados não empurra mais os comics disponíveis para as páginas seguintes; para visitantes, os três próximos lançamentos seguem como cards bloqueados e o resto da primeira página fica com comics liberados

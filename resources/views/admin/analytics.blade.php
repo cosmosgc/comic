@@ -23,7 +23,7 @@
                         <th>SO</th>
                         <th>Dur. (s)</th>
                         <th>Origem</th>
-                        <th>Data</th>
+                        <th title="Fuso horário: {{ config('app.display_timezone') }}">Data (hora local)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,7 +39,7 @@
                             <td class="whitespace-nowrap">{{ $entry->os }}</td>
                             <td>{{ $entry->duration }}</td>
                             <td class="max-w-40 truncate" title="{{ $entry->referral_source }}">{{ $entry->referral_source }}</td>
-                            <td class="whitespace-nowrap">{{ $entry->created_at }}</td>
+                            <td class="whitespace-nowrap">{{ $entry->created_at?->timezone(config('app.display_timezone'))->format('d/m/Y H:i:s') }}</td>
                         </tr>
                     @endforeach
                 </tbody>

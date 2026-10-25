@@ -44,7 +44,7 @@
             <table class="admin-table admin-table-compact">
                 <thead>
                     <tr>
-                        <th>Quando</th>
+                        <th title="Fuso horário: {{ config('app.display_timezone') }}">Quando (hora local)</th>
                         <th>Usuário</th>
                         <th>Ação</th>
                         <th>O quê</th>
@@ -55,7 +55,9 @@
                 <tbody>
                     @forelse ($activities as $activity)
                         <tr>
-                            <td class="whitespace-nowrap" title="{{ $activity->created_at }}">{{ $activity->created_at?->diffForHumans() }}</td>
+                            <td class="whitespace-nowrap" title="{{ $activity->created_at?->diffForHumans() }}">
+                                {{ $activity->created_at?->timezone(config('app.display_timezone'))->format('d/m/Y H:i:s') }}
+                            </td>
                             @php($knownUser = $activity->user ?? ($activity->ip_address ? $ipUsers->get($activity->ip_address) : null))
                             <td class="whitespace-nowrap">
                                 @if ($knownUser)

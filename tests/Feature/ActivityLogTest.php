@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ActivityLog;
+use App\Models\Analytics;
 use App\Models\Comic;
 use App\Models\Post;
 use App\Models\User;
@@ -18,6 +19,10 @@ class ActivityLogTest extends TestCase
         // Isolated scratch database: never touches the dev MySQL.
         config(['database.default' => 'sqlite']);
         config(['database.connections.sqlite.database' => ':memory:']);
+        config([
+            'app.timezone' => 'UTC',
+            'app.display_timezone' => 'America/Sao_Paulo',
+        ]);
         $this->artisan('migrate');
     }
 
@@ -104,6 +109,47 @@ class ActivityLogTest extends TestCase
             ->assertOk()
             ->assertSee('Iniciou leitura')
             ->assertSee('Feed Reading');
+    }
+
+    public function test_admin_activities_view_shows_brazilian_local_time(): void
+    {
+        $admin = $this->makeAdmin();
+        $activity = ActivityLog::create([
+            'action' => 'auth.login',
+            'description' => 'Fez login',
+        ]);
+        $activity->forceFill(['created_at' => '2026-06-01 12:34:56'])->save();
+
+        $this->actingAs($admin)->get('/admin/activities')
+            ->assertSee('01/06/2026 09:34:56');
+    }
+
+    public function test_admin_analytics_view_shows_brazilian_local_time(): void
+    {
+        $admin = $this->makeAdmin();
+        $entry = Analytics::create([
+            'ip_address' => '10.0.0.1',
+            'url' => '/',
+            'event_type' => 'page_view',
+        ]);
+        $entry->forceFill(['created_at' => '2026-06-01 12:34:56'])->save();
+
+        $this->actingAs($admin)->get('/admin/analytics')
+            ->assertSee('01/06/2026 09:34:56');
+    }
+
+    public function test_admin_activity_report_uses_brazilian_local_time_for_peak_hours(): void
+    {
+        $admin = $this->makeAdmin();
+        $activity = ActivityLog::create([
+            'action' => 'auth.login',
+            'description' => 'Fez login',
+        ]);
+        $activity->forceFill(['created_at' => '2026-06-01 02:30:00'])->save();
+
+        $this->actingAs($admin)->get('/admin/activities/report?start_date=2026-06-01&end_date=2026-06-01')
+            ->assertViewHas('byHour', fn (array $byHour): bool => $byHour[23] === 1 && array_sum($byHour) === 1)
+            ->assertSee('Fuso horário: America/Sao_Paulo');
     }
 
     public function test_login_event_records_activity(): void

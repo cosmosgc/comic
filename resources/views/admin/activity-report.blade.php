@@ -114,7 +114,10 @@
     </div>
 
     <div class="admin-card mt-6">
-        <div class="admin-card-header"><span>Horário de pico</span></div>
+        <div class="admin-card-header">
+            <span>Horário de pico</span>
+            <span class="admin-help">Fuso horário: {{ config('app.display_timezone') }}</span>
+        </div>
         <div class="admin-card-body">
             <div class="relative h-64">
                 <canvas id="hourChart"></canvas>

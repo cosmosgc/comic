@@ -322,7 +322,7 @@ class AdminController extends Controller
         $byHour = array_fill(0, 24, 0);
         foreach ($hourRows as $row) {
             if ($row->created_at !== null) {
-                $byHour[(int) $row->created_at->format('G')]++;
+                $byHour[(int) $row->created_at->timezone(config('app.display_timezone'))->format('G')]++;
             }
         }
 

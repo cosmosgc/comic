@@ -1,0 +1,9 @@
+{
+    "pr": null,
+    "title": "Fuso horário no painel administrativo",
+    "date": "2026-10-25",
+    "category": "Changed",
+    "tags": ["admin", "fuso-horario", "analises"],
+    "summary": "Atividades, relatório e análises exibem horários em America/Sao_Paulo por padrão, com fuso configurável pelo ambiente.",
+    "body": "## Horários do painel administrativo\n\nAs datas em Admin → Atividades e Admin → Análises agora são exibidas no fuso configurado por `APP_DISPLAY_TIMEZONE` (padrão `America/Sao_Paulo`). O gráfico de horário de pico do relatório também considera esse fuso. Essa configuração é separada de `APP_TIMEZONE`, então não altera os horários do restante da aplicação."
+}
